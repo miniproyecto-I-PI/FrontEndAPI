@@ -249,6 +249,73 @@ export async function addSubtask(eventId, payload) {
 }
 
 // =============================================================================
+// US-03 — Editar / eliminar eventos y subtareas
+// =============================================================================
+
+/**
+ * PUT /events/:id  (US-03)
+ * @param {string} id
+ * @param {{ name?, type?, contact?, dateTime?, place? }} patch
+ */
+export async function updateEvent(id, patch) {
+  ensureMockStores();
+  await delay(400);
+  // TODO(backend): PUT `${API_BASE_URL}/events/${id}`
+  const evt = _eventsStore[id];
+  if (!evt) throw new Error("No encontramos ese evento");
+  Object.assign(evt, patch);
+  saveToStorage();
+  return evt;
+}
+
+/**
+ * DELETE /events/:id  (US-03)
+ * Cascada: al borrar el evento, se borran sus subtareas asociadas
+ * (regla acordada del QA: "al eliminar evento se borran sus gestiones").
+ */
+export async function deleteEvent(id) {
+  ensureMockStores();
+  await delay(400);
+  // TODO(backend): DELETE `${API_BASE_URL}/events/${id}` con ON DELETE CASCADE
+  if (!_eventsStore[id]) throw new Error("No encontramos ese evento");
+  delete _eventsStore[id];
+  _subtasksStore = _subtasksStore.filter((s) => s.eventId !== id);
+  saveToStorage();
+  return { id, deleted: true };
+}
+
+/**
+ * PATCH /subtasks/:id  (US-03)
+ * Punto único para editar cualquier campo de una subtarea.
+ * NOTA: en Sprint 3/4, US-06 y US-09 pueden reusar esta misma función
+ * (patch = { targetDate } o { status }) en vez de tener endpoints separados.
+ */
+export async function updateSubtask(id, patch) {
+  ensureMockStores();
+  await delay(400);
+  // TODO(backend): PATCH `${API_BASE_URL}/subtasks/${id}` { title?, target_date?, estimated_hours? }
+  const idx = _subtasksStore.findIndex((s) => s.id === id);
+  if (idx === -1) throw new Error("No encontramos esa gestión");
+  _subtasksStore[idx] = { ..._subtasksStore[idx], ...patch };
+  saveToStorage();
+  return _subtasksStore[idx];
+}
+
+/**
+ * DELETE /subtasks/:id  (US-03)
+ */
+export async function deleteSubtask(id) {
+  ensureMockStores();
+  await delay(400);
+  // TODO(backend): DELETE `${API_BASE_URL}/subtasks/${id}`
+  const idx = _subtasksStore.findIndex((s) => s.id === id);
+  if (idx === -1) throw new Error("No encontramos esa gestión");
+  _subtasksStore.splice(idx, 1);
+  saveToStorage();
+  return { id, deleted: true };
+}
+
+// =============================================================================
 // US-12 — Configuración de límite diario
 // =============================================================================
 

@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { toDateInputValue } from "../../utils/dateUtils";
 
 /**
  * AddSubtaskModal.jsx
- * ---------------------------------------------------------------------------
- * Modal para agregar una gestión logística a un evento (US-02).
+ * US-02 (crear) + US-03 (editar). Un solo modal, dos modos:
+ *   - sin `initialValues` → "Agregar gestión"
+ *   - con `initialValues` → "Editar gestión"
+ * * Modal para agregar una gestión logística a un evento (US-02).
  * Sigue el patrón visual de RescheduleModal.jsx (overlay z-50, backdrop-blur,
  * clic fuera cierra, rounded-sharp, tipografía serif en el título) y el
  * patrón de formularios de CrearPage.jsx (form controlado, validate()
@@ -17,13 +20,23 @@ import { useEffect, useRef, useState } from "react";
  * @param {() => void} onCancel
  * @param {(payload: { title: string, targetDate: string, estimatedHours: number }) => Promise<void>} onSubmit
  */
-const initialForm = { title: "", targetDate: "", estimatedHours: "" };
+const emptyForm = { title: "", targetDate: "", estimatedHours: "" };
 
-export default function AddSubtaskModal({ onCancel, onSubmit }) {
-  const [form, setForm] = useState(initialForm);
+export default function AddSubtaskModal({ initialValues, onCancel, onSubmit }) {
+  const isEdit = Boolean(initialValues);
+
+  const [form, setForm] = useState(() =>
+    isEdit
+      ? {
+          title: initialValues.title ?? "",
+          targetDate: toDateInputValue(initialValues.targetDate),
+          estimatedHours: String(initialValues.estimatedHours ?? ""),
+        }
+      : emptyForm
+  );
   const [fieldErrors, setFieldErrors] = useState({});
   const [generalError, setGeneralError] = useState(null);
-  const [status, setStatus] = useState("idle"); // idle | loading
+  const [status, setStatus] = useState("idle");
 
   const firstInputRef = useRef(null);
 
@@ -54,12 +67,8 @@ export default function AddSubtaskModal({ onCancel, onSubmit }) {
 
   function validate() {
     const errors = {};
-    if (!form.title.trim()) {
-      errors.title = "El nombre es obligatorio.";
-    }
-    if (!form.targetDate) {
-      errors.targetDate = "Elige una fecha objetivo.";
-    }
+    if (!form.title.trim()) errors.title = "El nombre es obligatorio.";
+    if (!form.targetDate) errors.targetDate = "Elige una fecha objetivo.";
     const hours = Number(form.estimatedHours);
     if (form.estimatedHours === "" || Number.isNaN(hours)) {
       errors.estimatedHours = "Las horas estimadas son obligatorias.";
@@ -79,10 +88,7 @@ export default function AddSubtaskModal({ onCancel, onSubmit }) {
       return;
     }
 
-    // Fecha a mediodía local para evitar el corrimiento de un día que ocurre
-    // cuando `new Date("2026-10-15")` se interpreta como UTC.
     const localDate = new Date(`${form.targetDate}T12:00:00`);
-
     setStatus("loading");
     try {
       await onSubmit({
@@ -90,43 +96,36 @@ export default function AddSubtaskModal({ onCancel, onSubmit }) {
         targetDate: localDate.toISOString(),
         estimatedHours: Number(form.estimatedHours),
       });
-      // El padre cierra el modal y dispara el toast al resolverse.
     } catch (err) {
       setStatus("idle");
       setGeneralError(
-        err.message || "No se pudo agregar la gestión. Intenta de nuevo."
+        err.message || (isEdit ? "No se pudo actualizar la gestión. Intenta de nuevo." : "No se pudo agregar la gestión. Intenta de nuevo.")
       );
     }
   }
 
   const isLoading = status === "loading";
+  const titleId = isEdit ? "edit-subtask-title" : "add-subtask-title";
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      aria-labelledby="add-subtask-title"
+      aria-labelledby={titleId}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-charcoal/40 backdrop-blur-sm"
       onClick={(e) => e.target === e.currentTarget && onCancel()}
     >
       <div className="relative w-full max-w-md bg-paper-card border border-sepia-border rounded-sharp p-6 shadow-xl warm-card-shadow">
-        <h2
-          id="add-subtask-title"
-          className="font-serif text-2xl font-bold text-ink-charcoal"
-        >
-          Agregar gestión
+        <h2 id={titleId} className="font-serif text-2xl font-bold text-ink-charcoal">
+          {isEdit ? "Editar gestión" : "Agregar gestión"}
         </h2>
         <p className="font-body text-xs text-ink-muted mt-1">
           Ejemplos: reservar salón, enviar invitaciones, confirmar catering.
         </p>
 
         <form onSubmit={handleSubmit} noValidate className="mt-4 space-y-4">
-          {/* Nombre */}
           <div>
-            <label
-              htmlFor="subtask-title"
-              className="block font-body text-xs font-medium text-ink-muted mb-1"
-            >
+            <label htmlFor="subtask-title" className="block font-body text-xs font-medium text-ink-muted mb-1">
               Nombre de la gestión
             </label>
             <input
@@ -145,21 +144,14 @@ export default function AddSubtaskModal({ onCancel, onSubmit }) {
               }`}
             />
             {fieldErrors.title && (
-              <p
-                id="subtask-title-error"
-                className="mt-1 font-body text-xs text-crimson-urgent"
-              >
+              <p id="subtask-title-error" className="mt-1 font-body text-xs text-crimson-urgent">
                 {fieldErrors.title}
               </p>
             )}
           </div>
 
-          {/* Fecha objetivo */}
           <div>
-            <label
-              htmlFor="subtask-date"
-              className="block font-body text-xs font-medium text-ink-muted mb-1"
-            >
+            <label htmlFor="subtask-date" className="block font-body text-xs font-medium text-ink-muted mb-1">
               Fecha objetivo
             </label>
             <input
@@ -176,21 +168,14 @@ export default function AddSubtaskModal({ onCancel, onSubmit }) {
               }`}
             />
             {fieldErrors.targetDate && (
-              <p
-                id="subtask-date-error"
-                className="mt-1 font-body text-xs text-crimson-urgent"
-              >
+              <p id="subtask-date-error" className="mt-1 font-body text-xs text-crimson-urgent">
                 {fieldErrors.targetDate}
               </p>
             )}
           </div>
 
-          {/* Horas estimadas */}
           <div>
-            <label
-              htmlFor="subtask-hours"
-              className="block font-body text-xs font-medium text-ink-muted mb-1"
-            >
+            <label htmlFor="subtask-hours" className="block font-body text-xs font-medium text-ink-muted mb-1">
               Horas estimadas
             </label>
             <input
@@ -211,20 +196,14 @@ export default function AddSubtaskModal({ onCancel, onSubmit }) {
               }`}
             />
             {fieldErrors.estimatedHours && (
-              <p
-                id="subtask-hours-error"
-                className="mt-1 font-body text-xs text-crimson-urgent"
-              >
+              <p id="subtask-hours-error" className="mt-1 font-body text-xs text-crimson-urgent">
                 {fieldErrors.estimatedHours}
               </p>
             )}
           </div>
 
           {generalError && (
-            <div
-              role="alert"
-              className="rounded-sharp bg-crimson-paper border border-crimson-urgent/30 px-3 py-2 font-body text-xs text-crimson-urgent"
-            >
+            <div role="alert" className="rounded-sharp bg-crimson-paper border border-crimson-urgent/30 px-3 py-2 font-body text-xs text-crimson-urgent">
               {generalError}
             </div>
           )}
@@ -243,7 +222,7 @@ export default function AddSubtaskModal({ onCancel, onSubmit }) {
               disabled={isLoading}
               className="px-5 py-2 rounded-sharp bg-terracotta hover:bg-terracotta-dark text-[#FAF6F0] font-body text-xs font-semibold tracking-wide border border-terracotta-dark shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-terracotta focus:ring-offset-1 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Guardando…" : "Guardar"}
+              {isLoading ? "Guardando…" : isEdit ? "Guardar cambios" : "Guardar"}
             </button>
           </div>
         </form>
