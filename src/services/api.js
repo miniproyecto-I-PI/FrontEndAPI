@@ -1,6 +1,19 @@
 /**
  * services/api.js
  * ---------------------------------------------------------------------------
+ * Conexión real con el backend Django (DRF) desplegado en Render.
+ *
+ * El backend usa nombres de campo distintos a los del frontend (name vs
+ * eventName, target_date vs targetDate, etc.), así que TODA la traducción
+ * vive aquí: los componentes siguen usando los mismos nombres de siempre.
+ *
+ * El backend envuelve las respuestas en { success, data, message }.
+ * Aquí se desenvuelve `data` antes de devolverlo.
+ */
+// Old comment, pre integration with backend:
+/**
+ * services/api.js
+ * ---------------------------------------------------------------------------
  * SINGLE INTEGRATION POINT with the backend.
  * Every function here is named after (and documented with) the endpoint it
  * will call once the backend team implements it, per Backlog Refinado (C4)
@@ -18,331 +31,268 @@
  * (local, staging, prod) can point to a different API without code changes.
  * See `.env.example`.
  */
+// ---------------------------------------------------------------------------
+// Configuración
+// ---------------------------------------------------------------------------
 
-import { mockGestiones } from "../data/mockGestiones";
+export const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
-// Fix: una sola constante con fallback, en vez de dos lecturas distintas de
-// la misma env var (una con fallback, otra sin). Ver conversación.
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
-
-/** Simulates realistic network latency for the mock responses below. */
-function delay(ms = 400) {
+/** Simula latencia para que el estado loading se note en desarrollo. */
+function delay(ms = 200) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// =============================================================================
-// MOCK STORE (Sprint 1 — se elimina cuando el backend real esté listo)
-// =============================================================================
-// Sprint 1 no tiene backend todavía. Para que US-01/US-02 funcionen
-// end-to-end sin él, guardamos eventos y subtareas en localStorage, así la
-// demo en Vercel sobrevive a un F5. Se reemplaza entero por fetch() el día
-// que el backend exista: nada fuera de este bloque ni de las funciones de
-// abajo sabe que el store existe.
-//
-// VERSIONING: si cambia la forma de mockGestiones (nuevos campos, etc.),
-// sube STORAGE_VERSION. Al abrir la app se detectará el mismatch y se
-// re-sembrará desde el mock (evita "fantasmas" de datos viejos).
-// =============================================================================
+/**
+ * Helper central de fetch. Desenvuelve { success, data, message } y lanza
+ * un Error con mensaje legible si algo falla.
+ */
+async function apiFetch(path, options = {}) {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    ...options,
+  });
 
-const STORAGE_KEY = "convoka.sprint1.store";
-const STORAGE_VERSION = 1;
-
-let _eventsStore = null;   // { [id]: { id, name, type, contact?, dateTime?, place? } }
-let _subtasksStore = null; // Gestion[] — misma forma que mockGestiones
-
-function loadFromStorage() {
-  if (typeof window === "undefined") return null;
+  let body = null;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (parsed?.version !== STORAGE_VERSION) return null;
-    if (!parsed.events || !parsed.subtasks) return null;
-    return parsed;
+    body = await res.json();
   } catch {
-    return null; // JSON corrupto → re-seed
+    // respuesta sin JSON (ej. 204 No Content)
   }
+
+  if (!res.ok) {
+    const message =
+      body?.message ||
+      body?.detail ||
+      (body && typeof body === "object" ? Object.values(body).flat()[0] : null) ||
+      `Error ${res.status}`;
+    throw new Error(message);
+  }
+
+  // El backend envuelve todo en { success, data }. Si no viene envuelto,
+  // devolvemos el body tal cual (por si algún endpoint no lo hace).
+  if (body && typeof body === "object" && "success" in body && "data" in body) {
+    return body.data;
+  }
+  return body;
 }
 
-function saveToStorage() {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        version: STORAGE_VERSION,
-        events: _eventsStore,
-        subtasks: _subtasksStore,
-      })
-    );
-  } catch {
-    // Modo privado / quota excedida — silenciar, la app sigue funcionando en memoria.
-  }
-}
-
-function ensureMockStores() {
-  if (_eventsStore && _subtasksStore) return;
-
-  const persisted = loadFromStorage();
-  if (persisted) {
-    _eventsStore = persisted.events;
-    _subtasksStore = persisted.subtasks;
-    return;
-  }
-
-  // Primera carga (o versión vieja): sembrar desde mockGestiones.
-  _eventsStore = {};
-  for (const g of mockGestiones) {
-    if (!_eventsStore[g.eventId]) {
-      _eventsStore[g.eventId] = {
-        id: g.eventId,
-        name: g.eventName,
-        type: g.eventType,
-      };
-    }
-  }
-  _subtasksStore = structuredClone(mockGestiones);
-
-  saveToStorage();
-}
-
-// =============================================================================
-// US-04 — Vista "Hoy"
-// =============================================================================
+// ---------------------------------------------------------------------------
+// Mapeo Backend → Frontend
+// ---------------------------------------------------------------------------
 
 /**
- * GET /today  (US-04)
- * Returns the raw list of active/relevant gestiones. Grouping and ordering
- * is applied on the frontend by `utils/sortGestiones.js` (see that file for
- * why). Throws to simulate the error state when `simulateError` is true —
- * used by the QA simulation toolbar (components/dev/SimulationToolbar.jsx)
- * to demo the error state without needing a real backend outage.
- *
- * @param {{ simulateError?: boolean }} [opts]
- * @returns {Promise<import('../utils/sortGestiones').Gestion[]>}
+ * Evento del backend → Evento del frontend.
+ * Backend: { id, name, type, client_contact, event_datetime, place, ... }
+ * Frontend: { id, name, type, contact, dateTime, place }
+ */
+function mapEventFromBackend(raw) {
+  if (!raw) return null;
+  return {
+    id: String(raw.id), // el frontend usa IDs como string en las rutas
+    name: raw.name,
+    type: (raw.type || "").toLowerCase(),
+    contact: raw.client_contact ?? "",
+    dateTime: raw.event_datetime ?? "",
+    place: raw.place ?? "",
+  };
+}
+
+/**
+ * Subtarea del backend → Gestión del frontend.
+ * Backend: { id, event, name, target_date, estimated_hours, status, note, ... }
+ * Frontend: { id, eventId, title, targetDate, estimatedHours, status, ... }
+ */
+function mapSubtaskFromBackend(raw) {
+  if (!raw) return null;
+  return {
+    id: String(raw.id),
+    eventId: String(raw.event),
+    title: raw.name,
+    targetDate: raw.target_date, // "YYYY-MM-DD"
+    estimatedHours: Number(raw.estimated_hours),
+    status: raw.status,
+    note: raw.note ?? "",
+  };
+}
+
+// ---------------------------------------------------------------------------
+// US-04 — Vista "Hoy" (SIN backend todavía: GET /today no existe)
+// ---------------------------------------------------------------------------
+
+/**
+ * GET /today  — PENDIENTE en el backend.
+ * Mientras no exista el endpoint, seguimos usando mock.
  */
 export async function getToday({ simulateError = false } = {}) {
   await delay();
-  if (simulateError) {
-    throw new Error("No pudimos cargar tus gestiones");
-  }
-  // TODO(backend): reemplazar por:
-  //   const res = await fetch(`${API_BASE_URL}/today`);
-  //   if (!res.ok) throw new Error('No pudimos cargar tus gestiones');
-  //   return res.json();
+  if (simulateError) throw new Error("No pudimos cargar tus gestiones");
+  // TODO(backend, Sprint 2): GET `${API_BASE_URL}/today`
+  const { mockGestiones } = await import("../data/mockGestiones");
   return structuredClone(mockGestiones);
 }
 
-/** PATCH /subtasks/:id  (US-09, "Marcar tarea ejecutada") */
+// ---------------------------------------------------------------------------
+// US-09 — Marcar / posponer (SIN backend todavía)
+// ---------------------------------------------------------------------------
+
 export async function markGestionAsDone(id) {
   await delay(250);
-  // TODO(backend): PATCH `${API_BASE_URL}/subtasks/${id}` { status: 'EJECUTADA' }
+  // TODO(backend, Sprint 4): PATCH /subtasks/:id { status: 'EJECUTADA' }
   return { id, status: "EJECUTADA", doneAt: new Date().toISOString() };
 }
 
-/** PATCH /subtasks/:id  (US-09, "Posponer con nota explicativa") */
 export async function postponeGestion(id, note = "") {
   await delay(250);
-  // TODO(backend): PATCH { status: 'POSPUESTA', note }
+  // TODO(backend, Sprint 4): PATCH /subtasks/:id { status: 'POSPUESTA', note }
   return { id, status: "POSPUESTA", note };
 }
 
-/** PATCH /subtasks/:id  (US-06, "Reprogramar") */
 export async function rescheduleGestion(id, newTargetDateISO) {
   await delay(300);
-  // TODO(backend): PATCH { target_date: newTargetDateISO }
-  // TODO(backend, US-07): antes de confirmar, llamar POST /conflicts/overload
+  // TODO(backend, Sprint 3): PATCH /subtasks/:id { target_date: newTargetDateISO }
   return { id, targetDate: newTargetDateISO };
 }
 
-// =============================================================================
-// US-01 — Crear evento
-// =============================================================================
-
-const USE_MOCK = true; // TODO(backend): cambiar a false cuando exista el endpoint real
+// ---------------------------------------------------------------------------
+// US-01 — Eventos
+// ---------------------------------------------------------------------------
 
 /**
- * POST /events  (US-01)
- * @param {{ name: string, type: string, contact?: string, dateTime: string, place?: string }} payload
- * @returns {Promise<{ id: string, name: string, type: string, contact?: string, dateTime: string, place?: string }>}
+ * POST /events
+ * Recibe el formulario del frontend { name, type, contact, dateTime, place }
+ * y lo traduce al payload que espera el backend.
  */
-export async function createEvent(payload) {
-  ensureMockStores();
+export async function createEvent(form) {
+  const payload = {
+    name: form.name,
+    type: form.type.toUpperCase(), // backend espera BODA, SOCIAL, etc.
+    client_contact: form.contact ?? "",
+    event_datetime: new Date(form.dateTime).toISOString(),
+    place: form.place ?? "",
+  };
 
-  if (USE_MOCK) {
-    await delay(600);
-    const newEvent = { id: `evt-${Date.now()}`, ...payload };
-    _eventsStore[newEvent.id] = newEvent;
-    saveToStorage();
-    return newEvent;
-  }
-
-  const response = await fetch(`${API_BASE_URL}/events`, {
+  const raw = await apiFetch("/events", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 
-  if (!response.ok) {
-    throw new Error("No se pudo crear el evento. Intenta de nuevo.");
-  }
-  return response.json();
+  return mapEventFromBackend(raw);
 }
 
-// =============================================================================
-// US-02 — Subtareas logísticas (plan inicial de un evento)
-// =============================================================================
-
 /**
- * GET /events/:id  (US-01/US-03 — base para el detalle del evento)
- * @param {string} id
- * @returns {Promise<{ id: string, name: string, type: string }>}
+ * GET /events/:id
  */
 export async function getEventById(id) {
-  ensureMockStores();
-  await delay();
-  // TODO(backend): GET `${API_BASE_URL}/events/${id}`
-  const evt = _eventsStore[id];
-  if (!evt) throw new Error("No encontramos ese evento");
-  return evt;
+  const raw = await apiFetch(`/events/${id}`);
+  return mapEventFromBackend(raw);
 }
 
 /**
- * GET /events/:id/subtasks  (US-02)
- * @param {string} eventId
- * @returns {Promise<import('../utils/sortGestiones').Gestion[]>}
- */
-export async function getEventSubtasks(eventId) {
-  ensureMockStores();
-  await delay();
-  // TODO(backend): GET `${API_BASE_URL}/events/${eventId}/subtasks`
-  return _subtasksStore.filter((s) => s.eventId === eventId);
-}
-
-/**
- * POST /events/:id/subtasks  (US-02)
- * Crea una subtarea logística asociada al evento.
- * @param {string} eventId
- * @param {{ title: string, targetDate: string, estimatedHours: number }} payload
- */
-export async function addSubtask(eventId, payload) {
-  ensureMockStores();
-  await delay(500);
-  // TODO(backend): POST `${API_BASE_URL}/events/${eventId}/subtasks`
-  //   body: { title, target_date, estimated_hours }
-  //   → 201 con la subtarea creada
-  //   → 400 si title vacío o estimated_hours <= 0
-  const evt = _eventsStore[eventId];
-  const newSubtask = {
-    id: `sub-${Date.now()}`,
-    eventId,
-    eventName: evt?.name ?? "",
-    eventType: evt?.type ?? "otro",
-    title: payload.title,
-    targetDate: payload.targetDate,
-    estimatedHours: payload.estimatedHours,
-    status: "PENDIENTE",
-  };
-  _subtasksStore.push(newSubtask);
-  saveToStorage();
-  return newSubtask;
-}
-
-// =============================================================================
-// US-03 — Editar / eliminar eventos y subtareas
-// =============================================================================
-
-/**
- * PUT /events/:id  (US-03)
- * @param {string} id
- * @param {{ name?, type?, contact?, dateTime?, place? }} patch
+ * PUT /events/:id
  */
 export async function updateEvent(id, patch) {
-  ensureMockStores();
-  await delay(400);
-  // TODO(backend): PUT `${API_BASE_URL}/events/${id}`
-  const evt = _eventsStore[id];
-  if (!evt) throw new Error("No encontramos ese evento");
-  Object.assign(evt, patch);
-  saveToStorage();
-  return evt;
+  const payload = {};
+  if (patch.name !== undefined) payload.name = patch.name;
+  if (patch.type !== undefined) payload.type = patch.type.toUpperCase();
+  if (patch.contact !== undefined) payload.client_contact = patch.contact;
+  if (patch.dateTime !== undefined)
+    payload.event_datetime = new Date(patch.dateTime).toISOString();
+  if (patch.place !== undefined) payload.place = patch.place;
+
+  const raw = await apiFetch(`/events/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+
+  return mapEventFromBackend(raw);
 }
 
 /**
- * DELETE /events/:id  (US-03)
- * Cascada: al borrar el evento, se borran sus subtareas asociadas
- * (regla acordada del QA: "al eliminar evento se borran sus gestiones").
+ * DELETE /events/:id  (cascada: el backend borra sus subtareas)
  */
 export async function deleteEvent(id) {
-  ensureMockStores();
-  await delay(400);
-  // TODO(backend): DELETE `${API_BASE_URL}/events/${id}` con ON DELETE CASCADE
-  if (!_eventsStore[id]) throw new Error("No encontramos ese evento");
-  delete _eventsStore[id];
-  _subtasksStore = _subtasksStore.filter((s) => s.eventId !== id);
-  saveToStorage();
+  await apiFetch(`/events/${id}`, { method: "DELETE" });
   return { id, deleted: true };
 }
 
+// ---------------------------------------------------------------------------
+// US-02 — Subtareas logísticas
+// ---------------------------------------------------------------------------
+
 /**
- * PATCH /subtasks/:id  (US-03)
- * Punto único para editar cualquier campo de una subtarea.
- * NOTA: en Sprint 3/4, US-06 y US-09 pueden reusar esta misma función
- * (patch = { targetDate } o { status }) en vez de tener endpoints separados.
+ * GET /events/:eventId/subtasks
+ */
+export async function getEventSubtasks(eventId) {
+  const raw = await apiFetch(`/events/${eventId}/subtasks`);
+  const list = Array.isArray(raw) ? raw : raw?.results ?? [];
+  return list.map(mapSubtaskFromBackend);
+}
+
+/**
+ * POST /events/:eventId/subtasks
+ * Recibe { title, targetDate, estimatedHours } del modal y traduce.
+ */
+export async function addSubtask(eventId, form) {
+  const payload = {
+    name: form.title,
+    target_date: form.targetDate.split("T")[0], // "YYYY-MM-DD"
+    estimated_hours: form.estimatedHours,
+  };
+
+  const raw = await apiFetch(`/events/${eventId}/subtasks`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+  return mapSubtaskFromBackend(raw);
+}
+
+/**
+ * PATCH /subtasks/:id  (US-03 — editar)
  */
 export async function updateSubtask(id, patch) {
-  ensureMockStores();
-  await delay(400);
-  // TODO(backend): PATCH `${API_BASE_URL}/subtasks/${id}` { title?, target_date?, estimated_hours? }
-  const idx = _subtasksStore.findIndex((s) => s.id === id);
-  if (idx === -1) throw new Error("No encontramos esa gestión");
-  _subtasksStore[idx] = { ..._subtasksStore[idx], ...patch };
-  saveToStorage();
-  return _subtasksStore[idx];
+  const payload = {};
+  if (patch.title !== undefined) payload.name = patch.title;
+  if (patch.targetDate !== undefined)
+    payload.target_date = patch.targetDate.split("T")[0];
+  if (patch.estimatedHours !== undefined)
+    payload.estimated_hours = patch.estimatedHours;
+  if (patch.status !== undefined) payload.status = patch.status;
+  if (patch.note !== undefined) payload.note = patch.note;
+
+  const raw = await apiFetch(`/subtasks/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+
+  return mapSubtaskFromBackend(raw);
 }
 
 /**
- * DELETE /subtasks/:id  (US-03)
+ * DELETE /subtasks/:id  (US-03 — eliminar)
  */
 export async function deleteSubtask(id) {
-  ensureMockStores();
-  await delay(400);
-  // TODO(backend): DELETE `${API_BASE_URL}/subtasks/${id}`
-  const idx = _subtasksStore.findIndex((s) => s.id === id);
-  if (idx === -1) throw new Error("No encontramos esa gestión");
-  _subtasksStore.splice(idx, 1);
-  saveToStorage();
+  await apiFetch(`/subtasks/${id}`, { method: "DELETE" });
   return { id, deleted: true };
 }
 
-// =============================================================================
-// US-12 — Configuración de límite diario
-// =============================================================================
+// ---------------------------------------------------------------------------
+// US-12 / US-11 — pendientes
+// ---------------------------------------------------------------------------
 
 export const dailyLimitApi = {
-  /** @returns {Promise<{ dailyLimitHours: number }>} */
   async get() {
     await delay(200);
-    // TODO(backend): GET /settings/daily-limit — default 6h cuando no existe.
     return { dailyLimitHours: 6 };
   },
-  /** @param {number} hours — validar 1–16 en cliente antes de llamar. */
   async update(hours) {
     await delay(300);
-    // TODO(backend): PUT /settings/daily-limit { daily_limit_hours: hours }
     return { dailyLimitHours: hours };
   },
 };
 
-// =============================================================================
-// US-11 — Login (Sprint 2+)
-// =============================================================================
-
-/**
- * POST /auth/login  (US-11)
- * @param {{ email: string, password: string }} credentials
- */
 export async function login(_credentials) {
   await delay(400);
-  throw new Error("Login aún no disponible — se implementa desde el Sprint 2 (US-11).");
+  throw new Error("Login aún no disponible — Sprint 2 (US-11).");
 }
