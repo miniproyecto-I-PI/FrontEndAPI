@@ -1,138 +1,137 @@
-/**
- * services/api.js
- * ---------------------------------------------------------------------------
- * SINGLE INTEGRATION POINT with the backend.
- *
- * Every function here is named after (and documented with) the endpoint it
- * will call once the backend team implements it, per Backlog Refinado (C4)
- * and Arquitectura de Información (C5). Right now, Sprint 0 has no backend
- * yet (TS-01/TS-02/TS-07 are still pending), so each function resolves with
- * mock data instead of calling `fetch`.
- *
- * WHY THIS FILE EXISTS (and why components never import mock data directly):
- * When the backend is ready, only this file needs to change — swap the mock
- * implementation for a real `fetch`/axios call with the same return shape,
- * and every hook/page/component in the app keeps working unmodified. This is
- * the seam the rest of the app is built around.
- *
- * Real base URL is read from an environment variable so each environment
- * (local, staging, prod) can point to a different API without code changes.
- * See `.env.example`.
- */
-
 import { mockGestiones } from "../data/mockGestiones";
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+export const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:8000/api").replace(/\/$/, "");
 
-/** Simulates realistic network latency for the mock responses below. */
-function delay(ms = 400) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function toEvent(event) {
+  if (!event) return event;
+  return {
+    ...event,
+    type: event.type?.toLowerCase(),
+    contact: event.client_contact ?? event.contact ?? "",
+    dateTime: event.event_datetime ?? event.dateTime ?? "",
+    subtasks: event.subtasks?.map(toSubtask),
+  };
 }
 
-/**
- * GET /today  (US-04)
- * Returns the raw list of active/relevant gestiones. Grouping and ordering
- * is applied on the frontend by `utils/sortGestiones.js` (see that file for
- * why). Throws to simulate the error state when `simulateError` is true —
- * used by the QA simulation toolbar (components/dev/SimulationToolbar.jsx)
- * to demo the error state without needing a real backend outage.
- *
- * @param {{ simulateError?: boolean }} [opts]
- * @returns {Promise<import('../utils/sortGestiones').Gestion[]>}
- */
-export async function getToday({ simulateError = false } = {}) {
-  await delay();
-  if (simulateError) {
-    throw new Error("No pudimos cargar tus gestiones");
+function toSubtask(subtask) {
+  if (!subtask) return subtask;
+  return {
+    ...subtask,
+    eventId: subtask.event ?? subtask.eventId,
+    title: subtask.name ?? subtask.title,
+    targetDate: subtask.target_date ?? subtask.targetDate,
+    estimatedHours: Number(subtask.estimated_hours ?? subtask.estimatedHours),
+    status: subtask.status?.toLowerCase() ?? "pendiente",
+  };
+}
+
+function fromEvent(event) {
+  const payload = {};
+  if (event.name !== undefined) payload.name = event.name.trim();
+  if (event.type !== undefined) payload.type = event.type.toUpperCase();
+  if (event.dateTime !== undefined) payload.event_datetime = event.dateTime;
+  if (event.contact !== undefined) payload.client_contact = event.contact;
+  if (event.place !== undefined) payload.place = event.place;
+  if (event.subtasks) {
+    payload.subtasks = event.subtasks.map((subtask) => ({
+      name: subtask.title?.trim(),
+      target_date: subtask.targetDate,
+      estimated_hours: Number(subtask.estimatedHours),
+    }));
   }
-  // TODO(backend): replace with:
-  //   const res = await fetch(`${API_BASE_URL}/today`);
-  //   if (!res.ok) throw new Error('No pudimos cargar tus gestiones');
-  //   return res.json();
+  return payload;
+}
+
+function fromSubtask(subtask) {
+  const payload = {};
+  if (subtask.title !== undefined) payload.name = subtask.title?.trim();
+  if (subtask.targetDate !== undefined) payload.target_date = subtask.targetDate;
+  if (subtask.estimatedHours !== undefined) payload.estimated_hours = Number(subtask.estimatedHours);
+  if (subtask.status !== undefined) payload.status = subtask.status.toUpperCase();
+  if (subtask.note !== undefined) payload.note = subtask.note;
+  return payload;
+}
+
+async function request(path, options = {}) {
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers: { "Content-Type": "application/json", ...options.headers },
+    });
+  } catch {
+    throw new Error("No pudimos conectar con el servidor. Revisa que el backend esté activo.");
+  }
+
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok || body.success === false) {
+    const error = new Error(body.error?.message || "No se pudo completar la operación. Intenta de nuevo.");
+    error.details = body.error?.details ?? {};
+    throw error;
+  }
+  return body.success === true ? body.data : body;
+}
+
+const json = (method, payload) => ({ method, body: JSON.stringify(payload) });
+
+// La vista Hoy pertenece al T2; mantiene los datos de demostración existentes.
+export async function getToday({ simulateError = false } = {}) {
+  if (simulateError) throw new Error("No pudimos cargar tus gestiones");
   return structuredClone(mockGestiones);
 }
 
-/**
- * PATCH /subtasks/:id  (US-09, escenario "Marcar tarea ejecutada")
- * @param {string} id
- * @returns {Promise<{ id: string, status: 'EJECUTADA', doneAt: string }>}
- */
 export async function markGestionAsDone(id) {
-  await delay(250);
-  // TODO(backend): replace with:
-  //   return fetch(`${API_BASE_URL}/subtasks/${id}`, {
-  //     method: 'PATCH',
-  //     headers: { 'Content-Type': 'application/json' },
-  //     body: JSON.stringify({ status: 'EJECUTADA' }),
-  //   }).then((r) => r.json());
-  return { id, status: "EJECUTADA", doneAt: new Date().toISOString() };
+  return toSubtask(await request(`/subtasks/${id}`, json("PATCH", { status: "EJECUTADA" })));
 }
 
-/**
- * PATCH /subtasks/:id  (US-09, escenario "Posponer con nota explicativa")
- * @param {string} id
- * @param {string} [note]
- */
 export async function postponeGestion(id, note = "") {
-  await delay(250);
-  // TODO(backend): PATCH { status: 'POSPUESTA', note }
-  return { id, status: "POSPUESTA", note };
+  return toSubtask(await request(`/subtasks/${id}`, json("PATCH", { status: "POSPUESTA", note })));
 }
 
-/**
- * PATCH /subtasks/:id  (US-06, "Reprogramar subtarea logística / gestión")
- * @param {string} id
- * @param {string} newTargetDateISO
- */
 export async function rescheduleGestion(id, newTargetDateISO) {
-  await delay(300);
-  // TODO(backend): PATCH { target_date: newTargetDateISO }
-  // TODO(backend, US-07): before confirming in the real flow, first call the
-  // conflict-check endpoint (POST /conflicts/overload) and let the user
-  // resolve it (US-08) if `has_conflict` comes back true.
-  return { id, targetDate: newTargetDateISO };
+  return toSubtask(await request(`/subtasks/${id}`, json("PATCH", { target_date: newTargetDateISO })));
 }
 
-/**
- * POST /events  (US-01, "Crear evento")
- * @param {{ name: string, type: string, contact?: string, dateTime: string, place?: string }} payload
- */
 export async function createEvent(payload) {
-  await delay(400);
-  // TODO(backend): POST payload, backend assigns id.
-  return { id: `evt-${Date.now()}`, ...payload };
+  return toEvent(await request("/events", json("POST", fromEvent(payload))));
 }
 
-/**
- * GET /settings/daily-limit and PUT /settings/daily-limit  (US-12)
- * Grouped in one object because they always change together in the UI
- * (the settings modal reads the current value, then writes a new one).
- */
+export async function getEventById(id) {
+  return toEvent(await request(`/events/${id}`));
+}
+
+export async function getEventSubtasks(eventId) {
+  const subtasks = await request(`/events/${eventId}/subtasks`);
+  return subtasks.map(toSubtask);
+}
+
+export async function addSubtask(eventId, payload) {
+  return toSubtask(await request(`/events/${eventId}/subtasks`, json("POST", fromSubtask(payload))));
+}
+
+export async function updateEvent(id, patch) {
+  return toEvent(await request(`/events/${id}`, json("PATCH", fromEvent(patch))));
+}
+
+export async function deleteEvent(id) {
+  await request(`/events/${id}`, { method: "DELETE" });
+  return { id, deleted: true };
+}
+
+export async function updateSubtask(id, patch) {
+  return toSubtask(await request(`/subtasks/${id}`, json("PATCH", fromSubtask(patch))));
+}
+
+export async function deleteSubtask(id) {
+  await request(`/subtasks/${id}`, { method: "DELETE" });
+  return { id, deleted: true };
+}
+
 export const dailyLimitApi = {
-  /** @returns {Promise<{ dailyLimitHours: number }>} */
-  async get() {
-    await delay(200);
-    // TODO(backend): GET /settings/daily-limit — default is 6h when unset.
-    return { dailyLimitHours: 6 };
-  },
-  /**
-   * @param {number} hours - must be validated client-side to the 1–16 range
-   * before calling this (see components/common/DailyLimitModal.jsx).
-   */
-  async update(hours) {
-    await delay(300);
-    // TODO(backend): PUT /settings/daily-limit { daily_limit_hours: hours }
-    return { dailyLimitHours: hours };
-  },
+  async get() { return { dailyLimitHours: 6 }; },
+  async update(hours) { return { dailyLimitHours: hours }; },
 };
 
-/**
- * POST /auth/login  (US-11) — from Sprint 2 onward.
- * @param {{ email: string, password: string }} credentials
- */
-export async function login(_credentials) {
-  await delay(400);
-  // TODO(backend, Sprint 2): call Supabase Auth / DRF token endpoint using
-  // the (currently unused) `_credentials` argument: { email, password }.
+export async function login() {
   throw new Error("Login aún no disponible — se implementa desde el Sprint 2 (US-11).");
 }

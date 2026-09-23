@@ -120,3 +120,33 @@ export function formatFullDate(date = new Date()) {
 function capitalize(word) {
   return word.charAt(0).toUpperCase() + word.slice(1);
 }
+
+/** "15 Oct" — fecha corta para listas (sin año, útil en detalle de evento). */
+export function formatShortDate(date) {
+  const d = parseDateInput(date);
+  return `${d.getDate()} ${capitalize(MONTHS[d.getMonth()])}`;
+}
+
+function parseDateInput(value) {
+  const match = typeof value === "string" && value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return match
+    ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+    : new Date(value);
+}
+
+/** Formats an ISO date string for <input type="datetime-local">. */
+export function toDatetimeLocalValue(isoString) {
+  if (!isoString) return "";
+  const d = new Date(isoString);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** Formats an ISO date string for <input type="date">. */
+export function toDateInputValue(isoString) {
+  if (!isoString) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(isoString)) return isoString;
+  const d = new Date(isoString);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
