@@ -120,3 +120,9 @@ export function formatFullDate(date = new Date()) {
 function capitalize(word) {
   return word.charAt(0).toUpperCase() + word.slice(1);
 }
+
+/** "15 Oct" — fecha corta para listas (sin año, útil en detalle de evento). */
+export function formatShortDate(date) {
+  const d = new Date(date);
+  return `${d.getDate()} ${capitalize(MONTHS[d.getMonth()])}`;
+}

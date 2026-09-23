@@ -107,10 +107,15 @@ export default function CrearPage() {
 
     setStatus("loading");
     try {
-      await createEvent(form);
+       const newEvent = await createEvent(form);
       setStatus("success");
-      //Llama al toast
-      navigate("/hoy", { state: { toast: "Evento creado exitosamente" } });
+      // Al evento recién creado. Ahí el usuario ve el detalle, el estado
+      // vacío "Aún no tienes gestiones" y el CTA para armar el plan inicial
+      // (US-02). Antes redirigíamos a /hoy, pero eso dejaba al evento nuevo
+      // sin forma de alcanzarse desde la UI — ver nota en Documento Único.
+      navigate(`/evento/${newEvent.id}`, {
+        state: { toast: "Evento creado exitosamente" },
+      });
     } catch (err) {
       setStatus("idle");
       setGeneralError(err.message || "Ocurrió un error inesperado. Intenta de nuevo.");
