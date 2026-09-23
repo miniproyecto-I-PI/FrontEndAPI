@@ -93,14 +93,38 @@ export async function rescheduleGestion(id, newTargetDateISO) {
   return { id, targetDate: newTargetDateISO };
 }
 
+const API_URL = import.meta.env.VITE_API_URL;
+const USE_MOCK = true; // TODO(backend): cambiar a false cuando exista el endpoint real
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 /**
  * POST /events  (US-01, "Crear evento")
  * @param {{ name: string, type: string, contact?: string, dateTime: string, place?: string }} payload
  */
+/**
+ * POST /events  (US-01, "Crear evento")
+ * @param {{ name: string, type: string, contact?: string, dateTime: string, place?: string }} payload
+ * @returns {Promise<{ id: string, name: string, type: string, contact?: string, dateTime: string, place?: string }>}
+ */
 export async function createEvent(payload) {
-  await delay(400);
-  // TODO(backend): POST payload, backend assigns id.
-  return { id: `evt-${Date.now()}`, ...payload };
+  if (USE_MOCK) {
+    await delay(600); // simula latencia real de red, para que el estado "loading" se note
+    return { id: `evt-${Date.now()}`, ...payload };
+  }
+
+  const response = await fetch(`${API_URL}/events`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error("No se pudo crear el evento. Intenta de nuevo.");
+  }
+
+  return response.json();
 }
 
 /**

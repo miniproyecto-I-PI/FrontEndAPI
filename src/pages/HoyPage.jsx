@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useTodayGestiones } from "../hooks/useTodayGestiones";
 import { EVENT_TYPE_LABELS } from "../data/mockGestiones";
 import { formatFullDate, addDays } from "../utils/dateUtils";
@@ -34,7 +35,21 @@ export default function HoyPage() {
   const [toast, setToast] = useState(null);
   const [bulkRescheduleOpen, setBulkRescheduleOpen] = useState(false);
   const [rescheduleTarget, setRescheduleTarget] = useState(null); // gestión being rescheduled individually
+  // Para toast de evento creado exitosamente
+  const location = useLocation();
+  const navigate = useNavigate();
 
+  // Si llegamos aquí desde /crear (o cualquier otra pantalla) con un toast
+  // en el state de navegación, lo mostramos y limpiamos el state para que
+  // un refresh o "atrás" del navegador no lo vuelva a disparar.
+  useEffect(() => {
+    if (location.state?.toast) {
+      setToast({ message: location.state.toast });
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
+
+  
   const {
     status,
     errorMessage,
