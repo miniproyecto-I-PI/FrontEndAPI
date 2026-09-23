@@ -96,9 +96,6 @@ export async function rescheduleGestion(id, newTargetDateISO) {
 const API_URL = import.meta.env.VITE_API_URL;
 const USE_MOCK = true; // TODO(backend): cambiar a false cuando exista el endpoint real
 
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 /**
  * POST /events  (US-01, "Crear evento")
  * @param {{ name: string, type: string, contact?: string, dateTime: string, place?: string }} payload
