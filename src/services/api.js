@@ -201,7 +201,7 @@ export async function updateEvent(id, patch) {
   if (patch.place !== undefined) payload.place = patch.place;
 
   const raw = await apiFetch(`/events/${id}`, {
-    method: "PUT",
+    method: "PATCH",
     body: JSON.stringify(payload),
   });
 
