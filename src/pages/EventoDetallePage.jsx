@@ -143,14 +143,7 @@ export default function EventoDetallePage() {
   }
 
   return (
-    <div
-      className="w-full min-h-screen font-body text-ink-charcoal antialiased"
-      style={{
-        backgroundColor: "#F2EBE1",
-        backgroundImage: "radial-gradient(#D8CBC0 1px, transparent 1px)",
-        backgroundSize: "22px 22px",
-      }}
-    >
+    <div className="w-full min-h-screen bg-paper-base dot-grid-pattern font-body text-ink-charcoal antialiased">
       <div className="max-w-[1280px] mx-auto px-4 md:px-8 lg:px-12 py-8">
         {/* ---------- Breadcrumb bar ---------- */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-sepia-border">

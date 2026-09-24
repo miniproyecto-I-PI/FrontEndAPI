@@ -182,21 +182,36 @@ export async function createEvent(form) {
   return mapEventFromBackend(raw);
 }
 
-/**
+/** Función con datos mock
  * GET /events
  * Lista de eventos para /eventos. Backend todavía no devuelve `progress` ni
  * `status`, así que por ahora usamos mock (mismo patrón que getToday).
  * TODO(backend, Sprint X): reemplazar por fetch real y extender
  * mapEventFromBackend para traducir `progress` / `status`.
  */
+/** 
 export async function getEvents({ simulateError = false } = {}) {
   await delay();
   if (simulateError) throw new Error("No pudimos cargar tus eventos");
   const { mockEvents } = await import("../data/mockEvents");
   return structuredClone(mockEvents);
 }
+*/
 
-
+/** Función conectada con el backend, falta que el backend envíe "progreso" y "estado"
+ * GET /events
+ * Listado real del backend. El backend todavía no expone `progress` ni
+ * `status` por evento (ver follow-up en el mapper), así que la tabla los
+ * mostrará como "—" / estado neutro por ahora.
+ * TODO(backend, Sprint X): extender mapEventFromBackend cuando el
+ * serializador incluya progress / status.
+ */
+export async function getEvents({ simulateError = false } = {}) {
+  if (simulateError) throw new Error("No pudimos cargar tus eventos");
+  const raw = await apiFetch("/events");
+  const list = Array.isArray(raw) ? raw : raw?.results ?? [];
+  return list.map(mapEventFromBackend).filter(Boolean);
+}
 
 
 /**

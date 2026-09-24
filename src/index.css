@@ -64,3 +64,10 @@
 .task-done .no-strike {
   text-decoration: none !important;
 }
+
+/* Textura de papel: fondo base de toda la app (Design.md §5). */
+.dot-grid-pattern {
+  background-image: radial-gradient(#d6cbbe 1px, transparent 1px);
+  background-size: 22px 22px;
+  background-position: 0 0;
+}

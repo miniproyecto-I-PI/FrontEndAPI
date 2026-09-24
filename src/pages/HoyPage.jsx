@@ -93,7 +93,7 @@ export default function HoyPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-paper-base font-body text-ink-charcoal antialiased">
+    <div className="min-h-screen flex flex-col bg-paper-base dot-grid-pattern font-body text-ink-charcoal antialiased">
       <Header searchValue={query} onSearchChange={setQuery} />
 
       <main className="w-full pt-16 flex-1">
