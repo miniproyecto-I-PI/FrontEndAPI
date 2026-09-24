@@ -5,17 +5,17 @@ import DailyLimitModal from "../common/DailyLimitModal";
 /**
  * Header.jsx
  * ---------------------------------------------------------------------------
- * Persistent top bar, present on every main route. Ported from the original
- * HTML prototype's <header>. Two things worth calling out for backend
- * integration:
+ * Persistent top bar, present on every main route. Ported from the UX HTML.
  *
- *  1. The gear icon opens the "límite diario de horas" modal (US-12). Per
- *     the Arquitectura de Información (C5), this is intentionally NOT a
- *     route — it's a global modal reachable from here on every main screen.
- *  2. `onSearchChange`/`searchValue` are optional. Only /hoy currently wires
- *     them up; other pages simply don't pass them and the input stays
- *     uncontrolled-empty. This keeps the Header reusable without coupling it
- *     to one page's state.
+ * Dos notas de integración con backend:
+ *  1. El ícono de configuración abre el modal "límite diario de horas"
+ *     (US-12). Por Arquitectura de Información (C5), esto NO es una ruta:
+ *     es un modal global alcanzable desde aquí.
+ *  2. `onSearchChange`/`searchValue` son opcionales. Solo /hoy los conecta.
+ *
+ * NOTA Sprint 1: el nav dice "Mis Eventos" (label del UX) pero apunta a la
+ * ruta /progreso, que es la que existe hoy. Cuando se cree /eventos como
+ * ruta independiente, actualizar el `to` de este NavLink.
  */
 export default function Header({ searchValue, onSearchChange }) {
   const navigate = useNavigate();
@@ -47,7 +47,7 @@ export default function Header({ searchValue, onSearchChange }) {
               Hoy
             </NavLink>
             <NavLink to="/progreso" className={navLinkClasses}>
-              Progreso
+              Mis Eventos
             </NavLink>
           </nav>
         </div>
