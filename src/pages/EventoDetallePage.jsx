@@ -11,9 +11,9 @@ import ConfirmDeleteModal from "../components/common/ConfirmDeleteModal";
 import EditEventModal from "../components/common/EditEventModal";
 import RescheduleModal from "../components/common/RescheduleModal";
 
-import EventDossierHeader from "../components/evento/EventDossierHeader";
-import SubtaskFilters from "../components/evento/SubtaskFilters";
-import SubtaskListItem from "../components/evento/SubtaskListItem";
+import EventDossierHeader from "../components/eventos/EventDossierHeader";
+import SubtaskFilters from "../components/eventos/SubtaskFilters";
+import SubtaskListItem from "../components/eventos/SubtaskListItem";
 
 const isDone = (s) => s?.status === "EJECUTADA";
 
