@@ -172,6 +172,8 @@ export async function createEvent(form) {
     place: form.place ?? "",
   };
 
+  
+
   const raw = await apiFetch("/events", {
     method: "POST",
     body: JSON.stringify(payload),
@@ -179,6 +181,23 @@ export async function createEvent(form) {
 
   return mapEventFromBackend(raw);
 }
+
+/**
+ * GET /events
+ * Lista de eventos para /eventos. Backend todavía no devuelve `progress` ni
+ * `status`, así que por ahora usamos mock (mismo patrón que getToday).
+ * TODO(backend, Sprint X): reemplazar por fetch real y extender
+ * mapEventFromBackend para traducir `progress` / `status`.
+ */
+export async function getEvents({ simulateError = false } = {}) {
+  await delay();
+  if (simulateError) throw new Error("No pudimos cargar tus eventos");
+  const { mockEvents } = await import("../data/mockEvents");
+  return structuredClone(mockEvents);
+}
+
+
+
 
 /**
  * GET /events/:id

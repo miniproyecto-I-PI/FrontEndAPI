@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import MainLayout from "./components/layout/MainLayout";
 import HoyPage from "./pages/HoyPage";
+import EventosPage from "./pages/EventosPage";
 import CrearPage from "./pages/CrearPage";
 import EventoDetallePage from "./pages/EventoDetallePage";
 import ProgresoPage from "./pages/ProgresoPage";
@@ -17,6 +18,7 @@ import NotFoundPage from "./pages/NotFoundPage";
  *
  *   /hoy          → HoyPage          (T2 — fully built, Sprint 0 prototype)
  *   /crear        → CrearPage        (T1 — stub, Sprint 1)
+ *   /eventos      → EventosPage      (listado — Stitch, Sprint 1)
  *   /evento/:id   → EventoDetallePage(T3/T1/T4 — stub, Sprint 1–3)
  *   /progreso     → ProgresoPage     (T4 — stub, Sprint 4)
  *   /login        → LoginPage        (US-11 — working form, Sprint 2 wiring)
@@ -33,6 +35,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Navigate to="/hoy" replace />} />
       <Route path="/hoy" element={<HoyPage />} />
+      <Route path="/eventos" element={<EventosPage />} />
       <Route path="/login" element={<LoginPage />} />
 
       <Route element={<MainLayout />}>

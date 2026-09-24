@@ -13,9 +13,6 @@ import DailyLimitModal from "../common/DailyLimitModal";
  *     es un modal global alcanzable desde aquí.
  *  2. `onSearchChange`/`searchValue` son opcionales. Solo /hoy los conecta.
  *
- * NOTA Sprint 1: el nav dice "Mis Eventos" (label del UX) pero apunta a la
- * ruta /progreso, que es la que existe hoy. Cuando se cree /eventos como
- * ruta independiente, actualizar el `to` de este NavLink.
  */
 export default function Header({ searchValue, onSearchChange }) {
   const navigate = useNavigate();
@@ -46,7 +43,7 @@ export default function Header({ searchValue, onSearchChange }) {
             <NavLink to="/hoy" className={navLinkClasses}>
               Hoy
             </NavLink>
-            <NavLink to="/progreso" className={navLinkClasses}>
+            <NavLink to="/eventos" className={navLinkClasses}>
               Mis Eventos
             </NavLink>
           </nav>
