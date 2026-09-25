@@ -366,28 +366,25 @@ function ErrorState({ message, onRetry }) {
 
 function EmptyState({ onCreate }) {
   return (
-    <div className="bg-paper-card border border-sepia-border rounded-sharp warm-card-shadow p-8 md:p-12 text-center max-w-2xl mx-auto my-6">
-      <div className="w-16 h-16 mx-auto mb-4 rounded-sharp bg-paper-linen border border-sepia-border text-terracotta flex items-center justify-center">
+    <div className="bg-paper-card border border-sepia-border rounded-sharp warm-card-shadow p-10 sm:p-14 text-center max-w-2xl mx-auto my-6 flex flex-col items-center">
+      <div className="w-16 h-16 rounded-full bg-terracotta-light border border-terracotta/30 flex items-center justify-center text-terracotta mb-5">
         <span className="material-symbols-outlined text-[32px]">
-          calendar_month
+          assignment_turned_in
         </span>
       </div>
-      <span className="font-mono-stamp text-[10px] uppercase text-ink-muted font-bold tracking-wider mb-2 block">
-        Bitácora sin registros
-      </span>
-      <h2 className="font-serif text-2xl md:text-3xl font-bold text-ink-charcoal mb-2">
-        Tu bitácora de eventos está vacía
+      <h2 className="font-serif font-semibold text-ink-charcoal text-2xl md:text-3xl mb-2">
+        No tienes eventos programados
       </h2>
-      <p className="font-body text-xs md:text-sm text-ink-muted max-w-md mx-auto mb-6 leading-relaxed">
+      <p className="max-w-md mx-auto font-body text-sm text-ink-muted mb-8 leading-relaxed">
         Registra tu primera boda, gala corporativa o celebración para comenzar
         a planificar su hoja de ruta y gestiones operativas.
       </p>
       <button
         type="button"
         onClick={onCreate}
-        className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-terracotta text-[#FAF6F0] font-body font-medium text-xs md:text-sm tracking-wide rounded-sharp border border-terracotta-dark shadow-sm hover:bg-terracotta-dark transition-colors active:translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-terracotta focus:ring-offset-2 focus:ring-offset-paper-card"
+        className="inline-flex items-center gap-2 px-5 py-2.5 bg-terracotta hover:bg-terracotta-dark text-[#FAF6F0] font-body text-sm font-semibold rounded-sharp shadow-sm transition-colors active:translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-terracotta focus:ring-offset-2 focus:ring-offset-paper-card"
       >
-        <span className="material-symbols-outlined text-[16px]">add</span>
+        <span className="material-symbols-outlined text-[18px]">add</span>
         <span>Crear primer evento</span>
       </button>
     </div>
