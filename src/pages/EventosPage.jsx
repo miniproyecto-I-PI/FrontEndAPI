@@ -11,6 +11,7 @@ import { diffInCalendarDays } from "../utils/dateUtils";
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
 import Toast from "../components/common/Toast";
+import UpdateEventSuccessModal from "../components/common/UpdateEventSuccessModal";
 import EditEventModal from "../components/common/EditEventModal";
 import DeleteEventModal from "../components/eventos/DeleteEventModal";
 import EventsTable from "../components/eventos/EventsTable";
@@ -42,6 +43,7 @@ export default function EventosPage() {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [toast, setToast] = useState(null);
+  const [updatedEventName, setUpdatedEventName] = useState(null);
 
   const [editingEvent, setEditingEvent] = useState(null);
   const [deletingEvent, setDeletingEvent] = useState(null);
@@ -88,11 +90,11 @@ export default function EventosPage() {
 
   // --- Handlers ---
   async function handleEditSubmit(payload) {
-    await apiUpdateEvent(editingEvent.id, payload); // throws → modal muestra error
-    setEditingEvent(null);
-    setToast({ message: "Cambios guardados" });
-    reload();
-  }
+  await apiUpdateEvent(editingEvent.id, payload);
+  setEditingEvent(null);
+  setUpdatedEventName(payload.name);
+  reload();
+}
 
   async function handleDeleteConfirm() {
     await apiDeleteEvent(deletingEvent.id);
@@ -177,6 +179,14 @@ export default function EventosPage() {
       </main>
 
       <Footer />
+
+      {updatedEventName && (
+  <UpdateEventSuccessModal
+    eventName={updatedEventName}
+    onStay={() => setUpdatedEventName(null)}
+    onGoToEvents={() => setUpdatedEventName(null)}
+  />
+)}
 
       {/* ---------- Overlays ---------- */}
       <Toast toast={toast} onClose={() => setToast(null)} />

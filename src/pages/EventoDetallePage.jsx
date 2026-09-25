@@ -5,6 +5,8 @@ import { useEventSubtasks } from "../hooks/useEventSubtasks";
 import { deleteEvent } from "../services/api";
 import { classifyByDate } from "../utils/dateUtils";
 
+import UpdateEventSuccessModal from "../components/common/UpdateEventSuccessModal";
+import UpdateSubtaskSuccessModal from "../components/common/UpdateSubtaskSuccessModal";
 import Toast from "../components/common/Toast";
 import EditSubtaskModal from "../components/common/EditSubtaskModal";
 import DeleteEventModal from "../components/eventos/DeleteEventModal";
@@ -44,6 +46,8 @@ export default function EventoDetallePage() {
   const [deleteEventOpen, setDeleteEventOpen] = useState(false);
   const [editingSubtask, setEditingSubtask] = useState(null);
   const [deletingSubtask, setDeletingSubtask] = useState(null);
+  const [updatedEventName, setUpdatedEventName] = useState(null);
+  const [updatedSubtaskTitle, setUpdatedSubtaskTitle] = useState(null);
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
 
   useEffect(() => {
@@ -87,16 +91,18 @@ export default function EventoDetallePage() {
 
 
   async function handleEditSubtask(payload) {
-    await updateSubtask(editingSubtask.id, payload);
-    setEditingSubtask(null);
-    setToast({ message: "Cambios guardados" });
-  }
+  await updateSubtask(editingSubtask.id, payload);
+  const title = editingSubtask.title;
+  setEditingSubtask(null);
+  setUpdatedSubtaskTitle(title);
+}
 
-  async function handleEditEvent(payload) {
-    await updateEvent(payload);
-    setEditEventOpen(false);
-    setToast({ message: "Cambios guardados" });
-  }
+async function handleEditEvent(payload) {
+  await updateEvent(payload);
+  const name = payload.name;
+  setEditEventOpen(false);
+  setUpdatedEventName(name);
+}
 
   async function handleDeleteEvent() {
     await deleteEvent(id);
@@ -301,6 +307,22 @@ export default function EventoDetallePage() {
           onConfirm={handleConfirmReschedule}
         />
       )}
+
+      {updatedEventName && (
+  <UpdateEventSuccessModal
+    eventName={updatedEventName}
+    onStay={() => setUpdatedEventName(null)}
+    onGoToEvents={() => setUpdatedEventName(null)}
+  />
+)}
+
+{updatedSubtaskTitle && (
+  <UpdateSubtaskSuccessModal
+    subtaskTitle={updatedSubtaskTitle}
+    eventId={id}
+    onClose={() => setUpdatedSubtaskTitle(null)}
+  />
+)}
 
       <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
