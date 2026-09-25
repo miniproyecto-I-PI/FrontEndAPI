@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { toDateInputValue } from "../../utils/dateUtils";
-import EventTypeSelector, { EVENT_TYPES } from "../events/EventTypeSelector";
+import EventTypeSelector, { EVENT_TYPES } from "../eventos/EventTypeSelector";
 
 const KNOWN_TYPES = EVENT_TYPES.map((t) => t.key);
 
