@@ -162,9 +162,7 @@ async function handleEditEvent(payload) {
             <nav className="flex items-center flex-wrap gap-2 font-body text-xs text-ink-muted">
               <span>Convoka</span>
               <span className="text-sepia-dark">/</span>
-              <Link to="/hoy" className="hover:text-ink-charcoal transition-colors">
-                Eventos
-              </Link>
+              <span>Eventos</span>
               <span className="text-sepia-dark">/</span>
               <span className="text-ink-charcoal font-medium truncate max-w-[220px]">
                 {event?.name ?? "…"}

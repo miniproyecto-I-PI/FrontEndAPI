@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTodayGestiones } from "../hooks/useTodayGestiones";
 import { EVENT_TYPE_LABELS } from "../data/mockGestiones";
-import { formatFullDate, addDays } from "../utils/dateUtils";
+import { formatFullDate } from "../utils/dateUtils";
 
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
@@ -23,7 +23,6 @@ import SimulationToolbar from "../components/dev/SimulationToolbar";
  * Sprint 1: migración al diseño final del UX Lead.
  *   - Se eliminó el toggle Agrupada/Compacto (decisión UX).
  *   - Section I: "Urgencias & Vencidas" → "Vencidas".
- *   - Section III: se agregó link "Ver calendario completo" (placeholder).
  *   - Saludo: "Organización en marcha, usuario" (placeholder hasta Sprint 2).
  *
  * NOTE on Header placement: unlike the other pages, HoyPage renders its own
@@ -32,7 +31,6 @@ import SimulationToolbar from "../components/dev/SimulationToolbar";
  */
 export default function HoyPage() {
   const [simMode, setSimMode] = useState("normal"); // 'normal' | 'empty' | 'error'
-  const [bulkRescheduleOpen, setBulkRescheduleOpen] = useState(false);
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
 
   const location = useLocation();
@@ -81,15 +79,6 @@ export default function HoyPage() {
     setToast({ message: "Gestión reprogramada" });
   }
 
-  function handleConfirmBulkReschedule() {
-    const overdueItems = grouped.vencidas;
-    overdueItems.forEach((g) => {
-      const newDate = addDays(new Date(g.targetDate), 1).toISOString();
-      actions.reschedule(g.id, newDate);
-    });
-    setBulkRescheduleOpen(false);
-    setToast({ message: `${overdueItems.length} gestiones reprogramadas` });
-  }
 
   return (
     <div className="min-h-screen flex flex-col bg-paper-base dot-grid-pattern font-body text-ink-charcoal antialiased">
@@ -190,25 +179,13 @@ export default function HoyPage() {
             <div className="space-y-9">
               {grouped.vencidas.length > 0 && (
                 <section className="space-y-3.5">
-                  <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pb-2 border-b-2 border-crimson-urgent/30">
-                    <div className="flex items-baseline gap-2.5">
+                  <div className="flex items-baseline gap-2.5 pb-2 border-b-2 border-crimson-urgent/30">
                       <span className="font-serif font-bold text-crimson-urgent text-xl">I.</span>
                       <h2 className="font-serif text-2xl md:text-3xl text-ink-charcoal font-semibold tracking-tight">
                         Vencidas
                       </h2>
                       <span className="font-body text-xs text-ink-muted ml-1">Ordenadas por antigüedad</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setBulkRescheduleOpen(true)}
-                      className="font-body text-xs text-crimson-tag hover:text-crimson-urgent inline-flex items-center gap-1 font-semibold transition-colors group focus:outline-none"
-                    >
-                      <span className="group-hover:underline">Reprogramar todas</span>
-                      <span className="material-symbols-outlined text-[14px] transition-transform group-hover:translate-x-0.5">
-                        fast_forward
-                      </span>
-                    </button>
-                  </div>
                   <div className="grid grid-cols-1 gap-3">
                     {grouped.vencidas.map((g) => (
                       <TaskCard
@@ -268,24 +245,12 @@ export default function HoyPage() {
 
               {grouped.proximas.length > 0 && (
                 <section className="space-y-3.5">
-                  <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pb-2 border-b border-sepia-border">
-                    <div className="flex items-baseline gap-2.5">
-                      <span className="font-serif font-bold text-sepia-dark text-xl">III.</span>
-                      <h2 className="font-serif text-2xl md:text-3xl text-ink-charcoal font-semibold tracking-tight">
-                        Próximas Jornadas
-                      </h2>
-                      <span className="font-body text-xs text-ink-muted ml-1">Horizonte a 7 días</span>
-                    </div>
-                    {/* TODO(Sprint 2+): apuntar a /calendario cuando exista la ruta.
-                        Hoy es un placeholder visual del diseño UX. */}
-                    <a
-                      href="#"
-                      onClick={(e) => e.preventDefault()}
-                      className="font-body text-xs text-terracotta hover:text-terracotta-dark inline-flex items-center gap-1 font-semibold focus:outline-none"
-                    >
-                      <span>Ver calendario completo</span>
-                      <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
-                    </a>
+                  <div className="flex items-baseline gap-2.5 pb-2 border-b border-sepia-border">
+                    <span className="font-serif font-bold text-sepia-dark text-xl">III.</span>
+                    <h2 className="font-serif text-2xl md:text-3xl text-ink-charcoal font-semibold tracking-tight">
+                      Próximas Jornadas
+                    </h2>
+                    <span className="font-body text-xs text-ink-muted ml-1">Horizonte a 7 días</span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {grouped.proximas.map((g) => (
@@ -309,15 +274,6 @@ export default function HoyPage() {
 
       {/* ---------- Overlays ---------- */}
       <Toast toast={toast} onClose={() => setToast(null)} />
-
-      {bulkRescheduleOpen && (
-        <RescheduleModal
-          mode="bulk"
-          count={grouped.vencidas.length}
-          onCancel={() => setBulkRescheduleOpen(false)}
-          onConfirm={handleConfirmBulkReschedule}
-        />
-      )}
 
       {rescheduleTarget && (
         <RescheduleModal
