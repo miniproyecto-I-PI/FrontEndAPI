@@ -73,7 +73,10 @@ export default function EventoDetallePage() {
       const aDone = isDone(a);
       const bDone = isDone(b);
       if (aDone !== bDone) return aDone ? 1 : -1;
-      return new Date(a.targetDate) - new Date(b.targetDate);
+      return (
+      new Date(a.targetDate) - new Date(b.targetDate) ||
+      a.estimatedHours - b.estimatedHours
+    );
     });
 
     if (filter === "vencidas")
