@@ -85,9 +85,7 @@ export default function CrearGestionPage() {
   }
 }
 
-  function handleSaveDraft() {
-    setToast({ message: "Borrador guardado en la bitácora editorial" });
-  }
+  
 
   const isLoading = status === "loading";
   const eventName = event?.name ?? "…";
@@ -366,17 +364,8 @@ export default function CrearGestionPage() {
             Cancelar y volver al evento
           </Link>
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={handleSaveDraft}
-              disabled={isLoading}
-              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-paper-card hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body text-xs md:text-sm font-medium rounded-sharp transition-colors disabled:opacity-60"
-            >
-              <span className="material-symbols-outlined text-[16px] text-ink-muted">
-                bookmark_border
-              </span>
-              <span>Guardar borrador</span>
-            </button>
+            
+              
             <button
               type="submit"
               disabled={isLoading || eventStatus === "loading"}

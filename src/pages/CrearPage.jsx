@@ -88,9 +88,7 @@ export default function CrearPage() {
     }
   }
 
-  function handleSaveDraft() {
-    setToast({ message: "Borrador guardado en la bitácora editorial" });
-  }
+  
 
   function handleSuccessStay() {
   setCreatedEventName(null);
@@ -291,17 +289,8 @@ function handleSuccessGoToEvents() {
             Cancelar y volver
           </button>
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={handleSaveDraft}
-              disabled={isLoading}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-paper-card hover:bg-paper-linen text-ink-charcoal font-body text-xs font-semibold rounded-sharp border border-sepia-border transition-colors disabled:opacity-60"
-            >
-              <span className="material-symbols-outlined text-[15px] text-ink-muted">
-                bookmark
-              </span>
-              <span>Guardar borrador</span>
-            </button>
+            
+              
             <button
               type="submit"
               disabled={isLoading}
