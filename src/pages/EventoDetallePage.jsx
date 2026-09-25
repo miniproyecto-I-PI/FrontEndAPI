@@ -7,7 +7,7 @@ import { classifyByDate } from "../utils/dateUtils";
 
 import Toast from "../components/common/Toast";
 import EditSubtaskModal from "../components/common/EditSubtaskModal";
-import ConfirmDeleteModal from "../components/common/ConfirmDeleteModal";
+import DeleteEventModal from "../components/eventos/DeleteEventModal";
 import EditEventModal from "../components/common/EditEventModal";
 import RescheduleModal from "../components/common/RescheduleModal";
 
@@ -277,19 +277,12 @@ export default function EventoDetallePage() {
       )}
 
       {deleteEventOpen && event && (
-        <ConfirmDeleteModal
-          title={`¿Eliminar "${event.name}"?`}
-          description={
-            subtasks.length > 0
-              ? `Se eliminarán también sus ${subtasks.length} ${
-                  subtasks.length === 1 ? "gestión" : "gestiones"
-                }. Esta acción no se puede deshacer.`
-              : "Este evento no tiene gestiones asociadas. Esta acción no se puede deshacer."
-          }
-          onCancel={() => setDeleteEventOpen(false)}
-          onConfirm={handleDeleteEvent}
-        />
-      )}
+  <DeleteEventModal
+    event={event}
+    onCancel={() => setDeleteEventOpen(false)}
+    onConfirm={handleDeleteEvent}
+  />
+)}
 
       {deletingSubtask && (
         <ConfirmDeleteModal

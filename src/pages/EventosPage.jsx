@@ -12,7 +12,7 @@ import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
 import Toast from "../components/common/Toast";
 import EditEventModal from "../components/common/EditEventModal";
-import ConfirmDeleteModal from "../components/common/ConfirmDeleteModal";
+import DeleteEventModal from "../components/eventos/DeleteEventModal";
 import EventsTable from "../components/eventos/EventsTable";
 
 /** Chips de categoría (label en plural, como en el diseño). */
@@ -190,13 +190,12 @@ export default function EventosPage() {
       )}
 
       {deletingEvent && (
-        <ConfirmDeleteModal
-          title={`¿Eliminar "${deletingEvent.name}"?`}
-          description="Se eliminarán también sus gestiones asociadas. Esta acción no se puede deshacer."
-          onCancel={() => setDeletingEvent(null)}
-          onConfirm={handleDeleteConfirm}
-        />
-      )}
+  <DeleteEventModal
+    event={deletingEvent}
+    onCancel={() => setDeletingEvent(null)}
+    onConfirm={handleDeleteConfirm}
+  />
+)}
     </div>
   );
 }

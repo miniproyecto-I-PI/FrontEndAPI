@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import CreateEventSuccessModal from "../components/common/CreateEventSuccessModal";
 
 import Toast from "../components/common/Toast";
 import EventTypeSelector from "../components/eventos/EventTypeSelector";
@@ -27,7 +28,7 @@ export default function CrearPage() {
   const [generalError, setGeneralError] = useState(null);
   const [status, setStatus] = useState("idle");
   const [toast, setToast] = useState(null);
-  const [successOpen, setSuccessOpen] = useState(false);
+  const [createdEventName, setCreatedEventName] = useState(null);
 
   function handleChange(field) {
     return (e) => {
@@ -68,15 +69,16 @@ export default function CrearPage() {
     setStatus("loading");
     try {
       const localDate = new Date(`${form.date}T12:00:00`);
-      await createEvent({
+      const created = await createEvent({
         name: form.title.trim(),
         type: form.type,
         contact: form.host,
         dateTime: localDate.toISOString(),
         place: form.venue,
       });
-      setSuccessOpen(true);
+      setCreatedEventName(created?.name || form.title.trim());
       setStatus("idle");
+
     } catch (err) {
       setStatus("idle");
       setGeneralError(
@@ -90,17 +92,16 @@ export default function CrearPage() {
     setToast({ message: "Borrador guardado en la bitácora editorial" });
   }
 
-  function handleCreateAnother() {
-    setSuccessOpen(false);
-    setForm(emptyForm);
-    setFieldErrors({});
-    setGeneralError(null);
-  }
+  function handleSuccessStay() {
+  setCreatedEventName(null);
+  setForm(emptyForm);
+  setFieldErrors({});
+  setGeneralError(null);
+}
 
-  function handleGoToday() {
-    setSuccessOpen(false);
-    navigate("/hoy", { state: { toast: "Evento creado" } });
-  }
+function handleSuccessGoToEvents() {
+  navigate("/eventos", { state: { toast: "Evento creado" } });
+}
 
   const isLoading = status === "loading";
 
@@ -315,13 +316,13 @@ export default function CrearPage() {
         </div>
       </form>
 
-      {/* Success modal */}
-      {successOpen && (
-        <SuccessModal
-          onGoToday={handleGoToday}
-          onAnother={handleCreateAnother}
-        />
-      )}
+      {createdEventName && (
+  <CreateEventSuccessModal
+    eventName={createdEventName}
+    onStay={handleSuccessStay}
+    onGoToEvents={handleSuccessGoToEvents}
+  />
+)}
 
       <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
@@ -357,47 +358,3 @@ function FieldError({ msg }) {
   );
 }
 
-function SuccessModal({ onGoToday, onAnother }) {
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="success-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-charcoal/40 backdrop-blur-sm"
-      onClick={(e) => e.target === e.currentTarget && onGoToday()}
-    >
-      <div className="relative w-full max-w-md bg-paper-card border border-sepia-border rounded-sharp p-6 shadow-xl warm-card-shadow text-center space-y-4">
-        <div className="w-12 h-12 mx-auto rounded-full bg-sage-light text-sage-wax flex items-center justify-center">
-          <span className="material-symbols-outlined text-[26px]">check</span>
-        </div>
-        <h3
-          id="success-modal-title"
-          className="font-serif text-2xl font-bold text-ink-charcoal"
-        >
-          ¡Evento creado con éxito!
-        </h3>
-        <p className="font-body text-xs md:text-sm text-ink-muted leading-relaxed">
-          El evento se ha incorporado a tu cuaderno de operaciones y hemos
-          programado sus primeras gestiones prioritarias en la vista{" "}
-          <em>Hoy</em>.
-        </p>
-        <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2">
-          <button
-            type="button"
-            onClick={onGoToday}
-            className="w-full sm:w-auto px-5 py-2 bg-terracotta text-[#FAF6F0] font-body text-xs font-semibold rounded-sharp border border-terracotta-dark shadow-sm hover:bg-terracotta-dark transition-colors"
-          >
-            Ir a Gestiones de Hoy
-          </button>
-          <button
-            type="button"
-            onClick={onAnother}
-            className="w-full sm:w-auto px-4 py-2 bg-paper-base hover:bg-paper-linen text-ink-charcoal font-body text-xs font-medium rounded-sharp border border-sepia-border transition-colors"
-          >
-            Crear otro evento
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
