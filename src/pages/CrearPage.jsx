@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import Toast from "../components/common/Toast";
-import EventTypeSelector from "../components/events/EventTypeSelector";
+import EventTypeSelector from "../components/eventos/EventTypeSelector";
 import { createEvent } from "../services/api";
 
 const emptyForm = {
