@@ -3,7 +3,6 @@ import { toDateInputValue } from "../../utils/dateUtils";
 
 const STATUS_OPTIONS = [
   { key: "PENDIENTE", label: "Pendiente",  icon: null,    dot: "bg-terracotta" },
-  { key: "EN_CURSO",  label: "En curso",   icon: null,    dot: "bg-ink-subtle" },
   { key: "EJECUTADA", label: "Completada", icon: "check", dot: null },
 ];
 
@@ -19,13 +18,14 @@ export default function EditSubtaskModal({
   onSubmit,
 }) {
   const [form, setForm] = useState(() => ({
-    title: initialSubtask.title ?? "",
-    provider: initialSubtask.provider ?? "",
-    estimatedHours: String(initialSubtask.estimatedHours ?? ""),
-    date: toDateInputValue(initialSubtask.targetDate),
-    time: "",
-    status: initialSubtask.status ?? "PENDIENTE",
-  }));
+  title: initialSubtask.title ?? "",
+  provider: initialSubtask.provider ?? "",
+  estimatedHours: String(initialSubtask.estimatedHours ?? ""),
+  date: toDateInputValue(initialSubtask.targetDate),
+  time: "",
+  status:
+    initialSubtask.status === "EJECUTADA" ? "EJECUTADA" : "PENDIENTE",
+}));
   const [fieldErrors, setFieldErrors] = useState({});
   const [generalError, setGeneralError] = useState(null);
   const [status, setStatus] = useState("idle");
@@ -296,7 +296,7 @@ export default function EditSubtaskModal({
                 <label className="block font-serif font-semibold text-xs md:text-sm text-ink-charcoal">
                   Estado de la gestión
                 </label>
-                <div className="grid grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-2 gap-2.5">
                   {STATUS_OPTIONS.map((s) => {
                     const isActive = form.status === s.key;
                     return (
