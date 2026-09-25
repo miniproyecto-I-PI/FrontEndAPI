@@ -1,11 +1,9 @@
 import { Link } from "react-router-dom";
-import {
-  EVENT_STATUS_LABELS,
-  EVENT_STATUS_TONES,
-  EVENT_TYPE_SINGULAR,
-} from "../../data/mockEvents";
+import { EVENT_TYPE_SINGULAR } from "../../data/mockEvents";
 
-const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const MONTHS = [
+  "Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic",
+];
 
 function formatDayMonthYear(iso) {
   if (!iso) return "—";
@@ -13,23 +11,6 @@ function formatDayMonthYear(iso) {
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-function StatusBadge({ status }) {
-  const tone = EVENT_STATUS_TONES[status] ?? EVENT_STATUS_TONES.planificacion_inicial;
-  const label = EVENT_STATUS_LABELS[status] ?? status ?? "—";
-  return (
-    <span
-      className={`font-mono-stamp text-[10px] font-semibold px-2.5 py-1 rounded-sharp whitespace-nowrap inline-block ${tone.bg} ${tone.text}`}
-    >
-      {label}
-    </span>
-  );
-}
-
-/**
- * EventsTable.jsx — tabla de /eventos.
- * Columnas: Evento y cliente | Categoría | Fecha | Ubicación | Progreso |
- * Estado | Acciones.
- */
 export default function EventsTable({ events, onEdit, onDelete }) {
   return (
     <div className="bg-paper-card border border-sepia-border rounded-sharp warm-card-shadow overflow-hidden">
@@ -42,16 +23,12 @@ export default function EventsTable({ events, onEdit, onDelete }) {
               <th className="py-3.5 px-4 font-bold">Fecha</th>
               <th className="py-3.5 px-4 font-bold">Ubicación</th>
               <th className="py-3.5 px-4 font-bold">Progreso</th>
-              <th className="py-3.5 px-4 font-bold">Estado</th>
               <th className="py-3.5 px-5 text-right font-bold">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-sepia-border/60 font-body text-ink-charcoal">
             {events.map((evt) => (
-              <tr
-                key={evt.id}
-                className="hover:bg-paper-linen/30 transition-colors"
-              >
+              <tr key={evt.id} className="hover:bg-paper-linen/30 transition-colors">
                 <td className="py-4 px-5">
                   <Link to={`/evento/${evt.id}`} className="block group">
                     <div className="font-bold font-serif text-[15px] leading-snug text-ink-charcoal group-hover:text-terracotta transition-colors">
@@ -67,7 +44,8 @@ export default function EventsTable({ events, onEdit, onDelete }) {
 
                 <td className="py-4 px-4">
                   <span className="font-mono-stamp text-[10px] font-bold text-ink-charcoal bg-paper-linen/60 border border-sepia-border px-2 py-1 rounded-sharp uppercase tracking-wider inline-block">
-                    {EVENT_TYPE_SINGULAR[evt.type]?.toUpperCase() ?? (evt.type ?? "—").toUpperCase()}
+                    {EVENT_TYPE_SINGULAR[evt.type]?.toUpperCase() ??
+                      (evt.type ?? "—").toUpperCase()}
                   </span>
                 </td>
 
@@ -80,15 +58,7 @@ export default function EventsTable({ events, onEdit, onDelete }) {
                 </td>
 
                 <td className="py-4 px-4">
-                  <span className="font-mono-stamp text-xs font-bold text-ink-charcoal">
-                    {evt.progress
-                      ? `${evt.progress.done} / ${evt.progress.total}`
-                      : "—"}
-                  </span>
-                </td>
-
-                <td className="py-4 px-4">
-                  <StatusBadge status={evt.status} />
+                  <ProgressCell progress={evt.progress} />
                 </td>
 
                 <td className="py-4 px-5 text-right whitespace-nowrap">
@@ -124,5 +94,27 @@ export default function EventsTable({ events, onEdit, onDelete }) {
         </table>
       </div>
     </div>
+  );
+}
+
+function ProgressCell({ progress }) {
+  if (!progress || progress.total === 0) {
+    return (
+      <span className="font-mono-stamp text-xs text-ink-muted">—</span>
+    );
+  }
+
+  const { done, total } = progress;
+  const isComplete = done === total;
+
+  return (
+    <span
+      className={[
+        "font-mono-stamp text-xs font-bold whitespace-nowrap",
+        isComplete ? "text-sage-wax" : "text-ink-charcoal",
+      ].join(" ")}
+    >
+      {done} / {total}
+    </span>
   );
 }

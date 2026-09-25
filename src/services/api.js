@@ -213,6 +213,31 @@ export async function getEvents({ simulateError = false } = {}) {
   return list.map(mapEventFromBackend).filter(Boolean);
 }
 
+/**
+ * GET /events + GET /events/:id/subtasks (por evento, en paralelo)
+ * Enriquece cada evento con `progress: { done, total }` para la tabla de
+ * /eventos. No hay endpoint bulk, así que hacemos N requests en paralelo.
+ *
+ * Si falla el fetch de subtareas de un evento puntual, ese evento queda con
+ * `progress: null` (la tabla muestra "—") sin tirar abajo el listado.
+ *
+ * TODO(backend, Sprint X): un campo `progress` en el serializador de Event
+ * eliminaría este N+1.
+ */
+export async function getEventsWithProgress() {
+  const events = await getEvents();
+  return Promise.all(
+    events.map(async (evt) => {
+      try {
+        const subs = await getEventSubtasks(evt.id);
+        const done = subs.filter((s) => s.status === "EJECUTADA").length;
+        return { ...evt, progress: { done, total: subs.length } };
+      } catch {
+        return { ...evt, progress: null };
+      }
+    })
+  );
+}
 
 /**
  * GET /events/:id

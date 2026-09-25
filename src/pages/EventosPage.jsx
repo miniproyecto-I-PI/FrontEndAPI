@@ -60,19 +60,22 @@ export default function EventosPage() {
   }, [events, filter, query]);
 
   const stats = useMemo(() => {
-    let active = 0;
-    let upcoming30d = 0;
-    let completed = 0;
-    const today = new Date();
-    for (const e of events) {
-      if (e.status === "completado") completed++;
-      else active++;
-      if (e.dateTime) {
-        const diff = diffInCalendarDays(today, new Date(e.dateTime));
-        if (diff >= 0 && diff <= 30) upcoming30d++;
-      }
+  const today = new Date();
+  let active = 0;
+  let upcoming30d = 0;
+  let completed = 0;
+  for (const e of events) {
+    if (e.dateTime) {
+      const diff = diffInCalendarDays(today, new Date(e.dateTime));
+      if (diff >= 0 && diff <= 30) upcoming30d++;
+      if (diff >= 0) active++;
     }
-    return { active, upcoming30d, completed };
+    // "Completado" = todas sus gestiones hechas (y al menos una).
+    if (e.progress && e.progress.total > 0 && e.progress.done === e.progress.total) {
+      completed++;
+    }
+  }
+  return { active, upcoming30d, completed };
   }, [events]);
 
   const categoryCounts = useMemo(() => {
