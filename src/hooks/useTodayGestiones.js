@@ -50,7 +50,7 @@ export function useTodayGestiones({ simulateError = false, simulateEmpty = false
   }, [simulateError, simulateEmpty]);
 
   useEffect(() => {
-    fetchData();
+    Promise.resolve().then(fetchData);
   }, [fetchData]);
 
   const clearOverride = (id) =>

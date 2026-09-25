@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useDailyLimit } from "../../hooks/useDailyLimit";
 
 /**
@@ -15,18 +15,14 @@ import { useDailyLimit } from "../../hooks/useDailyLimit";
  */
 export default function DailyLimitModal({ onClose }) {
   const { hours, isLoaded, update, MIN_HOURS, MAX_HOURS } = useDailyLimit();
-  const [inputValue, setInputValue] = useState(String(hours));
+  const [inputValue, setInputValue] = useState(null);
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-  // Sync the input once the initial GET /settings/daily-limit resolves
-  // (the hook starts with a default value before the "real" one loads).
-  useEffect(() => {
-    if (isLoaded) setInputValue(String(hours));
-  }, [isLoaded, hours]);
+  const displayedValue = inputValue ?? String(hours);
 
   async function handleSave() {
-    const numericValue = Number(inputValue);
+    const numericValue = Number(displayedValue);
     if (Number.isNaN(numericValue)) {
       setError("Ingresa un número válido");
       return;
@@ -66,7 +62,7 @@ export default function DailyLimitModal({ onClose }) {
             min={MIN_HOURS}
             max={MAX_HOURS}
             step="0.5"
-            value={inputValue}
+            value={displayedValue}
             onChange={(e) => setInputValue(e.target.value)}
             className="mt-1 w-full border border-sepia-border rounded-sharp px-3 py-2 font-body text-sm text-ink-charcoal focus:outline-none focus:border-terracotta"
           />

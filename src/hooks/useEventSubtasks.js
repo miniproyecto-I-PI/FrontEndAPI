@@ -42,7 +42,7 @@ export function useEventSubtasks(eventId) {
   }, [eventId]);
 
   useEffect(() => {
-    fetchData();
+    Promise.resolve().then(fetchData);
   }, [fetchData]);
 
   const addSubtask = useCallback(
