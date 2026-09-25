@@ -126,7 +126,7 @@ async function handleEditEvent(payload) {
             : "Gestión marcada como pendiente",
       });
     } catch (err) {
-      setToast({ message: err.message || "No se pudo actualizar la gestión" });
+      setToast({ message: err.message || "No se pudo actualizar la gestión", intent: "error" })
     }
   }
 
@@ -137,7 +137,7 @@ async function handleEditEvent(payload) {
       setRescheduleTarget(null);
       setToast({ message: "Gestión reprogramada" });
     } catch (err) {
-      setToast({ message: err.message || "No se pudo reprogramar" });
+      setToast({ message: err.message || "No se pudo reprogramar" , intent: "error" })
     }
   }
 

@@ -63,7 +63,7 @@ export default function CrearGestionPage() {
   const errors = validate();
   if (Object.keys(errors).length > 0) {
     setFieldErrors(errors);
-    setToast({ message: "Faltan campos obligatorios" });
+    setToast({ message: "Faltan campos obligatorios", intent: "error" })
     return;
   }
   setStatus("loading");

@@ -62,7 +62,7 @@ export default function CrearPage() {
     const errors = validate();
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
-      setToast({ message: "Faltan campos obligatorios" });
+      setToast({ message: "Faltan campos obligatorios", intent: "error" })
       window.scrollTo({ top: 120, behavior: "smooth" });
       return;
     }
@@ -84,7 +84,7 @@ export default function CrearPage() {
       setGeneralError(
         err.message || "No pudimos crear el evento. Intenta de nuevo."
       );
-      setToast({ message: "No se pudo crear el evento" });
+      setToast({ message: "No se pudo crear el evento", intent: "error" })
     }
   }
 

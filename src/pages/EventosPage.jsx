@@ -49,17 +49,27 @@ export default function EventosPage() {
   const [deletingEvent, setDeletingEvent] = useState(null);
 
   // --- Derivados ---
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return events.filter((e) => {
+  // --- Derivados ---
+const filtered = useMemo(() => {
+  const q = query.trim().toLowerCase();
+
+  return events
+    .filter((e) => {
       const matchesCategory = filter === "all" || e.type === filter;
       const matchesQuery =
         !q ||
         (e.name ?? "").toLowerCase().includes(q) ||
         (e.contact ?? "").toLowerCase().includes(q);
       return matchesCategory && matchesQuery;
+    })
+    .sort((a, b) => {
+      // Fecha ascendente: más antigua primero, más lejana al final.
+      // Los eventos sin fecha (o fecha inválida) van al final.
+      const aTime = a.dateTime ? new Date(a.dateTime).getTime() : Infinity;
+      const bTime = b.dateTime ? new Date(b.dateTime).getTime() : Infinity;
+      return aTime - bTime;
     });
-  }, [events, filter, query]);
+}, [events, filter, query]);
 
   const stats = useMemo(() => {
   const today = new Date();
