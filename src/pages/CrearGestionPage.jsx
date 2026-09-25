@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-
+import CreateSubtaskSuccessModal from "../components/common/CreateSubtaskSuccessModal";
 import { useEventSubtasks } from "../hooks/useEventSubtasks";
 import Toast from "../components/common/Toast";
 import { formatShortDate } from "../utils/dateUtils";
@@ -25,6 +25,7 @@ export default function CrearGestionPage() {
 
   const [form, setForm] = useState(emptyForm);
   const [fieldErrors, setFieldErrors] = useState({});
+  const [createdSubtaskTitle, setCreatedSubtaskTitle] = useState(null);
   const [generalError, setGeneralError] = useState(null);
   const [status, setStatus] = useState("idle");
   const [toast, setToast] = useState(null);
@@ -57,33 +58,32 @@ export default function CrearGestionPage() {
   }
 
   async function handleSubmit(e) {
-    e.preventDefault();
-    setGeneralError(null);
-    const errors = validate();
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors);
-      setToast({ message: "Faltan campos obligatorios" });
-      return;
-    }
-    setStatus("loading");
-    try {
-      // Combina fecha + hora local; el backend trunca a fecha si no soporta hora.
-      const timeSuffix = form.time ? `T${form.time}:00` : "T12:00:00";
-      const localDate = new Date(`${form.targetDate}${timeSuffix}`);
-      await addSubtask({
-        title: form.title.trim(),
-        provider: form.provider.trim(),
-        targetDate: localDate.toISOString(),
-        estimatedHours: Number(form.estimatedHours),
-      });
-      navigate(`/evento/${id}`, { state: { toast: "Gestión creada" } });
-    } catch (err) {
-      setStatus("idle");
-      setGeneralError(
-        err.message || "No pudimos crear la gestión. Intenta de nuevo."
-      );
-    }
+  e.preventDefault();
+  setGeneralError(null);
+  const errors = validate();
+  if (Object.keys(errors).length > 0) {
+    setFieldErrors(errors);
+    setToast({ message: "Faltan campos obligatorios" });
+    return;
   }
+  setStatus("loading");
+  try {
+    const localDate = new Date(`${form.targetDate}T12:00:00`);
+    const created = await addSubtask({
+      title: form.title.trim(),
+      provider: form.provider.trim(),
+      targetDate: localDate.toISOString(),
+      estimatedHours: Number(form.estimatedHours),
+    });
+    setCreatedSubtaskTitle(created?.title || form.title.trim());
+    setStatus("idle");
+  } catch (err) {
+    setStatus("idle");
+    setGeneralError(
+      err.message || "No pudimos crear la gestión. Intenta de nuevo."
+    );
+  }
+}
 
   function handleSaveDraft() {
     setToast({ message: "Borrador guardado en la bitácora editorial" });
@@ -393,6 +393,13 @@ export default function CrearGestionPage() {
         </div>
       </form>
 
+              {createdSubtaskTitle && (
+  <CreateSubtaskSuccessModal
+    subtaskTitle={createdSubtaskTitle}
+    eventId={id}
+    onClose={() => setCreatedSubtaskTitle(null)}
+  />
+)}
       <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );

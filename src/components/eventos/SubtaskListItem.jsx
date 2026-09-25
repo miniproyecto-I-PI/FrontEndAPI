@@ -108,6 +108,15 @@ export default function SubtaskListItem({
             {subtask.title}
           </h4>
 
+            {subtask.provider && (
+  <p className="font-body text-xs text-ink-muted mt-1 inline-flex items-center gap-1">
+    <span className="material-symbols-outlined text-[13px] text-ink-subtle">
+      storefront
+    </span>
+    <span>{subtask.provider}</span>
+  </p>
+)}
+
           {subtask.note && (
             <p className="font-body text-xs text-ink-muted mt-1 leading-relaxed">
               {subtask.note}

@@ -10,7 +10,7 @@ import EditSubtaskModal from "../components/common/EditSubtaskModal";
 import DeleteEventModal from "../components/eventos/DeleteEventModal";
 import EditEventModal from "../components/common/EditEventModal";
 import RescheduleModal from "../components/common/RescheduleModal";
-
+import DeleteSubtaskModal from "../components/eventos/DeleteSubtaskModal";
 import EventDossierHeader from "../components/eventos/EventDossierHeader";
 import SubtaskFilters from "../components/eventos/SubtaskFilters";
 import SubtaskListItem from "../components/eventos/SubtaskListItem";
@@ -285,13 +285,13 @@ export default function EventoDetallePage() {
 )}
 
       {deletingSubtask && (
-        <ConfirmDeleteModal
-          title="¿Eliminar esta gestión?"
-          description={`"${deletingSubtask.title}" se eliminará del plan del evento. Esta acción no se puede deshacer.`}
-          onCancel={() => setDeletingSubtask(null)}
-          onConfirm={handleDeleteSubtask}
-        />
-      )}
+  <DeleteSubtaskModal
+    subtask={deletingSubtask}
+    eventName={event?.name}
+    onCancel={() => setDeletingSubtask(null)}
+    onConfirm={handleDeleteSubtask}
+  />
+)}
 
       {rescheduleTarget && (
         <RescheduleModal
