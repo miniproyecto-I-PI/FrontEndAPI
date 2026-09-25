@@ -37,23 +37,28 @@ const MONTHS = [
   "dic",
 ];
 
+function parseDateValue(value) {
+  const match = typeof value === "string" && value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : new Date(value);
+}
+
 /** Returns a new Date set to 00:00:00 of the same calendar day as `date`. */
 export function startOfDay(date) {
-  const d = new Date(date);
+  const d = parseDateValue(date);
   d.setHours(0, 0, 0, 0);
   return d;
 }
 
 /** Returns a new Date `days` days after `date` (negative to go backwards). */
 export function addDays(date, days) {
-  const d = new Date(date);
+  const d = parseDateValue(date);
   d.setDate(d.getDate() + days);
   return d;
 }
 
 /** Returns a new Date with the same day as `date` but at hour:minute. */
 export function atTime(date, hour, minute = 0) {
-  const d = new Date(date);
+  const d = parseDateValue(date);
   d.setHours(hour, minute, 0, 0);
   return d;
 }
@@ -92,7 +97,7 @@ export function formatOverdueLabel(targetDate, today = new Date()) {
 /** "Mañana, 25 Oct" / "Lunes, 28 Oct" — mirrors the original prototype copy. */
 export function formatUpcomingLabel(targetDate, today = new Date()) {
   const days = diffInCalendarDays(today, targetDate);
-  const d = new Date(targetDate);
+  const d = parseDateValue(targetDate);
   const dayNumber = d.getDate();
   const month = MONTHS[d.getMonth()];
   if (days === 1) return `Mañana, ${dayNumber} ${capitalize(month)}`;
@@ -102,7 +107,8 @@ export function formatUpcomingLabel(targetDate, today = new Date()) {
 
 /** "14:00" from a Date. */
 export function formatTime(date) {
-  const d = new Date(date);
+  if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)) return "Todo el día";
+  const d = parseDateValue(date);
   return d.toTimeString().slice(0, 5);
 }
 
@@ -123,8 +129,12 @@ function capitalize(word) {
 
 /** "15 Oct" — fecha corta para listas (sin año, útil en detalle de evento). */
 export function formatShortDate(date) {
-  const d = new Date(date);
+  const d = parseDateInput(date);
   return `${d.getDate()} ${capitalize(MONTHS[d.getMonth()])}`;
+}
+
+function parseDateInput(value) {
+  return parseDateValue(value);
 }
 
 /** Formats an ISO date string for <input type="datetime-local">. */
@@ -138,6 +148,7 @@ export function toDatetimeLocalValue(isoString) {
 /** Formats an ISO date string for <input type="date">. */
 export function toDateInputValue(isoString) {
   if (!isoString) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(isoString)) return isoString;
   const d = new Date(isoString);
   const pad = (n) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;

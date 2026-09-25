@@ -1,298 +1,94 @@
-/**
- * services/api.js
- * ---------------------------------------------------------------------------
- * Conexión real con el backend Django (DRF) desplegado en Render.
- *
- * El backend usa nombres de campo distintos a los del frontend (name vs
- * eventName, target_date vs targetDate, etc.), así que TODA la traducción
- * vive aquí: los componentes siguen usando los mismos nombres de siempre.
- *
- * El backend envuelve las respuestas en { success, data, message }.
- * Aquí se desenvuelve `data` antes de devolverlo.
- */
-// Old comment, pre integration with backend:
-/**
- * services/api.js
- * ---------------------------------------------------------------------------
- * SINGLE INTEGRATION POINT with the backend.
- * Every function here is named after (and documented with) the endpoint it
- * will call once the backend team implements it, per Backlog Refinado (C4)
- * and Arquitectura de Información (C5). Right now, Sprint 0 has no backend
- * yet (TS-01/TS-02/TS-07 are still pending), so each function resolves with
- * mock data instead of calling `fetch`.
- *
- * WHY THIS FILE EXISTS (and why components never import mock data directly):
- * When the backend is ready, only this file needs to change — swap the mock
- * implementation for a real `fetch`/axios call with the same return shape,
- * and every hook/page/component in the app keeps working unmodified. This is
- * the seam the rest of the app is built around.
- *
- * Real base URL is read from an environment variable so each environment
- * (local, staging, prod) can point to a different API without code changes.
- * See `.env.example`.
- */
-// ---------------------------------------------------------------------------
-// Configuración
-// ---------------------------------------------------------------------------
+export const API_BASE_URL = (import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:8000/api" : "")).replace(/\/$/, "");
 
-export const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:8000/api";
-
-/** Simula latencia para que el estado loading se note en desarrollo. */
-function delay(ms = 200) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
- * Helper central de fetch. Desenvuelve { success, data, message } y lanza
- * un Error con mensaje legible si algo falla.
- */
-async function apiFetch(path, options = {}) {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    ...options,
-  });
-
-  let body = null;
+async function request(path, options = {}) {
+  if (!API_BASE_URL) {
+    throw new Error("El backend no está configurado para este despliegue. Define VITE_API_URL en Vercel.");
+  }
+  let response;
   try {
-    body = await res.json();
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers: { "Content-Type": "application/json", ...options.headers },
+    });
   } catch {
-    // respuesta sin JSON (ej. 204 No Content)
+    throw new Error("No pudimos conectar con el servidor. Revisa que el backend esté activo.");
   }
-
-  if (!res.ok) {
-    const message =
-      body?.message ||
-      body?.detail ||
-      (body && typeof body === "object" ? Object.values(body).flat()[0] : null) ||
-      `Error ${res.status}`;
-    throw new Error(message);
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok || body.success === false) {
+    const fallback = response.status === 404
+      ? `El backend no tiene disponible ${path} (404). Actualiza el despliegue de la API.`
+      : `El backend respondió con error ${response.status} en ${path}.`;
+    const error = new Error(body.error?.message || body.message || body.detail || fallback);
+    error.details = body.error?.details ?? {};
+    throw error;
   }
-
-  // El backend envuelve todo en { success, data }. Si no viene envuelto,
-  // devolvemos el body tal cual (por si algún endpoint no lo hace).
-  if (body && typeof body === "object" && "success" in body && "data" in body) {
-    return body.data;
-  }
-  return body;
+  return body.success === true ? body.data : body;
 }
 
-// ---------------------------------------------------------------------------
-// Mapeo Backend → Frontend
-// ---------------------------------------------------------------------------
+const json = (method, payload) => ({ method, body: JSON.stringify(payload) });
+const typeToFrontend = (type) => type?.toLowerCase();
+const statusToFrontend = (status) => status?.toUpperCase() ?? "PENDIENTE";
 
-/**
- * Evento del backend → Evento del frontend.
- * Backend: { id, name, type, client_contact, event_datetime, place, ... }
- * Frontend: { id, name, type, contact, dateTime, place }
- */
-function mapEventFromBackend(raw) {
-  if (!raw) return null;
-  return {
-    id: String(raw.id), // el frontend usa IDs como string en las rutas
-    name: raw.name,
-    type: (raw.type || "").toLowerCase(),
-    contact: raw.client_contact ?? "",
-    dateTime: raw.event_datetime ?? "",
-    place: raw.place ?? "",
-  };
+function toSubtask(task) {
+  return { ...task, id: String(task.id), eventId: String(task.event), title: task.name,
+    targetDate: task.target_date, estimatedHours: Number(task.estimated_hours), status: statusToFrontend(task.status),
+    eventName: task.event_name, eventType: typeToFrontend(task.event_type) };
+}
+function toEvent(event) {
+  if (!event) return event;
+  return { ...event, id: String(event.id), type: typeToFrontend(event.type), contact: event.client_contact ?? "",
+    dateTime: event.event_datetime ?? "", subtasks: event.subtasks?.map(toSubtask) };
+}
+function fromEvent(event) {
+  const payload = {};
+  if (event.name !== undefined) payload.name = event.name.trim();
+  if (event.type !== undefined) payload.type = event.type.toUpperCase();
+  if (event.dateTime !== undefined) payload.event_datetime = event.dateTime;
+  if (event.contact !== undefined) payload.client_contact = event.contact;
+  if (event.place !== undefined) payload.place = event.place;
+  if (event.subtasks) payload.subtasks = event.subtasks.map((task) => ({ name: task.title.trim(), target_date: task.targetDate, estimated_hours: Number(task.estimatedHours) }));
+  return payload;
+}
+function fromSubtask(task) {
+  const payload = {};
+  if (task.title !== undefined) payload.name = task.title.trim();
+  if (task.targetDate !== undefined) payload.target_date = task.targetDate.split("T")[0];
+  if (task.estimatedHours !== undefined) payload.estimated_hours = Number(task.estimatedHours);
+  if (task.status !== undefined) payload.status = task.status.toUpperCase();
+  if (task.note !== undefined) payload.note = task.note;
+  if (task.provider !== undefined) payload.provider = task.provider;
+  return payload;
 }
 
-/**
- * Subtarea del backend → Gestión del frontend.
- * Backend: { id, event, name, target_date, estimated_hours, status, note, ... }
- * Frontend: { id, eventId, title, targetDate, estimatedHours, status, ... }
- */
-function mapSubtaskFromBackend(raw) {
-  if (!raw) return null;
-  return {
-    id: String(raw.id),
-    eventId: String(raw.event),
-    title: raw.name,
-    targetDate: raw.target_date, // "YYYY-MM-DD"
-    estimatedHours: Number(raw.estimated_hours),
-    status: raw.status,
-    note: raw.note ?? "",
-  };
-}
-
-// ---------------------------------------------------------------------------
-// US-04 — Vista "Hoy" (SIN backend todavía: GET /today no existe)
-// ---------------------------------------------------------------------------
-
-/**
- * GET /today  — PENDIENTE en el backend.
- * Mientras no exista el endpoint, seguimos usando mock.
- */
 export async function getToday({ simulateError = false } = {}) {
-  await delay();
   if (simulateError) throw new Error("No pudimos cargar tus gestiones");
-  // TODO(backend, Sprint 2): GET `${API_BASE_URL}/today`
-  const { mockGestiones } = await import("../data/mockGestiones");
-  return structuredClone(mockGestiones);
+  return (await request("/today")).map(toSubtask);
 }
-
-// ---------------------------------------------------------------------------
-// US-09 — Marcar / posponer (SIN backend todavía)
-// ---------------------------------------------------------------------------
-
-export async function markGestionAsDone(id) {
-  await delay(250);
-  // TODO(backend, Sprint 4): PATCH /subtasks/:id { status: 'EJECUTADA' }
-  return { id, status: "EJECUTADA", doneAt: new Date().toISOString() };
+export async function markGestionAsDone(id) { return toSubtask(await request(`/subtasks/${id}`, json("PATCH", { status: "EJECUTADA" }))); }
+export async function postponeGestion(id, note = "") { return toSubtask(await request(`/subtasks/${id}`, json("PATCH", { status: "POSPUESTA", note }))); }
+export async function rescheduleGestion(id, date) { return toSubtask(await request(`/subtasks/${id}`, json("PATCH", { target_date: date.split("T")[0] }))); }
+export async function createEvent(event) { return toEvent(await request("/events", json("POST", fromEvent(event)))); }
+export async function getEvents() { return (await request("/events")).map(toEvent); }
+// GET /events ya trae los conteos anotados por Django; no hace llamadas por evento.
+export async function getEventsWithProgress(options = {}) {
+  if (options.simulateError) throw new Error("No pudimos cargar tus eventos");
+  return getEvents();
 }
+export async function getEventById(id) { return toEvent(await request(`/events/${id}`)); }
+export async function getEventSubtasks(id) { return (await request(`/events/${id}/subtasks`)).map(toSubtask); }
+export async function addSubtask(id, task) { return toSubtask(await request(`/events/${id}/subtasks`, json("POST", fromSubtask(task)))); }
+export async function updateEvent(id, patch) { return toEvent(await request(`/events/${id}`, json("PATCH", fromEvent(patch)))); }
+export async function deleteEvent(id) { await request(`/events/${id}`, { method: "DELETE" }); return { id, deleted: true }; }
+export async function updateSubtask(id, patch) { return toSubtask(await request(`/subtasks/${id}`, json("PATCH", fromSubtask(patch)))); }
+export async function deleteSubtask(id) { await request(`/subtasks/${id}`, { method: "DELETE" }); return { id, deleted: true }; }
 
-export async function postponeGestion(id, note = "") {
-  await delay(250);
-  // TODO(backend, Sprint 4): PATCH /subtasks/:id { status: 'POSPUESTA', note }
-  return { id, status: "POSPUESTA", note };
-}
-
-export async function rescheduleGestion(id, newTargetDateISO) {
-  await delay(300);
-  // TODO(backend, Sprint 3): PATCH /subtasks/:id { target_date: newTargetDateISO }
-  return { id, targetDate: newTargetDateISO };
-}
-
-// ---------------------------------------------------------------------------
-// US-01 — Eventos
-// ---------------------------------------------------------------------------
-
-/**
- * POST /events
- * Recibe el formulario del frontend { name, type, contact, dateTime, place }
- * y lo traduce al payload que espera el backend.
- */
-export async function createEvent(form) {
-  const payload = {
-    name: form.name,
-    type: form.type.toUpperCase(), // backend espera BODA, SOCIAL, etc.
-    client_contact: form.contact ?? "",
-    event_datetime: new Date(form.dateTime).toISOString(),
-    place: form.place ?? "",
-  };
-
-  const raw = await apiFetch("/events", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-
-  return mapEventFromBackend(raw);
-}
-
-/**
- * GET /events/:id
- */
-export async function getEventById(id) {
-  const raw = await apiFetch(`/events/${id}`);
-  return mapEventFromBackend(raw);
-}
-
-/**
- * PUT /events/:id
- */
-export async function updateEvent(id, patch) {
-  const payload = {};
-  if (patch.name !== undefined) payload.name = patch.name;
-  if (patch.type !== undefined) payload.type = patch.type.toUpperCase();
-  if (patch.contact !== undefined) payload.client_contact = patch.contact;
-  if (patch.dateTime !== undefined)
-    payload.event_datetime = new Date(patch.dateTime).toISOString();
-  if (patch.place !== undefined) payload.place = patch.place;
-
-  const raw = await apiFetch(`/events/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify(payload),
-  });
-
-  return mapEventFromBackend(raw);
-}
-
-/**
- * DELETE /events/:id  (cascada: el backend borra sus subtareas)
- */
-export async function deleteEvent(id) {
-  await apiFetch(`/events/${id}`, { method: "DELETE" });
-  return { id, deleted: true };
-}
-
-// ---------------------------------------------------------------------------
-// US-02 — Subtareas logísticas
-// ---------------------------------------------------------------------------
-
-/**
- * GET /events/:eventId/subtasks
- */
-export async function getEventSubtasks(eventId) {
-  const raw = await apiFetch(`/events/${eventId}/subtasks`);
-  const list = Array.isArray(raw) ? raw : raw?.results ?? [];
-  return list.map(mapSubtaskFromBackend);
-}
-
-/**
- * POST /events/:eventId/subtasks
- * Recibe { title, targetDate, estimatedHours } del modal y traduce.
- */
-export async function addSubtask(eventId, form) {
-  const payload = {
-    name: form.title,
-    target_date: form.targetDate.split("T")[0], // "YYYY-MM-DD"
-    estimated_hours: form.estimatedHours,
-  };
-
-  const raw = await apiFetch(`/events/${eventId}/subtasks`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-
-  return mapSubtaskFromBackend(raw);
-}
-
-/**
- * PATCH /subtasks/:id  (US-03 — editar)
- */
-export async function updateSubtask(id, patch) {
-  const payload = {};
-  if (patch.title !== undefined) payload.name = patch.title;
-  if (patch.targetDate !== undefined)
-    payload.target_date = patch.targetDate.split("T")[0];
-  if (patch.estimatedHours !== undefined)
-    payload.estimated_hours = patch.estimatedHours;
-  if (patch.status !== undefined) payload.status = patch.status;
-  if (patch.note !== undefined) payload.note = patch.note;
-
-  const raw = await apiFetch(`/subtasks/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify(payload),
-  });
-
-  return mapSubtaskFromBackend(raw);
-}
-
-/**
- * DELETE /subtasks/:id  (US-03 — eliminar)
- */
-export async function deleteSubtask(id) {
-  await apiFetch(`/subtasks/${id}`, { method: "DELETE" });
-  return { id, deleted: true };
-}
-
-// ---------------------------------------------------------------------------
-// US-12 / US-11 — pendientes
-// ---------------------------------------------------------------------------
+// La autenticación pertenece al Sprint 2 y aún no tiene endpoint en Django.
+export async function login() { throw new Error("Login aún no disponible — se implementa desde el Sprint 2 (US-11)."); }
 
 export const dailyLimitApi = {
-  async get() {
-    await delay(200);
-    return { dailyLimitHours: 6 };
-  },
+  async get() { const data = await request("/settings/daily-limit"); return { dailyLimitHours: Number(data.daily_limit_hours) }; },
   async update(hours) {
-    await delay(300);
-    return { dailyLimitHours: hours };
+    const data = await request("/settings/daily-limit", json("PATCH", { daily_limit_hours: hours }));
+    return { dailyLimitHours: Number(data.daily_limit_hours) };
   },
 };
-
-export async function login(_credentials) {
-  await delay(400);
-  throw new Error("Login aún no disponible — Sprint 2 (US-11).");
-}
