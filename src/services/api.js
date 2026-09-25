@@ -109,10 +109,11 @@ function mapSubtaskFromBackend(raw) {
     id: String(raw.id),
     eventId: String(raw.event),
     title: raw.name,
-    targetDate: raw.target_date, // "YYYY-MM-DD"
+    targetDate: raw.target_date,
     estimatedHours: Number(raw.estimated_hours),
     status: raw.status,
     note: raw.note ?? "",
+    provider: raw.provider ?? "",  // ← nuevo (si el back no lo envía, queda "")
   };
 }
 
@@ -295,15 +296,15 @@ export async function getEventSubtasks(eventId) {
 export async function addSubtask(eventId, form) {
   const payload = {
     name: form.title,
-    target_date: form.targetDate.split("T")[0], // "YYYY-MM-DD"
+    target_date: form.targetDate.split("T")[0], // "YYYY-MM-DD" (backend trunca)
     estimated_hours: form.estimatedHours,
   };
+  if (form.provider) payload.provider = form.provider;
 
   const raw = await apiFetch(`/events/${eventId}/subtasks`, {
     method: "POST",
     body: JSON.stringify(payload),
   });
-
   return mapSubtaskFromBackend(raw);
 }
 
@@ -319,12 +320,12 @@ export async function updateSubtask(id, patch) {
     payload.estimated_hours = patch.estimatedHours;
   if (patch.status !== undefined) payload.status = patch.status;
   if (patch.note !== undefined) payload.note = patch.note;
+  if (patch.provider !== undefined) payload.provider = patch.provider;
 
   const raw = await apiFetch(`/subtasks/${id}`, {
     method: "PATCH",
     body: JSON.stringify(payload),
   });
-
   return mapSubtaskFromBackend(raw);
 }
 

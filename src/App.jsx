@@ -8,6 +8,7 @@ import EventoDetallePage from "./pages/EventoDetallePage";
 import ProgresoPage from "./pages/ProgresoPage";
 import LoginPage from "./pages/LoginPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import CrearGestionPage from "./pages/CrearGestionPage";
 
 /**
  * App.jsx
@@ -37,6 +38,7 @@ export default function App() {
       <Route path="/hoy" element={<HoyPage />} />
       <Route path="/eventos" element={<EventosPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/evento/:id/gestiones/crear" element={<CrearGestionPage />} />
 
       <Route element={<MainLayout />}>
         <Route path="/crear" element={<CrearPage />} />

@@ -6,7 +6,7 @@ import { deleteEvent } from "../services/api";
 import { classifyByDate } from "../utils/dateUtils";
 
 import Toast from "../components/common/Toast";
-import AddSubtaskModal from "../components/common/AddSubtaskModal";
+import EditSubtaskModal from "../components/common/EditSubtaskModal";
 import ConfirmDeleteModal from "../components/common/ConfirmDeleteModal";
 import EditEventModal from "../components/common/EditEventModal";
 import RescheduleModal from "../components/common/RescheduleModal";
@@ -31,7 +31,6 @@ export default function EventoDetallePage() {
     subtasks,
     status,
     errorMessage,
-    addSubtask,
     updateEvent,
     updateSubtask,
     removeSubtask,
@@ -41,7 +40,6 @@ export default function EventoDetallePage() {
   const [toast, setToast] = useState(null);
   const [filter, setFilter] = useState("todas");
 
-  const [addOpen, setAddOpen] = useState(false);
   const [editEventOpen, setEditEventOpen] = useState(false);
   const [deleteEventOpen, setDeleteEventOpen] = useState(false);
   const [editingSubtask, setEditingSubtask] = useState(null);
@@ -86,12 +84,7 @@ export default function EventoDetallePage() {
     return sorted;
   }, [subtasks, filter]);
 
-  // --- Handlers ---
-  async function handleAdd(payload) {
-    await addSubtask(payload);
-    setAddOpen(false);
-    setToast({ message: "Gestión agregada" });
-  }
+
 
   async function handleEditSubtask(payload) {
     await updateSubtask(editingSubtask.id, payload);
@@ -220,7 +213,7 @@ export default function EventoDetallePage() {
             {status === "success" && (
               <button
                 type="button"
-                onClick={() => setAddOpen(true)}
+                onClick={() => navigate(`/evento/${id}/gestiones/crear`)}
                 className="inline-flex items-center gap-1.5 px-4 py-2 bg-terracotta hover:bg-terracotta-dark text-[#FAF6F0] font-body text-sm font-semibold rounded-sharp shadow-sm transition-colors active:translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-terracotta focus:ring-offset-2 focus:ring-offset-paper-base"
               >
                 <span className="material-symbols-outlined text-[18px]">add</span>
@@ -232,7 +225,7 @@ export default function EventoDetallePage() {
           {status === "loading" && <ListSkeleton />}
 
           {status === "success" && stats.total === 0 && (
-            <SubtasksEmpty eventName={event?.name} onAdd={() => setAddOpen(true)} />
+            <SubtasksEmpty eventName={event?.name} onAdd={() => navigate(`/evento/${id}/gestiones/crear`)} />
           )}
 
           {status === "success" && stats.total > 0 && (
@@ -265,18 +258,15 @@ export default function EventoDetallePage() {
         </section>
       </div>
 
-      {/* ---------- Overlays ---------- */}
-      {addOpen && (
-        <AddSubtaskModal onCancel={() => setAddOpen(false)} onSubmit={handleAdd} />
-      )}
 
       {editingSubtask && (
-        <AddSubtaskModal
-          initialValues={editingSubtask}
-          onCancel={() => setEditingSubtask(null)}
-          onSubmit={handleEditSubtask}
-        />
-      )}
+  <EditSubtaskModal
+    initialSubtask={editingSubtask}
+    eventName={event?.name}
+    onCancel={() => setEditingSubtask(null)}
+    onSubmit={handleEditSubtask}
+  />
+)}
 
       {editEventOpen && event && (
         <EditEventModal
