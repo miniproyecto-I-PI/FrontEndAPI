@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTodayGestiones } from "../hooks/useTodayGestiones";
 import { EVENT_TYPE_LABELS } from "../data/mockGestiones";
@@ -52,6 +52,7 @@ export default function HoyPage() {
     setQuery,
     eventTypeFilter,
     setEventTypeFilter,
+    availableEventTypes,
     actions,
     reload,
   } = useTodayGestiones({
@@ -59,10 +60,7 @@ export default function HoyPage() {
     simulateEmpty: simMode === "empty",
   });
 
-  const availableEventTypes = useMemo(() => {
-    const allActive = [...grouped.vencidas, ...grouped.hoy, ...grouped.proximas];
-    return [...new Set(allActive.map((g) => g.eventType))];
-  }, [grouped]);
+  
 
   const totalCount = grouped.vencidas.length + grouped.hoy.length + grouped.proximas.length;
   const isEmpty = status === "success" && totalCount === 0;

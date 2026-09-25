@@ -28,6 +28,7 @@ import {
 import { computeHoyStats, groupAndSortGestiones } from "../utils/sortGestiones";
 
 export function useTodayGestiones({ simulateError = false, simulateEmpty = false } = {}) {
+  const EVENT_TYPE_ORDER = ["boda", "corporativo", "cumpleanos", "social", "otro"];
   const [rawGestiones, setRawGestiones] = useState([]);
   const [status, setStatus] = useState("loading"); // 'loading' | 'success' | 'error'
   const [errorMessage, setErrorMessage] = useState("");
@@ -125,16 +126,29 @@ export function useTodayGestiones({ simulateError = false, simulateEmpty = false
   /** Discards any optimistic override, restoring the last known server state ("Deshacer"). */
   const undo = useCallback((id) => clearOverride(id), []);
 
+
+  /**
+ * Tipos de evento disponibles para los chips de filtro.
+ * Se deriva de `effectiveGestiones` (datos SIN filtrar por tipo), para que
+ * los chips no desaparezcan cuando el usuario elige un filtro activo.
+ * El orden es fijo (EVENT_TYPE_ORDER) para que no "salten" entre renders.
+ */
+const availableEventTypes = useMemo(() => {
+  const present = new Set(effectiveGestiones.map((g) => g.eventType));
+  return EVENT_TYPE_ORDER.filter((t) => present.has(t));
+}, [effectiveGestiones]);
+
   return {
-    status,
-    errorMessage,
-    grouped,
-    stats,
-    query,
-    setQuery,
-    eventTypeFilter,
-    setEventTypeFilter,
-    actions: { markAsDone, postpone, reschedule, rescheduleMany, undo },
-    reload: fetchData,
-  };
+  status,
+  errorMessage,
+  grouped,
+  stats,
+  query,
+  setQuery,
+  eventTypeFilter,
+  setEventTypeFilter,
+  availableEventTypes,
+  actions: { markAsDone, postpone, reschedule, rescheduleMany, undo },
+  reload: fetchData,
+};
 }
