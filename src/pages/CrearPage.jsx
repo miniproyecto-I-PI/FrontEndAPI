@@ -1,177 +1,349 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import CreateEventSuccessModal from "../components/common/CreateEventSuccessModal";
+
+import Toast from "../components/common/Toast";
+import EventTypeSelector from "../components/eventos/EventTypeSelector";
 import { createEvent } from "../services/api";
 
-const EVENT_TYPES = [
-  ["", "Selecciona un tipo"],
-  ["boda", "Boda"],
-  ["social", "Social"],
-  ["corporativo", "Corporativo"],
-  ["cumpleanos", "Cumpleaños"],
-  ["otro", "Otro"],
-];
+const emptyForm = {
+  title: "",
+  type: "boda",
+  host: "",
+  date: "",
+  venue: "",
+};
 
-const initialSubtasks = [
-  { title: "Reservar salón", targetDate: "", estimatedHours: "4" },
-  { title: "Enviar invitaciones", targetDate: "", estimatedHours: "2" },
-  { title: "Confirmar catering", targetDate: "", estimatedHours: "3" },
-];
-
-const inputClass = "w-full rounded-sharp border border-sepia-border bg-paper-card px-3 py-2 text-sm text-ink-charcoal focus:border-terracotta focus:outline-none focus:ring-2 focus:ring-terracotta/40";
-
+/**
+ * CrearPage.jsx — route "/crear" (US-01).
+ * Rewrite (Stitch Sprint 1): dos bloques numerados, tipo de celebración como
+ * grid de cards, modal de éxito post-create. No persiste guests/budget/city/
+ * notes porque el backend todavía no los soporta (ver respuesta).
+ */
 export default function CrearPage() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", type: "", contact: "", dateTime: "", place: "" });
-  const [subtasks, setSubtasks] = useState(initialSubtasks);
-  const [fieldErrors, setFieldErrors] = useState({});
-  const [generalError, setGeneralError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
-  function changeEvent(field, value) {
-    setForm((current) => ({ ...current, [field]: value }));
-    setFieldErrors((current) => ({ ...current, [field]: undefined }));
+  const [form, setForm] = useState(emptyForm);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [generalError, setGeneralError] = useState(null);
+  const [status, setStatus] = useState("idle");
+  const [toast, setToast] = useState(null);
+  const [createdEventName, setCreatedEventName] = useState(null);
+
+  function handleChange(field) {
+    return (e) => {
+      const v = e.target.value;
+      setForm((p) => ({ ...p, [field]: v }));
+      setFieldErrors((p) => {
+        if (!p[field]) return p;
+        const n = { ...p };
+        delete n[field];
+        return n;
+      });
+    };
   }
 
-  function changeSubtask(index, field, value) {
-    setSubtasks((current) => current.map((subtask, i) => i === index ? { ...subtask, [field]: value } : subtask));
-    setFieldErrors((current) => ({ ...current, [`subtasks.${index}.${field}`]: undefined }));
+  function handleTypeChange(type) {
+    setForm((p) => ({ ...p, type }));
   }
 
   function validate() {
     const errors = {};
-    if (!form.name.trim()) errors.name = "El nombre del evento es obligatorio.";
-    if (!form.type) errors.type = "Selecciona un tipo de evento.";
-    if (!form.dateTime || Number.isNaN(new Date(form.dateTime).getTime())) {
-      errors.dateTime = "Ingresa una fecha y hora válidas para el evento.";
-    }
-    subtasks.forEach((task, index) => {
-      if (!task.title.trim()) errors[`subtasks.${index}.title`] = "El nombre de la gestión es obligatorio.";
-      if (!task.targetDate) errors[`subtasks.${index}.targetDate`] = "Elige una fecha objetivo.";
-      if (!task.estimatedHours || Number(task.estimatedHours) <= 0) {
-        errors[`subtasks.${index}.estimatedHours`] = "Las horas deben ser mayores a 0.";
-      }
-    });
+    if (!form.title.trim())
+      errors.title = "Ingresa un nombre para poder identificar la bitácora.";
+    if (!form.date)
+      errors.date = "Elige una fecha para programar las alertas.";
     return errors;
   }
 
-  async function handleSubmit(event) {
-    event.preventDefault();
-    setGeneralError("");
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setGeneralError(null);
     const errors = validate();
-    setFieldErrors(errors);
-    if (Object.keys(errors).length) return;
-
-    setIsLoading(true);
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setToast({ message: "Faltan campos obligatorios", intent: "error" })
+      window.scrollTo({ top: 120, behavior: "smooth" });
+      return;
+    }
+    setStatus("loading");
     try {
+      const localDate = new Date(`${form.date}T12:00:00`);
       const created = await createEvent({
-        ...form,
-        dateTime: new Date(form.dateTime).toISOString(),
-        subtasks: subtasks.map((task) => ({
-          title: task.title.trim(),
-          targetDate: task.targetDate,
-          estimatedHours: Number(task.estimatedHours),
-        })),
+        name: form.title.trim(),
+        type: form.type,
+        contact: form.host,
+        dateTime: localDate.toISOString(),
+        place: form.venue,
       });
-      navigate(`/evento/${created.id}`, { state: { toast: "Evento y plan inicial creados" } });
-    } catch (error) {
-      const details = error.details ?? {};
-      const nextErrors = {};
-      for (const field of ["name", "type", "event_datetime", "eventDateTime"]) {
-        if (details[field]) nextErrors[field === "event_datetime" || field === "eventDateTime" ? "dateTime" : field] = details[field][0];
-      }
-      if (Array.isArray(details.subtasks)) {
-        details.subtasks.forEach((taskErrors, index) => {
-          if (!taskErrors) return;
-          if (taskErrors.name) nextErrors[`subtasks.${index}.title`] = taskErrors.name[0];
-          if (taskErrors.target_date) nextErrors[`subtasks.${index}.targetDate`] = taskErrors.target_date[0];
-          if (taskErrors.estimated_hours) nextErrors[`subtasks.${index}.estimatedHours`] = taskErrors.estimated_hours[0];
-        });
-      }
-      setFieldErrors((current) => ({ ...current, ...nextErrors }));
-      setGeneralError(error.message || "No se pudo guardar el evento. Intenta de nuevo.");
-    } finally {
-      setIsLoading(false);
+      setCreatedEventName(created?.name || form.title.trim());
+      setStatus("idle");
+
+    } catch (err) {
+      setStatus("idle");
+      setGeneralError(
+        err.message || "No pudimos crear el evento. Intenta de nuevo."
+      );
+      setToast({ message: "No se pudo crear el evento", intent: "error" })
     }
   }
 
-  const fieldError = (key) => fieldErrors[key] && <p className="mt-1 text-xs text-crimson-urgent">{fieldErrors[key]}</p>;
+  
+
+  function handleSuccessStay() {
+  setCreatedEventName(null);
+  setForm(emptyForm);
+  setFieldErrors({});
+  setGeneralError(null);
+}
+
+function handleSuccessGoToEvents() {
+  navigate("/eventos", { state: { toast: "Evento creado" } });
+}
+
+  const isLoading = status === "loading";
 
   return (
-    <main className="max-w-3xl mx-auto px-4 md:px-8 py-8">
-      <header className="mb-7">
-        <p className="font-mono-stamp text-xs uppercase tracking-widest text-terracotta-dark">Planificación</p>
-        <h1 className="mt-1 font-serif text-4xl font-semibold text-ink-charcoal">Crear evento</h1>
-        <p className="mt-2 text-sm text-ink-muted">Registra el evento y deja listo su plan logístico inicial.</p>
-      </header>
+    <div className="max-w-[1320px] mx-auto px-4 md:px-8 lg:px-12 py-8">
+      {/* Breadcrumb */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 mb-8 border-b border-sepia-border">
+        <div className="flex items-center gap-2 text-xs font-body text-ink-muted">
+          <Link
+            to="/eventos"
+            aria-label="Volver"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-sharp border border-sepia-border bg-paper-card hover:bg-paper-linen text-ink-muted hover:text-ink-charcoal transition-colors mr-1"
+          >
+            <span className="material-symbols-outlined text-[16px]">
+              arrow_back
+            </span>
+          </Link>
+          <Link to="/hoy" className="hover:text-ink-charcoal transition-colors">
+            Convoka
+          </Link>
+          <span className="text-sepia-dark">/</span>
+          <Link
+            to="/eventos"
+            className="hover:text-ink-charcoal transition-colors"
+          >
+            Eventos
+          </Link>
+          <span className="text-sepia-dark">/</span>
+          <span className="text-ink-charcoal font-semibold">Nuevo evento</span>
+        </div>
+      </div>
 
-      <form onSubmit={handleSubmit} noValidate className="space-y-6">
-        <section className="space-y-4 rounded-sharp border border-sepia-border bg-paper-card p-5">
-          <h2 className="font-serif text-xl font-semibold text-ink-charcoal">Datos del evento</h2>
-          <div>
-            <label htmlFor="event-name" className="mb-1 block text-sm font-medium text-ink-charcoal">Nombre del evento</label>
-            <input id="event-name" className={inputClass} value={form.name} onChange={(e) => changeEvent("name", e.target.value)} aria-invalid={Boolean(fieldErrors.name)} aria-describedby={fieldErrors.name ? "event-name-error" : undefined} />
-            {fieldErrors.name && <p id="event-name-error" className="mt-1 text-xs text-crimson-urgent">{fieldErrors.name}</p>}
+      {/* Título */}
+      <div className="mb-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-ink-charcoal leading-tight">
+              Crear{" "}
+              <span className="italic font-normal text-terracotta">
+                nuevo evento
+              </span>
+            </h1>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="event-type" className="mb-1 block text-sm font-medium text-ink-charcoal">Tipo de evento</label>
-              <select id="event-type" className={inputClass} value={form.type} onChange={(e) => changeEvent("type", e.target.value)} aria-invalid={Boolean(fieldErrors.type)}>
-                {EVENT_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-              </select>
-              {fieldError("type")}
-            </div>
-            <div>
-              <label htmlFor="event-datetime" className="mb-1 block text-sm font-medium text-ink-charcoal">Fecha y hora del evento</label>
-              <input id="event-datetime" type="datetime-local" className={inputClass} value={form.dateTime} onChange={(e) => changeEvent("dateTime", e.target.value)} aria-invalid={Boolean(fieldErrors.dateTime)} />
-              {fieldError("dateTime")}
+          <p className="font-body text-xs md:text-sm text-ink-muted max-w-md">
+            Ingresa los datos clave para generar de forma inmediata la hoja de
+            ruta y las primeras gestiones.
+          </p>
+        </div>
+      </div>
+
+      {/* Formulario */}
+      <form
+        onSubmit={handleSubmit}
+        noValidate
+        className="max-w-3xl mx-auto space-y-7"
+      >
+        {generalError && (
+          <div
+            role="alert"
+            className="rounded-sharp bg-crimson-paper border border-crimson-urgent/30 px-3 py-2 font-body text-xs text-crimson-urgent"
+          >
+            {generalError}
+          </div>
+        )}
+
+        <section className="bg-paper-card border border-sepia-border rounded-sharp p-6 md:p-7 warm-card-shadow space-y-8">
+          {/* Bloque 1 */}
+          <div className="space-y-6">
+            <SectionHeader
+              number="1"
+              title="Datos del Evento"
+              badge="Paso indispensable"
+            />
+            <div className="space-y-5">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-3">
+                  <label
+                    htmlFor="event-title"
+                    className="block font-serif font-semibold text-sm text-ink-charcoal"
+                  >
+                    Nombre o título del evento{" "}
+                    <span className="text-crimson-urgent">*</span>
+                  </label>
+                  <span className="font-body text-[11px] text-ink-muted hidden sm:inline">
+                    Visible para clientes y proveedores
+                  </span>
+                </div>
+                <input
+                  id="event-title"
+                  type="text"
+                  value={form.title}
+                  onChange={handleChange("title")}
+                  placeholder="Ej. Boda Sofía & Mateo, Gala Anual Innovatech..."
+                  aria-invalid={Boolean(fieldErrors.title)}
+                  className={`input-editorial w-full px-3.5 py-2.5 text-sm text-ink-charcoal placeholder:text-ink-subtle placeholder:italic ${
+                    fieldErrors.title ? "error-field" : ""
+                  }`}
+                />
+                {fieldErrors.title && <FieldError msg={fieldErrors.title} />}
+              </div>
+
+              <div className="space-y-2 pt-1">
+                <label className="block font-serif font-semibold text-sm text-ink-charcoal">
+                  Tipo de celebración{" "}
+                  <span className="text-crimson-urgent">*</span>
+                </label>
+                <EventTypeSelector
+                  value={form.type}
+                  onChange={handleTypeChange}
+                />
+              </div>
+
+              <div className="space-y-1.5 pt-1">
+                <label
+                  htmlFor="event-host"
+                  className="block font-serif font-semibold text-sm text-ink-charcoal"
+                >
+                  Cliente o anfitrión
+                </label>
+                <input
+                  id="event-host"
+                  type="text"
+                  value={form.host}
+                  onChange={handleChange("host")}
+                  placeholder="Ej. Familia Arismendi"
+                  className="input-editorial w-full px-3.5 py-2 text-sm text-ink-charcoal placeholder:text-ink-subtle placeholder:italic"
+                />
+              </div>
             </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="event-contact" className="mb-1 block text-sm font-medium text-ink-charcoal">Cliente / contacto <span className="font-normal text-ink-muted">(opcional)</span></label>
-              <input id="event-contact" className={inputClass} value={form.contact} onChange={(e) => changeEvent("contact", e.target.value)} />
-            </div>
-            <div>
-              <label htmlFor="event-place" className="mb-1 block text-sm font-medium text-ink-charcoal">Lugar <span className="font-normal text-ink-muted">(opcional)</span></label>
-              <input id="event-place" className={inputClass} value={form.place} onChange={(e) => changeEvent("place", e.target.value)} />
+
+          {/* Bloque 2 */}
+          <div className="pt-6 border-t border-sepia-border space-y-6">
+            <SectionHeader
+              number="2"
+              title="Cuándo y Dónde"
+              badge="Calendario"
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="event-date"
+                  className="block font-serif font-semibold text-sm text-ink-charcoal"
+                >
+                  Fecha de celebración{" "}
+                  <span className="text-crimson-urgent">*</span>
+                </label>
+                <input
+                  id="event-date"
+                  type="date"
+                  value={form.date}
+                  onChange={handleChange("date")}
+                  aria-invalid={Boolean(fieldErrors.date)}
+                  className={`input-editorial w-full px-3.5 py-2 text-sm text-ink-charcoal ${
+                    fieldErrors.date ? "error-field" : ""
+                  }`}
+                />
+                {fieldErrors.date && <FieldError msg={fieldErrors.date} />}
+              </div>
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="event-venue"
+                  className="block font-serif font-semibold text-sm text-ink-charcoal"
+                >
+                  Lugar o recinto tentativo
+                </label>
+                <input
+                  id="event-venue"
+                  type="text"
+                  value={form.venue}
+                  onChange={handleChange("venue")}
+                  placeholder="Ej. Finca El Olivo, Madrid"
+                  className="input-editorial w-full px-3.5 py-2 text-sm text-ink-charcoal placeholder:text-ink-subtle placeholder:italic"
+                />
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="space-y-4 rounded-sharp border border-sepia-border bg-paper-card p-5">
-          <div>
-            <h2 className="font-serif text-xl font-semibold text-ink-charcoal">Plan logístico inicial</h2>
-            <p className="mt-1 text-sm text-ink-muted">Define un plazo y las horas estimadas para cada gestión.</p>
+        {/* Acciones */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-sepia-border">
+          <button
+            type="button"
+            onClick={() => navigate("/eventos")}
+            className="text-xs font-serif text-ink-muted hover:text-ink-charcoal underline hover:no-underline order-last sm:order-first transition-colors focus:outline-none"
+          >
+            Cancelar y volver
+          </button>
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            
+              
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-terracotta hover:bg-terracotta-dark text-[#FAF6F0] font-serif font-semibold text-sm rounded-sharp border border-terracotta-dark shadow-sm transition-colors active:translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <span className="material-symbols-outlined text-[18px]">
+                check_circle
+              </span>
+              <span>{isLoading ? "Creando…" : "Crear y abrir expediente"}</span>
+            </button>
           </div>
-          {subtasks.map((task, index) => (
-            <fieldset key={task.title} className="grid gap-3 rounded-sharp border border-sepia-border/70 bg-paper-base p-4 sm:grid-cols-[1.4fr_1fr_0.7fr]">
-              <legend className="sr-only">Gestión {index + 1}</legend>
-              <div>
-                <label htmlFor={`subtask-name-${index}`} className="mb-1 block text-xs font-medium text-ink-charcoal">Nombre de la gestión</label>
-                <input id={`subtask-name-${index}`} className={inputClass} value={task.title} onChange={(e) => changeSubtask(index, "title", e.target.value)} aria-invalid={Boolean(fieldErrors[`subtasks.${index}.title`])} />
-                {fieldError(`subtasks.${index}.title`)}
-              </div>
-              <div>
-                <label htmlFor={`subtask-date-${index}`} className="mb-1 block text-xs font-medium text-ink-charcoal">Fecha objetivo</label>
-                <input id={`subtask-date-${index}`} type="date" className={inputClass} value={task.targetDate} onChange={(e) => changeSubtask(index, "targetDate", e.target.value)} aria-invalid={Boolean(fieldErrors[`subtasks.${index}.targetDate`])} />
-                {fieldError(`subtasks.${index}.targetDate`)}
-              </div>
-              <div>
-                <label htmlFor={`subtask-hours-${index}`} className="mb-1 block text-xs font-medium text-ink-charcoal">Horas estimadas</label>
-                <input id={`subtask-hours-${index}`} type="number" min="0.1" step="0.1" className={inputClass} value={task.estimatedHours} onChange={(e) => changeSubtask(index, "estimatedHours", e.target.value)} aria-invalid={Boolean(fieldErrors[`subtasks.${index}.estimatedHours`])} />
-                {fieldError(`subtasks.${index}.estimatedHours`)}
-              </div>
-            </fieldset>
-          ))}
-        </section>
-
-        {generalError && <div role="alert" className="rounded-sharp border border-crimson-urgent/30 bg-crimson-paper px-4 py-3 text-sm text-crimson-urgent">{generalError}</div>}
-
-        <div className="flex justify-end gap-3">
-          <button type="button" disabled={isLoading} onClick={() => navigate(-1)} className="rounded-sharp border border-sepia-border bg-paper-card px-4 py-2 text-sm font-medium text-ink-charcoal hover:bg-paper-linen disabled:opacity-60">Cancelar</button>
-          <button type="submit" disabled={isLoading} className="rounded-sharp bg-terracotta px-5 py-2 text-sm font-semibold text-paper-card hover:bg-terracotta-dark disabled:cursor-wait disabled:opacity-60">{isLoading ? "Guardando…" : "Crear evento y plan"}</button>
         </div>
       </form>
-    </main>
+
+      {createdEventName && (
+  <CreateEventSuccessModal
+    eventName={createdEventName}
+    onStay={handleSuccessStay}
+    onGoToEvents={handleSuccessGoToEvents}
+  />
+)}
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
+    </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+
+function SectionHeader({ number, title, badge }) {
+  return (
+    <div className="flex items-center justify-between pb-3 border-b border-sepia-border">
+      <div className="flex items-center gap-3">
+        <span className="w-6 h-6 rounded-full bg-paper-base border border-sepia-border flex items-center justify-center font-serif text-xs font-bold text-terracotta">
+          {number}
+        </span>
+        <h2 className="font-serif text-xl font-semibold text-ink-charcoal">
+          {title}
+        </h2>
+      </div>
+      <span className="font-mono-stamp text-[10px] text-ink-muted uppercase">
+        {badge}
+      </span>
+    </div>
+  );
+}
+
+function FieldError({ msg }) {
+  return (
+    <p className="text-xs font-body text-crimson-urgent flex items-center gap-1 font-medium mt-1">
+      <span className="material-symbols-outlined text-[14px]">error</span>
+      {msg}
+    </p>
+  );
+}
+

@@ -15,7 +15,10 @@ async function request(path, options = {}) {
   }
   const body = await response.json().catch(() => ({}));
   if (!response.ok || body.success === false) {
-    const error = new Error(body.error?.message || body.message || body.detail || "No se pudo completar la operación.");
+    const fallback = response.status === 404
+      ? `El backend no tiene disponible ${path} (404). Actualiza el despliegue de la API.`
+      : `El backend respondió con error ${response.status} en ${path}.`;
+    const error = new Error(body.error?.message || body.message || body.detail || fallback);
     error.details = body.error?.details ?? {};
     throw error;
   }
@@ -53,6 +56,7 @@ function fromSubtask(task) {
   if (task.estimatedHours !== undefined) payload.estimated_hours = Number(task.estimatedHours);
   if (task.status !== undefined) payload.status = task.status.toUpperCase();
   if (task.note !== undefined) payload.note = task.note;
+  if (task.provider !== undefined) payload.provider = task.provider;
   return payload;
 }
 
@@ -65,6 +69,11 @@ export async function postponeGestion(id, note = "") { return toSubtask(await re
 export async function rescheduleGestion(id, date) { return toSubtask(await request(`/subtasks/${id}`, json("PATCH", { target_date: date.split("T")[0] }))); }
 export async function createEvent(event) { return toEvent(await request("/events", json("POST", fromEvent(event)))); }
 export async function getEvents() { return (await request("/events")).map(toEvent); }
+// GET /events ya trae los conteos anotados por Django; no hace llamadas por evento.
+export async function getEventsWithProgress(options = {}) {
+  if (options.simulateError) throw new Error("No pudimos cargar tus eventos");
+  return getEvents();
+}
 export async function getEventById(id) { return toEvent(await request(`/events/${id}`)); }
 export async function getEventSubtasks(id) { return (await request(`/events/${id}/subtasks`)).map(toSubtask); }
 export async function addSubtask(id, task) { return toSubtask(await request(`/events/${id}/subtasks`, json("POST", fromSubtask(task)))); }

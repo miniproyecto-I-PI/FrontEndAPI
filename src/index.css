@@ -64,3 +64,29 @@
 .task-done .no-strike {
   text-decoration: none !important;
 }
+
+/* Textura de papel: fondo base de toda la app (Design.md §5). */
+.dot-grid-pattern {
+  background-image: radial-gradient(#d6cbbe 1px, transparent 1px);
+  background-size: 22px 22px;
+  background-position: 0 0;
+}
+
+.input-editorial {
+  background-color: #FAF6F0;
+  border: 1px solid #D8CBC0;
+  border-radius: 3px;
+  transition: all 0.15s ease-in-out;
+}
+.input-editorial:focus {
+  outline: none;
+  border-color: #8B5A3C;
+  box-shadow: 0 0 0 1px #8B5A3C;
+}
+.input-editorial.error-field {
+  border-color: #B83D2B;
+  background-color: #FAEDE9;
+}
+.input-editorial.error-field:focus {
+  box-shadow: 0 0 0 1px #B83D2B;
+}

@@ -19,6 +19,12 @@ export default function Toast({ toast, onClose, durationMs = 3500 }) {
   }, [toast, onClose, durationMs]);
 
   const isVisible = Boolean(toast);
+  const isError = toast?.intent === "error";
+
+  // Colores e ícono según intent
+  const borderLeft = isError ? "border-l-crimson-urgent" : "border-l-terracotta";
+  const iconName = isError ? "error" : "check_circle";
+  const iconClass = isError ? "text-crimson-urgent" : "text-terracotta";
 
   return (
     <div
@@ -27,9 +33,15 @@ export default function Toast({ toast, onClose, durationMs = 3500 }) {
         isVisible ? "translate-y-0 opacity-100" : "translate-y-20 opacity-0 pointer-events-none"
       }`}
     >
-      <div className="bg-paper-card border border-sepia-border rounded-sharp shadow-lg p-3 px-4 flex items-center gap-3.5 border-l-4 border-l-terracotta">
-        <span className="material-symbols-outlined text-[20px] text-terracotta">check_circle</span>
-        <p className="font-body text-xs md:text-sm font-medium text-ink-charcoal">{toast?.message}</p>
+      <div
+        className={`bg-paper-card border border-sepia-border rounded-sharp shadow-lg p-3 px-4 flex items-center gap-3.5 border-l-4 ${borderLeft}`}
+      >
+        <span className={`material-symbols-outlined text-[20px] ${iconClass}`}>
+          {iconName}
+        </span>
+        <p className="font-body text-xs md:text-sm font-medium text-ink-charcoal">
+          {toast?.message}
+        </p>
         {toast?.onUndo && (
           <>
             <div className="h-4 w-px bg-sepia-border mx-0.5" />

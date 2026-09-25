@@ -17,37 +17,33 @@ import TaskCard from "../components/tasks/TaskCard";
 import SimulationToolbar from "../components/dev/SimulationToolbar";
 
 /**
- * HoyPage.jsx
- * ---------------------------------------------------------------------------
- * Sprint 0 deliverable: "Prototipo Hoy v1" (rúbrica, criterio C6) and the
- * concrete implementation of route /hoy (T2 — Arquitectura de Información
- * C5, §3). Ported field-by-field from the original static HTML prototype,
- * now driven by real state instead of hardcoded markup.
+ * HoyPage.jsx — route "/hoy" (T2 — Arquitectura de Información C5, §3).
+ *
+ * Sprint 0: prototipo "Hoy" v1.
+ * Sprint 1: migración al diseño final del UX Lead.
+ *   - Se eliminó el toggle Agrupada/Compacto (decisión UX).
+ *   - Section I: "Urgencias & Vencidas" → "Vencidas".
+ *   - Section III: se agregó link "Ver calendario completo" (placeholder).
+ *   - Saludo: "Organización en marcha, usuario" (placeholder hasta Sprint 2).
  *
  * NOTE on Header placement: unlike the other pages, HoyPage renders its own
  * <Header> (with the search box wired up) instead of relying on
  * MainLayout's — see App.jsx for why /hoy is NOT nested under MainLayout.
  */
 export default function HoyPage() {
-  // `simMode` drives the QA/demo simulation toolbar (dev-only, see below).
   const [simMode, setSimMode] = useState("normal"); // 'normal' | 'empty' | 'error'
-  const [compactView, setCompactView] = useState(false);
   const [bulkRescheduleOpen, setBulkRescheduleOpen] = useState(false);
-  const [rescheduleTarget, setRescheduleTarget] = useState(null); // gestión being rescheduled individually
-  // Para toast de evento creado exitosamente
+  const [rescheduleTarget, setRescheduleTarget] = useState(null);
+
   const location = useLocation();
   const navigate = useNavigate();
   const [toast, setToast] = useState(() => location.state?.toast ? { message: location.state.toast } : null);
 
-  // Si llegamos aquí desde /crear (o cualquier otra pantalla) con un toast
-  // en el state de navegación, lo mostramos y limpiamos el state para que
-  // un refresh o "atrás" del navegador no lo vuelva a disparar.
   useEffect(() => {
     if (location.state?.toast) {
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location, navigate]);
-
 
   const {
     status,
@@ -87,11 +83,6 @@ export default function HoyPage() {
 
   function handleConfirmBulkReschedule() {
     const overdueItems = grouped.vencidas;
-    // Sprint 0 simplification: push each overdue item to "tomorrow, same
-    // time" so it reappears in the "Hoy"/"Próximas" groups instead of
-    // vanishing. The full US-06/07/08 flow (explicit per-item date picking
-    // plus overload-conflict detection) will live in /evento/:id from
-    // Sprint 3 onward — this bulk action is just a quick escape hatch.
     overdueItems.forEach((g) => {
       const newDate = addDays(new Date(g.targetDate), 1).toISOString();
       actions.reschedule(g.id, newDate);
@@ -101,7 +92,7 @@ export default function HoyPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-paper-base font-body text-ink-charcoal antialiased">
+    <div className="min-h-screen flex flex-col bg-paper-base dot-grid-pattern font-body text-ink-charcoal antialiased">
       <Header searchValue={query} onSearchChange={setQuery} />
 
       <main className="w-full pt-16 flex-1">
@@ -112,7 +103,7 @@ export default function HoyPage() {
               <div className="space-y-1.5 max-w-3xl">
                 <p className="font-body text-xs md:text-sm font-medium text-ink-muted">{formatFullDate()}</p>
                 <p className="font-serif italic text-terracotta text-lg md:text-xl font-normal">
-                  Organización en marcha
+                  Organización en marcha, usuario
                 </p>
                 <h1 className="font-serif text-4xl sm:text-5xl lg:text-[50px] font-semibold tracking-tight text-ink-charcoal leading-[1.08]">
                   Gestiones <span className="italic font-normal text-terracotta">para hoy</span>
@@ -134,13 +125,6 @@ export default function HoyPage() {
                       onClick={() => setEventTypeFilter(type)}
                     />
                   ))}
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-body text-xs text-ink-muted hidden sm:inline">Vista:</span>
-                  <div className="inline-flex border border-sepia-border bg-paper-linen/80 p-0.5 rounded-sharp">
-                    <ViewToggleButton active={!compactView} label="Agrupada" onClick={() => setCompactView(false)} />
-                    <ViewToggleButton active={compactView} label="Compacto" onClick={() => setCompactView(true)} />
-                  </div>
                 </div>
               </div>
             </div>
@@ -186,26 +170,38 @@ export default function HoyPage() {
           {/* ---------- Body: loading / error / empty / active lists ---------- */}
           {status === "loading" && <LoadingSkeleton />}
 
-          {status === "error" && <ErrorState message={errorMessage} onRetry={reload} />}
+          {status === "error" && (
+            <ErrorState
+              message={errorMessage}
+              onRetry={reload}
+              secondaryLabel="Volver al listado"
+              onSecondaryCta={reload}
+            />
+          )}
 
-          {status === "success" && isEmpty && <EmptyState />}
+          {status === "success" && isEmpty && (
+            <EmptyState
+              secondaryLabel="Volver al listado"
+              onSecondaryCta={reload}
+            />
+          )}
 
           {status === "success" && !isEmpty && (
-            <div className={compactView ? "space-y-6" : "space-y-9"}>
+            <div className="space-y-9">
               {grouped.vencidas.length > 0 && (
                 <section className="space-y-3.5">
                   <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pb-2 border-b-2 border-crimson-urgent/30">
                     <div className="flex items-baseline gap-2.5">
                       <span className="font-serif font-bold text-crimson-urgent text-xl">I.</span>
                       <h2 className="font-serif text-2xl md:text-3xl text-ink-charcoal font-semibold tracking-tight">
-                        Urgencias &amp; Vencidas
+                        Vencidas
                       </h2>
                       <span className="font-body text-xs text-ink-muted ml-1">Ordenadas por antigüedad</span>
                     </div>
                     <button
                       type="button"
                       onClick={() => setBulkRescheduleOpen(true)}
-                      className="font-body text-xs text-crimson-tag hover:text-crimson-urgent inline-flex items-center gap-1 font-semibold transition-colors group"
+                      className="font-body text-xs text-crimson-tag hover:text-crimson-urgent inline-flex items-center gap-1 font-semibold transition-colors group focus:outline-none"
                     >
                       <span className="group-hover:underline">Reprogramar todas</span>
                       <span className="material-symbols-outlined text-[14px] transition-transform group-hover:translate-x-0.5">
@@ -280,6 +276,16 @@ export default function HoyPage() {
                       </h2>
                       <span className="font-body text-xs text-ink-muted ml-1">Horizonte a 7 días</span>
                     </div>
+                    {/* TODO(Sprint 2+): apuntar a /calendario cuando exista la ruta.
+                        Hoy es un placeholder visual del diseño UX. */}
+                    <a
+                      href="#"
+                      onClick={(e) => e.preventDefault()}
+                      className="font-body text-xs text-terracotta hover:text-terracotta-dark inline-flex items-center gap-1 font-semibold focus:outline-none"
+                    >
+                      <span>Ver calendario completo</span>
+                      <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+                    </a>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {grouped.proximas.map((g) => (
@@ -345,21 +351,6 @@ function FilterChip({ active, label, onClick }) {
         active
           ? "border-terracotta bg-terracotta text-[#FAF6F0] shadow-sm"
           : "border-sepia-border bg-paper-linen text-ink-charcoal hover:border-ink-muted",
-      ].join(" ")}
-    >
-      {label}
-    </button>
-  );
-}
-
-function ViewToggleButton({ active, label, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        "px-3 py-1 font-serif text-xs rounded-sharp transition-all",
-        active ? "font-semibold bg-paper-card text-ink-charcoal shadow-sm" : "font-medium text-ink-muted hover:text-ink-charcoal",
       ].join(" ")}
     >
       {label}
