@@ -2,7 +2,7 @@
  * EventTypeSelector.jsx — selector visual de tipo de celebración.
  * Usado en CrearPage y EditEventModal. Los `key` mapean 1:1 a los valores
  * que el backend espera en minúsculas (boda, corporativo, cumpleanos,
- * social, otro). "Gala / Cultural" se guarda como `social` — es solo el
+ * social, otro). "Social" se guarda como `social` — es solo el
  * label visible.
  */
 export default function EventTypeSelector({ value, onChange, error }) {

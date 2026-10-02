@@ -23,7 +23,7 @@ const CATEGORY_CHIPS = [
   { key: "boda", label: "Bodas" },
   { key: "corporativo", label: "Corporativos" },
   { key: "cumpleanos", label: "Cumpleaños" },
-  { key: "social", label: "Gala / Cultural" },
+  { key: "social", label: "Sociales" },
   { key: "otro", label: "Otros" },
 ];
 
