@@ -126,7 +126,7 @@ function ExecutedSwitch({ checked, onChange, disabled }) {
         disabled={disabled}
         className={[
           "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1 disabled:opacity-60",
-          checked ? "bg-sage-wax" : "bg-sepia-dark",
+          checked ? "bg-sage-wax" : "bg-ink-muted",
         ].join(" ")}
       >
         <span
