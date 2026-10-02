@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { EVENT_TYPE_SINGULAR } from "../../data/mockEvents";
+import { EVENT_TYPE_LABEL } from "../../data/eventTypes";
 
 const MONTHS = [
   "Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic",
@@ -106,7 +106,7 @@ export default function DeleteEventModal({ event, onCancel, onConfirm }) {
             </span>
             {event.type && (
               <span className="font-mono-stamp text-[10px] font-bold text-ink-charcoal bg-paper-card border border-sepia-border px-2 py-0.5 rounded-sharp uppercase shrink-0">
-                {EVENT_TYPE_SINGULAR[event.type] ?? event.type}
+                {EVENT_TYPE_LABEL[event.type] ?? event.type}
               </span>
             )}
           </div>
