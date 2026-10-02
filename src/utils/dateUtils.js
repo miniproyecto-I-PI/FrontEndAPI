@@ -153,3 +153,16 @@ export function toDateInputValue(isoString) {
   const pad = (n) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
+
+/**
+ * Regla del backend (POST /events/:id/subtasks → `target_date_after_event`):
+ * la fecha de una gestión debe ser igual o anterior al día del evento.
+ * `targetDate` = "AAAA-MM-DD"; `eventDateTime` = ISO del evento o "AAAA-MM-DD".
+ * Devuelve el mensaje de error, o null si la fecha es válida (o falta alguna).
+ */
+export function validateTargetDateAgainstEvent(targetDate, eventDateTime) {
+  if (!targetDate || !eventDateTime) return null;
+  const eventDate = toDateInputValue(eventDateTime);
+  if (toDateInputValue(targetDate) <= eventDate) return null;
+  return `Debe ser igual o anterior a la fecha del evento (${formatShortDate(eventDate)}).`;
+}
