@@ -36,7 +36,7 @@ export default function HoyPage() {
   const navigate = useNavigate();
   const [simMode, setSimMode] = useState("normal"); // 'normal' | 'empty' | 'error' (solo desarrollo)
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
-  const [editTarget, setEditTarget] = useState(null); // gestión ejecutada en edición
+  const [editTarget, setEditTarget] = useState(null); // gestión en edición (título de la tarjeta o botón Editar)
   const [toast, setToast] = useState(() => (location.state?.toast ? { message: location.state.toast } : null));
   const closeToast = useCallback(() => setToast(null), []);
 
@@ -209,7 +209,7 @@ export default function HoyPage() {
                 />
                 <div className="grid grid-cols-1 gap-3">
                   {grouped.vencidas.map((g) => (
-                    <TaskCard key={g.id} gestion={g} variant="vencida" onMarkDone={() => handleMarkDone(g)} onReschedule={() => setRescheduleTarget(g)} />
+                    <TaskCard key={g.id} gestion={g} variant="vencida" onMarkDone={() => handleMarkDone(g)} onReschedule={() => setRescheduleTarget(g)} onEdit={() => setEditTarget(g)} />
                   ))}
                 </div>
               </section>
@@ -232,12 +232,12 @@ export default function HoyPage() {
                 />
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
                   <div className={grouped.hoy.length > 1 ? "lg:col-span-7" : "lg:col-span-12"}>
-                    <TaskCard gestion={grouped.hoy[0]} variant="hoy-hero" onMarkDone={() => handleMarkDone(grouped.hoy[0])} onReschedule={() => setRescheduleTarget(grouped.hoy[0])} />
+                    <TaskCard gestion={grouped.hoy[0]} variant="hoy-hero" onMarkDone={() => handleMarkDone(grouped.hoy[0])} onReschedule={() => setRescheduleTarget(grouped.hoy[0])} onEdit={() => setEditTarget(grouped.hoy[0])} />
                   </div>
                   {grouped.hoy.length > 1 && (
                     <div className="lg:col-span-5 flex flex-col gap-3.5">
                       {grouped.hoy.slice(1).map((g) => (
-                        <TaskCard key={g.id} gestion={g} variant="hoy-secundaria" onMarkDone={() => handleMarkDone(g)} onReschedule={() => setRescheduleTarget(g)} />
+                        <TaskCard key={g.id} gestion={g} variant="hoy-secundaria" onMarkDone={() => handleMarkDone(g)} onReschedule={() => setRescheduleTarget(g)} onEdit={() => setEditTarget(g)} />
                       ))}
                     </div>
                   )}
@@ -250,7 +250,7 @@ export default function HoyPage() {
                 <SectionHeading id="hoy-proximas" numeral="III." title="Próximas Jornadas" rule={PRIORITY_RULE_BY_GROUP.proximas} />
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {grouped.proximas.map((g) => (
-                    <TaskCard key={g.id} gestion={g} variant="proxima" onMarkDone={() => handleMarkDone(g)} onReschedule={() => setRescheduleTarget(g)} />
+                    <TaskCard key={g.id} gestion={g} variant="proxima" onMarkDone={() => handleMarkDone(g)} onReschedule={() => setRescheduleTarget(g)} onEdit={() => setEditTarget(g)} />
                   ))}
                 </div>
               </section>
