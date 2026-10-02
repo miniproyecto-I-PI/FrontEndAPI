@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { toDateInputValue } from "../../utils/dateUtils";
 
 /**
  * RescheduleModal.jsx
@@ -14,8 +15,10 @@ import { useEffect, useRef, useState } from "react";
  *    Sprint 3 scope and will live in /evento/:id.
  *
  *  - mode="single": "Reprogramar" on one card. Lets the user pick a new
- *    date/time for that one gestión (a small, honest stand-in for the real
- *    US-06 flow, useful to demo the interaction pattern now).
+ *    target date for that one gestión. `target_date` is a plain local date
+ *    (no time), so the picker is <input type="date"> and `onConfirm` gets
+ *    "YYYY-MM-DD" — converting through toISOString() shifted the day for
+ *    evening times in UTC-5. The optional hour is edited in EditSubtaskModal.
  *
  * Accesibilidad (TS-06):
  *  - Escape cierra el modal.
@@ -24,7 +27,7 @@ import { useEffect, useRef, useState } from "react";
  *  - focus:ring visible en input y botones.
  */
 export default function RescheduleModal({ mode, count, currentDateISO, onCancel, onConfirm }) {
-  const [newDate, setNewDate] = useState(() => toDatetimeLocalValue(currentDateISO));
+  const [newDate, setNewDate] = useState(() => toDateInputValue(currentDateISO));
 
   const dateInputRef = useRef(null);
   const dialogRef = useRef(null);
@@ -52,7 +55,7 @@ export default function RescheduleModal({ mode, count, currentDateISO, onCancel,
 
   function handleConfirm() {
     if (!canConfirm) return;
-    onConfirm(mode === "single" ? new Date(newDate).toISOString() : undefined);
+    onConfirm(mode === "single" ? newDate : undefined);
   }
 
   return (
@@ -89,11 +92,11 @@ export default function RescheduleModal({ mode, count, currentDateISO, onCancel,
             </h3>
             <label className="block mt-4">
               <span className="font-body text-xs font-medium text-ink-muted">
-                Nueva fecha y hora
+                Nueva fecha límite
               </span>
               <input
                 ref={dateInputRef}
-                type="datetime-local"
+                type="date"
                 value={newDate}
                 onChange={(e) => setNewDate(e.target.value)}
                 aria-describedby={!canConfirm ? "reschedule-hint" : undefined}
@@ -131,12 +134,4 @@ export default function RescheduleModal({ mode, count, currentDateISO, onCancel,
       </div>
     </div>
   );
-}
-
-/** Formats an ISO date string into the value <input type="datetime-local"> expects. */
-function toDatetimeLocalValue(isoString) {
-  if (!isoString) return "";
-  const d = new Date(isoString);
-  const pad = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }

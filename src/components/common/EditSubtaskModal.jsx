@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { toDateInputValue } from "../../utils/dateUtils";
 
+// "Pospuesta" no está en el diseño, pero es un estado real del backend: sin
+// esta opción, editar una gestión pospuesta la devolvía a PENDIENTE.
 const STATUS_OPTIONS = [
   { key: "PENDIENTE", label: "Pendiente",  icon: null,    dot: "bg-terracotta" },
+  { key: "POSPUESTA", label: "Pospuesta",  icon: "pause_circle", dot: null },
   { key: "EJECUTADA", label: "Completada", icon: "check", dot: null },
 ];
 
@@ -22,9 +25,8 @@ export default function EditSubtaskModal({
   provider: initialSubtask.provider ?? "",
   estimatedHours: String(initialSubtask.estimatedHours ?? ""),
   date: toDateInputValue(initialSubtask.targetDate),
-  time: "",
-  status:
-    initialSubtask.status === "EJECUTADA" ? "EJECUTADA" : "PENDIENTE",
+  time: initialSubtask.time ?? "",
+  status: STATUS_OPTIONS.some((s) => s.key === initialSubtask.status) ? initialSubtask.status : "PENDIENTE",
 }));
   const [fieldErrors, setFieldErrors] = useState({});
   const [generalError, setGeneralError] = useState(null);
@@ -80,13 +82,14 @@ export default function EditSubtaskModal({
     }
     setStatus("loading");
     try {
-      const timeSuffix = form.time ? `T${form.time}:00` : "T12:00:00";
-      const localDate = new Date(`${form.date}${timeSuffix}`);
+      // target_date es una fecha local sin hora: se envía tal cual
+      // ("YYYY-MM-DD"); la hora opcional viaja aparte en `time`.
       await onSubmit({
         title: form.title.trim(),
         provider: form.provider.trim(),
         estimatedHours: Number(form.estimatedHours),
-        targetDate: localDate.toISOString(),
+        targetDate: form.date,
+        time: form.time || null,
         status: form.status,
       });
     } catch (err) {
@@ -293,10 +296,10 @@ export default function EditSubtaskModal({
               </div>
 
               <div className="space-y-2 pt-1">
-                <label className="block font-heading font-semibold text-xs md:text-sm text-ink-charcoal">
+                <span id="edit-subtask-status-label" className="block font-heading font-semibold text-xs md:text-sm text-ink-charcoal">
                   Estado de la gestión
-                </label>
-                <div className="grid grid-cols-2 gap-2.5">
+                </span>
+                <div className="grid grid-cols-3 gap-2.5" role="group" aria-labelledby="edit-subtask-status-label">
                   {STATUS_OPTIONS.map((s) => {
                     const isActive = form.status === s.key;
                     return (
@@ -306,6 +309,7 @@ export default function EditSubtaskModal({
                         onClick={() =>
                           setForm((p) => ({ ...p, status: s.key }))
                         }
+                        aria-pressed={isActive}
                         className={[
                           "flex items-center justify-center gap-2 p-2.5 rounded-sharp font-body text-xs transition-all",
                           isActive
