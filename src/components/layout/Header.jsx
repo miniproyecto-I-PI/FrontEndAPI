@@ -1,6 +1,7 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import DailyLimitModal from "../common/DailyLimitModal";
+import UserMenu from "./UserMenu";
 import logo from "../../assets/logo.png";
 
 /**
@@ -90,9 +91,7 @@ export default function Header({ searchValue, onSearchChange }) {
             <span className="material-symbols-outlined text-[18px]">settings</span>
           </button>
 
-          <div className="w-8 h-8 rounded-sharp border border-sepia-border bg-paper-card flex items-center justify-center">
-            <span className="material-symbols-outlined text-[18px] text-terracotta">person</span>
-          </div>
+          <UserMenu />
         </div>
       </div>
 
