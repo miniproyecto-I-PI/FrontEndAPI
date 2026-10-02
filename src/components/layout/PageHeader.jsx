@@ -51,7 +51,7 @@ export default function PageHeader({ breadcrumb, eyebrow, title, accent, descrip
   return (
     <section className="mb-6">
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 pb-5 border-b border-sepia-border">
-        <div className="space-y-1.5 max-w-3xl">
+        <div className="space-y-1.5 max-w-3xl lg:self-start">
           {/* Primera línea de alto fijo (migas o eyebrow) para que el título
               quede a la misma distancia del Header en todas las páginas. */}
           <div className="min-h-7 flex items-center mb-3">
