@@ -122,12 +122,7 @@ function handleSuccessGoToEvents() {
         }
         title="Crear"
         accent="nuevo evento"
-        aside={
-          <p className="font-body text-xs md:text-sm text-ink-muted max-w-md lg:text-right">
-            Ingresa los datos clave para generar de forma inmediata la hoja de
-            ruta y las primeras gestiones.
-          </p>
-        }
+        description="Ingresa los datos clave para generar de forma inmediata la hoja de ruta y las primeras gestiones."
       />
 
       {/* Formulario */}
