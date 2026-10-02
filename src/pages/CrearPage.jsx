@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CreateEventSuccessModal from "../components/common/CreateEventSuccessModal";
 
@@ -6,6 +6,7 @@ import Toast from "../components/common/Toast";
 import PageContainer from "../components/layout/PageContainer";
 import PageHeader, { Breadcrumb } from "../components/layout/PageHeader";
 import EventTypeSelector from "../components/eventos/EventTypeSelector";
+import InitialSubtasks from "../components/eventos/InitialSubtasks";
 import { createEvent } from "../services/api";
 
 const emptyForm = {
@@ -18,9 +19,10 @@ const emptyForm = {
 
 /**
  * CrearPage.jsx — route "/crear" (US-01).
- * Rewrite (Stitch Sprint 1): dos bloques numerados, tipo de celebración como
- * grid de cards, modal de éxito post-create. No persiste guests/budget/city/
- * notes porque el backend todavía no los soporta (ver respuesta).
+ * Diseño Stitch: datos del evento, cuándo y dónde, y gestiones iniciales
+ * opcionales (se crean junto al evento en POST /events → `subtasks`).
+ * "Asistentes estimados" y "Guardar borrador" no se implementan: el backend
+ * no los soporta.
  */
 export default function CrearPage() {
   const navigate = useNavigate();
@@ -31,6 +33,8 @@ export default function CrearPage() {
   const [status, setStatus] = useState("idle");
   const [toast, setToast] = useState(null);
   const [createdEventName, setCreatedEventName] = useState(null);
+  const [initialSubtasks, setInitialSubtasks] = useState([]);
+  const closeToast = useCallback(() => setToast(null), []);
 
   function handleChange(field) {
     return (e) => {
@@ -77,6 +81,7 @@ export default function CrearPage() {
         contact: form.host,
         dateTime: localDate.toISOString(),
         place: form.venue,
+        subtasks: initialSubtasks,
       });
       setCreatedEventName(created?.name || form.title.trim());
       setStatus("idle");
@@ -95,6 +100,7 @@ export default function CrearPage() {
   function handleSuccessStay() {
   setCreatedEventName(null);
   setForm(emptyForm);
+  setInitialSubtasks([]);
   setFieldErrors({});
   setGeneralError(null);
 }
@@ -253,6 +259,13 @@ function handleSuccessGoToEvents() {
           </div>
         </section>
 
+        <InitialSubtasks
+          items={initialSubtasks}
+          onAdd={(item) => setInitialSubtasks((list) => [...list, item])}
+          onRemove={(index) => setInitialSubtasks((list) => list.filter((_, i) => i !== index))}
+          disabled={isLoading}
+        />
+
         {/* Acciones */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-sepia-border">
           <button
@@ -287,7 +300,7 @@ function handleSuccessGoToEvents() {
   />
 )}
 
-      <Toast toast={toast} onClose={() => setToast(null)} />
+      <Toast toast={toast} onClose={closeToast} />
     </PageContainer>
   );
 }
