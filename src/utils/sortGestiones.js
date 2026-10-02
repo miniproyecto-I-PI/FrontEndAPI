@@ -26,12 +26,17 @@ import { classifyByDate } from "./dateUtils";
 export const UPCOMING_WINDOW_DAYS = 7;
 
 /**
- * Texto visible de la regla (US-04, 2–4 líneas, sin jerga técnica). Lo muestra
- * el tooltip "Criterio editorial" de /hoy y debe coincidir con
- * groupAndSortGestiones(): si la regla cambia, actualizar ambos.
+ * Texto visible de la regla por grupo (US-04, sin jerga técnica). Lo muestra
+ * el tooltip "¿Cómo se ordena?" junto al título de cada grupo de /hoy y debe
+ * coincidir con groupAndSortGestiones(): si la regla cambia, actualizar ambos.
  */
-export const PRIORITY_RULE_TEXT =
-  "Las gestiones vencidas aparecen primero (de la más antigua a la más reciente), luego las de hoy, y luego las próximas ordenadas por fecha más cercana. En caso de empate, se prioriza la de menor esfuerzo estimado.";
+export const PRIORITY_RULE_BY_GROUP = {
+  vencidas:
+    "Aparecen primero, de la más antigua a la más reciente. Si dos vencieron a la misma hora, va antes la de menor esfuerzo estimado.",
+  hoy: "Van después de las vencidas, ordenadas por hora. Si dos coinciden en la hora, va antes la de menor esfuerzo estimado.",
+  proximas:
+    "Van al final, de la fecha más cercana a la más lejana. Si dos coinciden en fecha y hora, va antes la de menor esfuerzo estimado.",
+};
 
 /**
  * @typedef {Object} Gestion

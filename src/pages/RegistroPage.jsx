@@ -5,13 +5,21 @@ import AuthField, { AuthBanner } from "../components/auth/AuthField";
 
 const MIN_PASSWORD_LENGTH = 8;
 
+/** Mismas reglas que el validador de usuario de Django: máx. 150, letras, números y @ . + - _ */
+const MAX_USERNAME_LENGTH = 150;
+const USERNAME_PATTERN = /^[\p{L}\p{N}_.@+-]+$/u;
+const INVALID_USERNAME_ES = "Usa solo letras, números y los caracteres @ . + - _ (sin espacios).";
+
 /**
- * Django responde en inglés cuando el username duplicado coincide exacto
- * (validador único del modelo, antes del validador en español del backend).
- * Reportado al backend; mientras tanto se traduce aquí.
+ * Django responde en inglés con los validadores del modelo User (usuario
+ * duplicado exacto, caracteres no permitidos, longitud), que corren antes del
+ * validador en español del backend. Reportado al backend; mientras tanto se
+ * traduce aquí.
  */
 const BACKEND_MESSAGE_ES = {
   "A user with that username already exists.": "Ese usuario ya está en uso.",
+  "Enter a valid username. This value may contain only letters, numbers, and @/./+/-/_ characters.": INVALID_USERNAME_ES,
+  [`Ensure this field has no more than ${MAX_USERNAME_LENGTH} characters.`]: `Usa como máximo ${MAX_USERNAME_LENGTH} caracteres.`,
 };
 const toSpanish = (message) => BACKEND_MESSAGE_ES[message] ?? message;
 
@@ -58,7 +66,10 @@ export default function RegistroPage() {
 
   function validate() {
     const errors = {};
-    if (!form.username.trim()) errors.username = "Elige un nombre de usuario.";
+    const username = form.username.trim();
+    if (!username) errors.username = "Elige un nombre de usuario.";
+    else if (username.length > MAX_USERNAME_LENGTH) errors.username = `Usa como máximo ${MAX_USERNAME_LENGTH} caracteres.`;
+    else if (!USERNAME_PATTERN.test(username)) errors.username = INVALID_USERNAME_ES;
     if (!form.email.trim()) errors.email = "Ingresa tu correo electrónico.";
     else if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) errors.email = "Revisa el formato del correo.";
     if (!form.password) errors.password = "Crea una contraseña.";

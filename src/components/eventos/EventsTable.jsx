@@ -11,7 +11,7 @@ function formatDayMonthYear(iso) {
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-export default function EventsTable({ events, onEdit, onDelete }) {
+export default function EventsTable({ events, onDelete }) {
   return (
     <div className="bg-paper-card border border-sepia-border rounded-sharp warm-card-shadow overflow-hidden">
       <div className="overflow-x-auto">
@@ -63,18 +63,17 @@ export default function EventsTable({ events, onEdit, onDelete }) {
 
                 <td className="py-4 px-5 text-right whitespace-nowrap">
                   <div className="flex items-center justify-end gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => onEdit(evt)}
-                      title="Editar evento"
-                      aria-label={`Editar evento "${evt.name}"`}
+                    <Link
+                      to={`/evento/${evt.id}`}
+                      title="Ir a evento"
+                      aria-label={`Ir a evento "${evt.name}"`}
                       className="inline-flex items-center gap-1 px-2 py-1 rounded-sharp text-ink-muted hover:text-terracotta hover:bg-paper-linen/60 border border-transparent hover:border-sepia-border transition-colors text-xs font-medium"
                     >
+                      <span>Ir a evento</span>
                       <span className="material-symbols-outlined text-[16px]">
-                        edit
+                        arrow_forward
                       </span>
-                      <span>Editar</span>
-                    </button>
+                    </Link>
                     <button
                       type="button"
                       onClick={() => onDelete(evt)}

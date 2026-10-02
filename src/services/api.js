@@ -83,7 +83,7 @@ function fromEvent(event) {
   if (event.dateTime !== undefined) payload.event_datetime = event.dateTime;
   if (event.contact !== undefined) payload.client_contact = event.contact;
   if (event.place !== undefined) payload.place = event.place;
-  if (event.subtasks) payload.subtasks = event.subtasks.map((task) => ({ name: task.title.trim(), target_date: task.targetDate, estimated_hours: Number(task.estimatedHours) }));
+  if (event.subtasks) payload.subtasks = event.subtasks.map((task) => ({ name: task.title.trim(), target_date: task.targetDate, estimated_hours: Number(task.estimatedHours), provider: task.provider ?? "", time: task.time || null }));
   return payload;
 }
 function fromSubtask(task) {

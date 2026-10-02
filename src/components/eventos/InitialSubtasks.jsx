@@ -1,14 +1,15 @@
 import { useId, useState } from "react";
 import { formatShortDate } from "../../utils/dateUtils";
 
-const emptyDraft = { title: "", targetDate: "", estimatedHours: "" };
+const emptyDraft = { title: "", provider: "", targetDate: "", time: "", estimatedHours: "" };
 
 /**
  * InitialSubtasks.jsx — bloque "3. Gestiones iniciales (opcional)" de /crear
  * (diseño Stitch). Las gestiones se envían junto al evento en POST /events
  * (`subtasks`), así que quedan creadas en el mismo paso.
  *
- * @param {{title, targetDate, estimatedHours}[]} items  targetDate = "AAAA-MM-DD"
+ * @param {{title, provider, targetDate, time, estimatedHours}[]} items
+ *   targetDate = "AAAA-MM-DD"; provider y time ("HH:MM") son opcionales ("" si vacíos).
  * @param {(item) => void} onAdd
  * @param {(index: number) => void} onRemove
  */
@@ -41,7 +42,7 @@ export default function InitialSubtasks({ items, onAdd, onRemove, disabled = fal
     else if (hours <= 0) next.estimatedHours = "Debe ser mayor a 0.";
     setErrors(next);
     if (Object.keys(next).length > 0) return;
-    onAdd({ title: draft.title.trim(), targetDate: draft.targetDate, estimatedHours: hours });
+    onAdd({ title: draft.title.trim(), provider: draft.provider.trim(), targetDate: draft.targetDate, time: draft.time, estimatedHours: hours });
     setDraft(emptyDraft);
   }
 
@@ -87,7 +88,7 @@ export default function InitialSubtasks({ items, onAdd, onRemove, disabled = fal
 
           <div className="bg-paper-linen/60 border border-sepia-border rounded-sharp p-4 space-y-3" onKeyDown={handleKeyDown}>
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-              <div className="sm:col-span-6 space-y-1">
+              <div className="sm:col-span-7 space-y-1">
                 <label htmlFor={`${baseId}-title`} className="block font-body font-semibold text-xs text-ink-charcoal">Título de la gestión</label>
                 <input
                   id={`${baseId}-title`}
@@ -101,7 +102,22 @@ export default function InitialSubtasks({ items, onAdd, onRemove, disabled = fal
                 />
                 {errors.title && <p className="text-[11px] text-crimson-urgent font-medium">{errors.title}</p>}
               </div>
-              <div className="sm:col-span-3 space-y-1">
+              <div className="sm:col-span-5 space-y-1">
+                <label htmlFor={`${baseId}-provider`} className="flex items-center justify-between font-body font-semibold text-xs text-ink-charcoal">
+                  <span>Proveedor o encargado</span>
+                  <span className="text-[11px] text-ink-muted font-normal">Opcional</span>
+                </label>
+                <input
+                  id={`${baseId}-provider`}
+                  type="text"
+                  value={draft.provider}
+                  onChange={update("provider")}
+                  disabled={disabled}
+                  placeholder="Ej. Chef Jean-Luc"
+                  className={inputClass("provider")}
+                />
+              </div>
+              <div className="sm:col-span-4 space-y-1">
                 <label htmlFor={`${baseId}-date`} className="block font-body font-semibold text-xs text-ink-charcoal">Fecha límite</label>
                 <input
                   id={`${baseId}-date`}
@@ -114,7 +130,21 @@ export default function InitialSubtasks({ items, onAdd, onRemove, disabled = fal
                 />
                 {errors.targetDate && <p className="text-[11px] text-crimson-urgent font-medium">{errors.targetDate}</p>}
               </div>
-              <div className="sm:col-span-3 space-y-1">
+              <div className="sm:col-span-4 space-y-1">
+                <label htmlFor={`${baseId}-time`} className="flex items-center justify-between font-body font-semibold text-xs text-ink-charcoal">
+                  <span>Hora límite o reunión</span>
+                  <span className="text-[11px] text-ink-muted font-normal">Opcional</span>
+                </label>
+                <input
+                  id={`${baseId}-time`}
+                  type="time"
+                  value={draft.time}
+                  onChange={update("time")}
+                  disabled={disabled}
+                  className={inputClass("time")}
+                />
+              </div>
+              <div className="sm:col-span-4 space-y-1">
                 <label htmlFor={`${baseId}-hours`} className="block font-body font-semibold text-xs text-ink-charcoal">Horas est.</label>
                 <input
                   id={`${baseId}-hours`}
@@ -156,10 +186,14 @@ export default function InitialSubtasks({ items, onAdd, onRemove, disabled = fal
                 {items.map((item, index) => (
                   <li key={`${item.title}-${index}`} className="flex items-center gap-3 px-3 py-2.5 bg-paper-linen/50 border border-sepia-border rounded-sharp">
                     <span className="material-symbols-outlined text-[18px] text-terracotta" aria-hidden="true">assignment</span>
-                    <span className="flex-1 min-w-0 truncate font-body text-sm text-ink-charcoal">{item.title}</span>
+                    <span className="flex-1 min-w-0 truncate font-body text-sm text-ink-charcoal">
+                      {item.title}
+                      {item.provider && <span className="text-ink-muted"> · {item.provider}</span>}
+                    </span>
                     <span className="inline-flex items-center gap-1 font-mono-stamp text-[11px] text-ink-muted bg-paper-card border border-sepia-border px-2 py-0.5 rounded-sharp">
                       <span className="material-symbols-outlined text-[13px]" aria-hidden="true">calendar_today</span>
                       {formatShortDate(item.targetDate)}
+                      {item.time && ` · ${item.time}`}
                     </span>
                     <span className="font-mono-stamp text-[11px] text-ink-muted bg-paper-card border border-sepia-border px-2 py-0.5 rounded-sharp">
                       {item.estimatedHours} h

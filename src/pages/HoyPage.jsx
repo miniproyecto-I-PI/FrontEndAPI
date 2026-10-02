@@ -2,11 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { useTodayGestiones } from "../hooks/useTodayGestiones";
 import { formatFullDate } from "../utils/dateUtils";
-import { UPCOMING_WINDOW_DAYS } from "../utils/sortGestiones";
+import { PRIORITY_RULE_BY_GROUP, UPCOMING_WINDOW_DAYS } from "../utils/sortGestiones";
 
 import PageContainer from "../components/layout/PageContainer";
 import PageHeader from "../components/layout/PageHeader";
-import PriorityRuleBanner from "../components/common/PriorityRuleBanner";
+import PriorityRuleTooltip from "../components/common/PriorityRuleTooltip";
 import StatCard from "../components/common/StatCard";
 import StateCard from "../components/common/StateCard";
 import LoadingSkeleton, { StatsSkeleton } from "../components/common/LoadingSkeleton";
@@ -22,8 +22,8 @@ import SimulationToolbar from "../components/dev/SimulationToolbar";
  * Diseño Stitch (Sprint 2). Estados: cargando (esqueleto + "Sincronizando…"),
  * vacío con acción "Crear evento", sin resultados por filtro con "Limpiar
  * filtros", error de carga / error al filtrar con "Reintentar", y éxito con
- * los tres grupos (Vencidas, Agenda de Hoy, Próximas) y la regla visible en
- * el tooltip "Criterio editorial".
+ * los tres grupos (Vencidas, Agenda de Hoy, Próximas), cada uno con su regla
+ * de orden en el tooltip "¿Cómo se ordena?" junto al título.
  *
  * Header, Footer y buscador vienen de MainLayout (useOutletContext).
  */
@@ -100,18 +100,15 @@ export default function HoyPage() {
           }
         />
 
-        {/* ---------- Resumen de actividad + regla ---------- */}
+        {/* ---------- Resumen de actividad ---------- */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
           <span className="font-stamp text-[11px] uppercase tracking-wider text-ink-muted font-bold">Resumen de actividad</span>
-          <div className="flex items-center gap-4">
-            {isRefreshing && (
-              <span role="status" className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-paper-card border border-sepia-border rounded-sharp font-body text-xs text-terracotta-dark">
-                <span className="material-symbols-outlined text-[15px] animate-spin" aria-hidden="true">sync</span>
-                Sincronizando bitácora y gestiones del día…
-              </span>
-            )}
-            <PriorityRuleBanner />
-          </div>
+          {isRefreshing && (
+            <span role="status" className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-paper-card border border-sepia-border rounded-sharp font-body text-xs text-terracotta-dark">
+              <span className="material-symbols-outlined text-[15px] animate-spin" aria-hidden="true">sync</span>
+              Sincronizando bitácora y gestiones del día…
+            </span>
+          )}
         </div>
 
         {showStats && (
@@ -178,7 +175,7 @@ export default function HoyPage() {
                   id="hoy-vencidas"
                   numeral="I."
                   title="Vencidas"
-                  subtitle="Ordenadas por antigüedad"
+                  rule={PRIORITY_RULE_BY_GROUP.vencidas}
                   tone="crimson"
                   aside={
                     <span className="inline-flex items-center gap-1 font-body text-xs font-semibold text-crimson-tag">
@@ -201,7 +198,7 @@ export default function HoyPage() {
                   id="hoy-hoy"
                   numeral="II."
                   title="Agenda de Hoy"
-                  subtitle={`${grouped.hoy.length} ${grouped.hoy.length === 1 ? "gestión" : "gestiones"} para la jornada`}
+                  rule={PRIORITY_RULE_BY_GROUP.hoy}
                   tone="terracotta"
                   aside={
                     <span className="font-stamp text-xs text-terracotta-dark flex items-center gap-1.5 font-bold">
@@ -227,7 +224,7 @@ export default function HoyPage() {
 
             {grouped.proximas.length > 0 && (
               <section className="space-y-3.5" aria-labelledby="hoy-proximas">
-                <SectionHeading id="hoy-proximas" numeral="III." title="Próximas Jornadas" subtitle={`Horizonte a ${UPCOMING_WINDOW_DAYS} días`} />
+                <SectionHeading id="hoy-proximas" numeral="III." title="Próximas Jornadas" rule={PRIORITY_RULE_BY_GROUP.proximas} />
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {grouped.proximas.map((g) => (
                     <TaskCard key={g.id} gestion={g} variant="proxima" onMarkDone={() => handleMarkDone(g)} onReschedule={() => setRescheduleTarget(g)} />
@@ -263,15 +260,15 @@ export default function HoyPage() {
   );
 }
 
-function SectionHeading({ id, numeral, title, subtitle, tone, aside }) {
+function SectionHeading({ id, numeral, title, rule, tone, aside }) {
   const numeralColor = tone === "crimson" ? "text-crimson-urgent" : tone === "terracotta" ? "text-terracotta" : "text-sepia-dark";
   const border = tone === "crimson" ? "border-b-2 border-crimson-urgent/30" : "border-b border-sepia-border";
   return (
     <div className={`flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pb-2 ${border}`}>
-      <div className="flex items-baseline gap-2.5">
+      <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
         <span className={`font-heading font-bold text-xl ${numeralColor}`} aria-hidden="true">{numeral}</span>
         <h2 id={id} className="font-heading text-2xl md:text-3xl text-ink-charcoal font-semibold tracking-tight">{title}</h2>
-        {subtitle && <span className="font-body text-xs text-ink-muted ml-1">{subtitle}</span>}
+        {rule && <span className="ml-1"><PriorityRuleTooltip rule={rule} /></span>}
       </div>
       {aside}
     </div>
