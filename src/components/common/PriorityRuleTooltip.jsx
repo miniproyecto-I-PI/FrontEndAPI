@@ -49,9 +49,9 @@ export default function PriorityRuleTooltip({ rule }) {
         onBlur={() => setFocused(false)}
         aria-expanded={open}
         aria-describedby={tooltipId}
-        className="inline-flex items-center gap-1 font-body text-sm font-semibold text-terracotta hover:text-terracotta-dark underline decoration-2 underline-offset-4 decoration-terracotta/50 hover:decoration-terracotta-dark cursor-help transition-colors rounded-sharp focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta"
+        className="inline-flex items-center gap-1 pb-0.5 border-b-2 border-terracotta/50 hover:border-terracotta-dark font-body text-sm font-semibold text-terracotta hover:text-terracotta-dark cursor-help transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta"
       >
-        <span className="material-symbols-outlined text-[17px] no-underline" aria-hidden="true">help</span>
+        <span className="material-symbols-outlined text-[17px]" aria-hidden="true">help</span>
         ¿Cómo se ordena?
       </button>
 
