@@ -12,6 +12,7 @@ import StateCard from "../components/common/StateCard";
 import LoadingSkeleton, { StatsSkeleton } from "../components/common/LoadingSkeleton";
 import Toast from "../components/common/Toast";
 import RescheduleModal from "../components/common/RescheduleModal";
+import EditSubtaskModal from "../components/common/EditSubtaskModal";
 import TaskCard from "../components/tasks/TaskCard";
 import HoyFilters from "../components/tasks/HoyFilters";
 import SimulationToolbar from "../components/dev/SimulationToolbar";
@@ -23,7 +24,9 @@ import SimulationToolbar from "../components/dev/SimulationToolbar";
  * vacío con acción "Crear evento", sin resultados por filtro con "Limpiar
  * filtros", error de carga / error al filtrar con "Reintentar", y éxito con
  * los tres grupos (Vencidas, Agenda de Hoy, Próximas), cada uno con su regla
- * de orden en el tooltip "¿Cómo se ordena?" junto al título.
+ * de orden en el tooltip "¿Cómo se ordena?" junto al título. La sección
+ * "0. Ejecutadas" solo aparece con el switch "Mostrar gestiones ejecutadas"
+ * o con el chip de estado "Ejecutadas".
  *
  * Header, Footer y buscador vienen de MainLayout (useOutletContext).
  */
@@ -33,6 +36,7 @@ export default function HoyPage() {
   const navigate = useNavigate();
   const [simMode, setSimMode] = useState("normal"); // 'normal' | 'empty' | 'error' (solo desarrollo)
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
+  const [editTarget, setEditTarget] = useState(null); // gestión ejecutada en edición
   const [toast, setToast] = useState(() => (location.state?.toast ? { message: location.state.toast } : null));
   const closeToast = useCallback(() => setToast(null), []);
 
@@ -46,7 +50,7 @@ export default function HoyPage() {
     simulateEmpty: simMode === "empty",
   });
 
-  const totalVisible = grouped.vencidas.length + grouped.hoy.length + grouped.proximas.length;
+  const totalVisible = grouped.ejecutadas.length + grouped.vencidas.length + grouped.hoy.length + grouped.proximas.length;
   const isFiltering = filters.hasServerFilters || search.trim() !== "";
 
   function clearAllFilters() {
@@ -77,6 +81,12 @@ export default function HoyPage() {
     setToast(ok ? { message: "Gestión reprogramada" } : { message: "No se pudo reprogramar la gestión.", intent: "error" });
   }
 
+  async function handleEditSubmit(payload) {
+    await actions.editGestion(editTarget.id, payload);
+    setEditTarget(null);
+    setToast({ message: "Gestión actualizada" });
+  }
+
   const totalForBars = Math.max(1, totalVisible);
   const showStats = status !== "error";
 
@@ -95,6 +105,8 @@ export default function HoyPage() {
               statusFilter={filters.statusFilter}
               onStatusChange={filters.setStatusFilter}
               onClear={filters.clearFilters}
+              showExecuted={filters.showExecuted}
+              onShowExecutedChange={filters.setShowExecuted}
               disabled={status === "loading"}
             />
           }
@@ -169,6 +181,17 @@ export default function HoyPage() {
 
         {status === "success" && totalVisible > 0 && (
           <div className={`space-y-9 transition-opacity ${isRefreshing ? "opacity-60" : ""}`} aria-busy={isRefreshing}>
+            {grouped.ejecutadas.length > 0 && (
+              <section className="space-y-3.5" aria-labelledby="hoy-ejecutadas">
+                <SectionHeading id="hoy-ejecutadas" numeral="0." title="Ejecutadas" rule={PRIORITY_RULE_BY_GROUP.ejecutadas} tone="sage" />
+                <div className="grid grid-cols-1 gap-3">
+                  {grouped.ejecutadas.map((g) => (
+                    <TaskCard key={g.id} gestion={g} variant="ejecutada" onEdit={() => setEditTarget(g)} />
+                  ))}
+                </div>
+              </section>
+            )}
+
             {grouped.vencidas.length > 0 && (
               <section className="space-y-3.5" aria-labelledby="hoy-vencidas">
                 <SectionHeading
@@ -238,6 +261,15 @@ export default function HoyPage() {
 
       <Toast toast={toast} onClose={closeToast} />
 
+      {editTarget && (
+        <EditSubtaskModal
+          initialSubtask={editTarget}
+          eventName={editTarget.eventName}
+          onCancel={() => setEditTarget(null)}
+          onSubmit={handleEditSubmit}
+        />
+      )}
+
       {rescheduleTarget && (
         <RescheduleModal
           mode="single"
@@ -261,7 +293,7 @@ export default function HoyPage() {
 }
 
 function SectionHeading({ id, numeral, title, rule, tone, aside }) {
-  const numeralColor = tone === "crimson" ? "text-crimson-urgent" : tone === "terracotta" ? "text-terracotta" : "text-sepia-dark";
+  const numeralColor = { crimson: "text-crimson-urgent", terracotta: "text-terracotta", sage: "text-sage-wax" }[tone] ?? "text-sepia-dark";
   const border = tone === "crimson" ? "border-b-2 border-crimson-urgent/30" : "border-b border-sepia-border";
   return (
     <div className={`flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pb-2 ${border}`}>
