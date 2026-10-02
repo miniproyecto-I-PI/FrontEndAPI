@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import CreateEventSuccessModal from "../components/common/CreateEventSuccessModal";
 
 import Toast from "../components/common/Toast";
+import PageContainer from "../components/layout/PageContainer";
+import PageHeader, { Breadcrumb } from "../components/layout/PageHeader";
 import EventTypeSelector from "../components/eventos/EventTypeSelector";
 import { createEvent } from "../services/api";
 
@@ -104,51 +106,23 @@ function handleSuccessGoToEvents() {
   const isLoading = status === "loading";
 
   return (
-    <div className="max-w-[1320px] mx-auto px-4 md:px-8 lg:px-12 py-8">
-      {/* Breadcrumb */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 mb-8 border-b border-sepia-border">
-        <div className="flex items-center gap-2 text-xs font-body text-ink-muted">
-          <Link
-            to="/eventos"
-            aria-label="Volver"
-            className="inline-flex items-center justify-center w-7 h-7 rounded-sharp border border-sepia-border bg-paper-card hover:bg-paper-linen text-ink-muted hover:text-ink-charcoal transition-colors mr-1"
-          >
-            <span className="material-symbols-outlined text-[16px]">
-              arrow_back
-            </span>
-          </Link>
-          <Link to="/hoy" className="hover:text-ink-charcoal transition-colors">
-            Convoka
-          </Link>
-          <span className="text-sepia-dark">/</span>
-          <Link
-            to="/eventos"
-            className="hover:text-ink-charcoal transition-colors"
-          >
-            Eventos
-          </Link>
-          <span className="text-sepia-dark">/</span>
-          <span className="text-ink-charcoal font-semibold">Nuevo evento</span>
-        </div>
-      </div>
-
-      {/* Título */}
-      <div className="mb-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div className="space-y-1">
-            <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-ink-charcoal leading-tight">
-              Crear{" "}
-              <span className="italic font-normal text-terracotta">
-                nuevo evento
-              </span>
-            </h1>
-          </div>
-          <p className="font-body text-xs md:text-sm text-ink-muted max-w-md">
+    <PageContainer>
+      <PageHeader
+        breadcrumb={
+          <Breadcrumb
+            backTo="/eventos"
+            items={[{ label: "Convoka", to: "/hoy" }, { label: "Eventos", to: "/eventos" }, { label: "Nuevo evento" }]}
+          />
+        }
+        title="Crear"
+        accent="nuevo evento"
+        aside={
+          <p className="font-body text-xs md:text-sm text-ink-muted max-w-md lg:text-right">
             Ingresa los datos clave para generar de forma inmediata la hoja de
             ruta y las primeras gestiones.
           </p>
-        </div>
-      </div>
+        }
+      />
 
       {/* Formulario */}
       <form
@@ -178,7 +152,7 @@ function handleSuccessGoToEvents() {
                 <div className="flex items-center justify-between gap-3">
                   <label
                     htmlFor="event-title"
-                    className="block font-serif font-semibold text-sm text-ink-charcoal"
+                    className="block font-heading font-semibold text-sm text-ink-charcoal"
                   >
                     Nombre o título del evento{" "}
                     <span className="text-crimson-urgent">*</span>
@@ -202,7 +176,7 @@ function handleSuccessGoToEvents() {
               </div>
 
               <div className="space-y-2 pt-1">
-                <label className="block font-serif font-semibold text-sm text-ink-charcoal">
+                <label className="block font-heading font-semibold text-sm text-ink-charcoal">
                   Tipo de celebración{" "}
                   <span className="text-crimson-urgent">*</span>
                 </label>
@@ -215,7 +189,7 @@ function handleSuccessGoToEvents() {
               <div className="space-y-1.5 pt-1">
                 <label
                   htmlFor="event-host"
-                  className="block font-serif font-semibold text-sm text-ink-charcoal"
+                  className="block font-heading font-semibold text-sm text-ink-charcoal"
                 >
                   Cliente o anfitrión
                 </label>
@@ -242,7 +216,7 @@ function handleSuccessGoToEvents() {
               <div className="space-y-1.5">
                 <label
                   htmlFor="event-date"
-                  className="block font-serif font-semibold text-sm text-ink-charcoal"
+                  className="block font-heading font-semibold text-sm text-ink-charcoal"
                 >
                   Fecha de celebración{" "}
                   <span className="text-crimson-urgent">*</span>
@@ -262,7 +236,7 @@ function handleSuccessGoToEvents() {
               <div className="space-y-1.5">
                 <label
                   htmlFor="event-venue"
-                  className="block font-serif font-semibold text-sm text-ink-charcoal"
+                  className="block font-heading font-semibold text-sm text-ink-charcoal"
                 >
                   Lugar o recinto tentativo
                 </label>
@@ -284,7 +258,7 @@ function handleSuccessGoToEvents() {
           <button
             type="button"
             onClick={() => navigate("/eventos")}
-            className="text-xs font-serif text-ink-muted hover:text-ink-charcoal underline hover:no-underline order-last sm:order-first transition-colors focus:outline-none"
+            className="text-xs font-heading text-ink-muted hover:text-ink-charcoal underline hover:no-underline order-last sm:order-first transition-colors focus:outline-none"
           >
             Cancelar y volver
           </button>
@@ -294,7 +268,7 @@ function handleSuccessGoToEvents() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-terracotta hover:bg-terracotta-dark text-[#FAF6F0] font-serif font-semibold text-sm rounded-sharp border border-terracotta-dark shadow-sm transition-colors active:translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-terracotta hover:bg-terracotta-dark text-[#FAF6F0] font-heading font-semibold text-sm rounded-sharp border border-terracotta-dark shadow-sm transition-colors active:translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <span className="material-symbols-outlined text-[18px]">
                 check_circle
@@ -314,7 +288,7 @@ function handleSuccessGoToEvents() {
 )}
 
       <Toast toast={toast} onClose={() => setToast(null)} />
-    </div>
+    </PageContainer>
   );
 }
 
@@ -324,10 +298,10 @@ function SectionHeader({ number, title, badge }) {
   return (
     <div className="flex items-center justify-between pb-3 border-b border-sepia-border">
       <div className="flex items-center gap-3">
-        <span className="w-6 h-6 rounded-full bg-paper-base border border-sepia-border flex items-center justify-center font-serif text-xs font-bold text-terracotta">
+        <span className="w-6 h-6 rounded-full bg-paper-base border border-sepia-border flex items-center justify-center font-heading text-xs font-bold text-terracotta">
           {number}
         </span>
-        <h2 className="font-serif text-xl font-semibold text-ink-charcoal">
+        <h2 className="font-heading text-xl font-semibold text-ink-charcoal">
           {title}
         </h2>
       </div>

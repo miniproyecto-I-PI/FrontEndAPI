@@ -19,7 +19,7 @@ export default function ComingSoonPlaceholder({ title, description, plannedSprin
         <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-terracotta-light text-terracotta flex items-center justify-center">
           <span className="material-symbols-outlined text-[24px]">construction</span>
         </div>
-        <h1 className="font-serif text-2xl md:text-3xl text-ink-charcoal font-semibold mb-2">{title}</h1>
+        <h1 className="font-heading text-2xl md:text-3xl text-ink-charcoal font-semibold mb-2">{title}</h1>
         <p className="font-body text-sm text-ink-muted max-w-md mx-auto mb-2">{description}</p>
         {plannedSprint && (
           <p className="font-mono-stamp text-[11px] text-terracotta-dark uppercase tracking-wide mb-6">

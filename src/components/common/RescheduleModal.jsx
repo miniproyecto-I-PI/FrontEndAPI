@@ -70,7 +70,7 @@ export default function RescheduleModal({ mode, count, currentDateISO, onCancel,
           <>
             <h3
               id="reschedule-title"
-              className="font-serif text-2xl font-bold text-ink-charcoal"
+              className="font-heading text-2xl font-bold text-ink-charcoal"
             >
               ¿Reprogramar las {count} gestiones vencidas?
             </h3>
@@ -83,7 +83,7 @@ export default function RescheduleModal({ mode, count, currentDateISO, onCancel,
           <>
             <h3
               id="reschedule-title"
-              className="font-serif text-2xl font-bold text-ink-charcoal"
+              className="font-heading text-2xl font-bold text-ink-charcoal"
             >
               Reprogramar gestión
             </h3>

@@ -38,7 +38,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-paper-base font-body px-4">
       <div className="w-full max-w-sm bg-paper-card border border-sepia-border rounded-sharp p-8 warm-card-shadow">
-        <h1 className="font-serif text-3xl font-bold text-ink-charcoal text-center mb-1">Convoka</h1>
+        <h1 className="font-heading text-3xl font-bold text-ink-charcoal text-center mb-1">Convoka</h1>
         <p className="font-body text-xs text-ink-muted text-center mb-6">Inicia sesión para ver tus gestiones</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">

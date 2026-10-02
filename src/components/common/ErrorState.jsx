@@ -23,7 +23,7 @@ export default function ErrorState({
         <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-crimson-paper text-crimson-urgent flex items-center justify-center">
           <span className="material-symbols-outlined text-[24px]">error_outline</span>
         </div>
-        <h3 className="font-serif text-2xl md:text-3xl text-ink-charcoal font-semibold mb-2">{message}</h3>
+        <h3 className="font-heading text-2xl md:text-3xl text-ink-charcoal font-semibold mb-2">{message}</h3>
         <p className="font-body text-sm text-ink-muted max-w-md mx-auto mb-6">
           Comprueba que la API esté disponible y actualizada, y vuelve a intentarlo.
         </p>

@@ -47,7 +47,7 @@ export default function DailyLimitModal({ onClose }) {
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="relative w-full max-w-sm bg-paper-card border border-sepia-border rounded-sharp p-6 shadow-xl warm-card-shadow">
-        <h3 className="font-serif text-xl font-bold text-ink-charcoal">Límite diario de horas</h3>
+        <h3 className="font-heading text-xl font-bold text-ink-charcoal">Límite diario de horas</h3>
         <p className="font-body text-xs text-ink-muted mt-2 leading-relaxed">
           Se usa para detectar sobrecarga cuando reprogramas gestiones (US-07/US-08). Valor
           actual: {isLoaded ? `${hours}h` : "cargando…"}.

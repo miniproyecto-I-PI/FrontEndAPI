@@ -59,7 +59,7 @@ export default function CreateSubtaskSuccessModal({
 
           <h2
             id="create-subtask-success-title"
-            className="font-serif text-2xl md:text-[28px] font-bold text-ink-charcoal leading-tight mb-3"
+            className="font-heading text-2xl md:text-[28px] font-bold text-ink-charcoal leading-tight mb-3"
           >
             ¡Gestión creada con éxito!
           </h2>

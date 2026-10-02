@@ -31,7 +31,7 @@ export default function EventsTable({ events, onEdit, onDelete }) {
               <tr key={evt.id} className="hover:bg-paper-linen/30 transition-colors">
                 <td className="py-4 px-5">
                   <Link to={`/evento/${evt.id}`} className="block group">
-                    <div className="font-bold font-serif text-[15px] leading-snug text-ink-charcoal group-hover:text-terracotta transition-colors">
+                    <div className="font-bold font-heading text-[15px] leading-snug text-ink-charcoal group-hover:text-terracotta transition-colors">
                       {evt.name}
                     </div>
                     {evt.contact && (

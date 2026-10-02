@@ -98,7 +98,7 @@ export default function DeleteSubtaskModal({
             </div>
             <h3
               id="delete-subtask-title"
-              className="font-serif text-[20px] sm:text-[22px] font-semibold text-ink-charcoal leading-snug"
+              className="font-heading text-[20px] sm:text-[22px] font-semibold text-ink-charcoal leading-snug"
             >
               ¿Eliminar la gestión «{subtask.title}»?
             </h3>
@@ -124,7 +124,7 @@ export default function DeleteSubtaskModal({
         {/* Preview card */}
 <div className="bg-paper-base border border-sepia-border rounded-sharp p-4 mb-6">
   <div className="flex items-start justify-between gap-3 mb-2.5">
-    <span className="font-serif text-[15px] font-semibold text-ink-charcoal leading-tight">
+    <span className="font-heading text-[15px] font-semibold text-ink-charcoal leading-tight">
       {subtask.title}
     </span>
     {subtask.status === "EJECUTADA" && (

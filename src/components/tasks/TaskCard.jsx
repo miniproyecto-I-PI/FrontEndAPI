@@ -90,7 +90,7 @@ function VencidaBody({ gestion, today, onMarkDone, onReschedule }) {
           <span className="text-sepia-dark">•</span>
           <span className="font-mono-stamp text-[11px] text-ink-muted">{gestion.estimatedHours} hrs estimadas</span>
         </div>
-        <h3 className="font-serif text-xl text-ink-charcoal font-bold group-hover:text-terracotta transition-colors leading-snug">
+        <h3 className="font-heading text-xl text-ink-charcoal font-bold group-hover:text-terracotta transition-colors leading-snug">
           {gestion.title}
         </h3>
         {(gestion.provider || gestion.detail) && (
@@ -117,7 +117,7 @@ function HeroBody({ gestion, onMarkDone, onReschedule }) {
             <span className="font-body text-[11px] font-bold text-terracotta-dark bg-terracotta-light/70 border border-terracotta/30 px-2.5 py-0.5 rounded-sharp uppercase tracking-wide">
               Hoy • {formatTime(gestion.targetDate)}
             </span>
-            <span className="font-serif italic text-xs text-terracotta">Prioritaria</span>
+            <span className="font-heading italic text-xs text-terracotta">Prioritaria</span>
           </div>
           <span className="font-mono-stamp text-xs text-ink-muted">{gestion.estimatedHours} hrs estimadas</span>
         </div>
@@ -125,7 +125,7 @@ function HeroBody({ gestion, onMarkDone, onReschedule }) {
           <span className="font-body text-xs font-semibold text-ink-muted uppercase tracking-wider block no-strike">
             {gestion.eventName}
           </span>
-          <h3 className="font-serif text-2xl md:text-3xl text-ink-charcoal font-bold mt-1 group-hover:text-terracotta transition-colors leading-tight">
+          <h3 className="font-heading text-2xl md:text-3xl text-ink-charcoal font-bold mt-1 group-hover:text-terracotta transition-colors leading-tight">
             {gestion.title}
           </h3>
         </div>
@@ -157,7 +157,7 @@ function SecondaryBody({ gestion, onMarkDone, onReschedule }) {
           <span className="font-mono-stamp text-[11px] text-ink-muted">{gestion.estimatedHours} hrs</span>
         </div>
         <span className="font-body text-xs font-semibold text-ink-muted block mt-2 no-strike">{gestion.eventName}</span>
-        <h3 className="font-serif text-lg font-bold text-ink-charcoal group-hover:text-terracotta transition-colors leading-snug mt-0.5">
+        <h3 className="font-heading text-lg font-bold text-ink-charcoal group-hover:text-terracotta transition-colors leading-snug mt-0.5">
           {gestion.title}
         </h3>
         {(gestion.provider || gestion.detail) && (
@@ -184,7 +184,7 @@ function ProximaBody({ gestion, today, onMarkDone, onReschedule }) {
           <span className="font-mono-stamp text-[11px] text-ink-muted">{gestion.estimatedHours} hrs</span>
         </div>
         <span className="font-body text-xs font-semibold text-ink-muted block no-strike">{gestion.eventName}</span>
-        <h3 className="font-serif text-lg font-bold text-ink-charcoal group-hover:text-terracotta transition-colors leading-snug">
+        <h3 className="font-heading text-lg font-bold text-ink-charcoal group-hover:text-terracotta transition-colors leading-snug">
           {gestion.title}
         </h3>
         {gestion.detail && <p className="font-body text-xs text-ink-muted leading-relaxed">{gestion.detail}</p>}

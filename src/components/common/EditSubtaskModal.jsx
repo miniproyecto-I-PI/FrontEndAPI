@@ -116,7 +116,7 @@ export default function EditSubtaskModal({
           <div>
             <h2
               id="edit-subtask-title"
-              className="font-serif text-2xl font-bold text-ink-charcoal tracking-tight"
+              className="font-heading text-2xl font-bold text-ink-charcoal tracking-tight"
             >
               Editar gestión
             </h2>
@@ -161,7 +161,7 @@ export default function EditSubtaskModal({
                 <div className="flex items-center justify-between gap-3">
                   <label
                     htmlFor="edit-subtask-title-input"
-                    className="block font-serif font-semibold text-xs md:text-sm text-ink-charcoal"
+                    className="block font-heading font-semibold text-xs md:text-sm text-ink-charcoal"
                   >
                     Título de la subtarea o gestión{" "}
                     <span className="text-crimson-urgent">*</span>
@@ -188,7 +188,7 @@ export default function EditSubtaskModal({
                 <div className="space-y-1.5">
                   <label
                     htmlFor="edit-subtask-provider"
-                    className="block font-serif font-semibold text-xs md:text-sm text-ink-charcoal"
+                    className="block font-heading font-semibold text-xs md:text-sm text-ink-charcoal"
                   >
                     Proveedor o encargado{" "}
                     <span className="font-body text-xs text-ink-muted font-normal">
@@ -212,7 +212,7 @@ export default function EditSubtaskModal({
                 <div className="space-y-1.5">
                   <label
                     htmlFor="edit-subtask-hours"
-                    className="block font-serif font-semibold text-xs md:text-sm text-ink-charcoal"
+                    className="block font-heading font-semibold text-xs md:text-sm text-ink-charcoal"
                   >
                     Dedicación estimada{" "}
                     <span className="font-body text-xs text-ink-muted font-normal">
@@ -255,7 +255,7 @@ export default function EditSubtaskModal({
                 <div className="space-y-1.5">
                   <label
                     htmlFor="edit-subtask-date"
-                    className="block font-serif font-semibold text-xs md:text-sm text-ink-charcoal"
+                    className="block font-heading font-semibold text-xs md:text-sm text-ink-charcoal"
                   >
                     Fecha límite de resolución{" "}
                     <span className="text-crimson-urgent">*</span>
@@ -275,7 +275,7 @@ export default function EditSubtaskModal({
                 <div className="space-y-1.5">
                   <label
                     htmlFor="edit-subtask-time"
-                    className="block font-serif font-semibold text-xs md:text-sm text-ink-charcoal"
+                    className="block font-heading font-semibold text-xs md:text-sm text-ink-charcoal"
                   >
                     Hora límite o reunión{" "}
                     <span className="font-body text-xs text-ink-muted font-normal">
@@ -293,7 +293,7 @@ export default function EditSubtaskModal({
               </div>
 
               <div className="space-y-2 pt-1">
-                <label className="block font-serif font-semibold text-xs md:text-sm text-ink-charcoal">
+                <label className="block font-heading font-semibold text-xs md:text-sm text-ink-charcoal">
                   Estado de la gestión
                 </label>
                 <div className="grid grid-cols-2 gap-2.5">
@@ -354,7 +354,7 @@ export default function EditSubtaskModal({
               type="button"
               onClick={onCancel}
               disabled={isLoading}
-              className="text-xs font-serif text-ink-muted hover:text-ink-charcoal underline hover:no-underline transition-colors order-last sm:order-first disabled:opacity-60"
+              className="text-xs font-heading text-ink-muted hover:text-ink-charcoal underline hover:no-underline transition-colors order-last sm:order-first disabled:opacity-60"
             >
               Descartar cambios
             </button>
@@ -384,10 +384,10 @@ function ModalSectionHeader({ number, title, badge }) {
   return (
     <div className="flex items-center justify-between pb-2 border-b border-sepia-border">
       <div className="flex items-center gap-2">
-        <span className="w-5 h-5 rounded-full bg-paper-base border border-sepia-border flex items-center justify-center font-serif text-[11px] font-bold text-terracotta">
+        <span className="w-5 h-5 rounded-full bg-paper-base border border-sepia-border flex items-center justify-center font-heading text-[11px] font-bold text-terracotta">
           {number}
         </span>
-        <h3 className="font-serif text-base font-semibold text-ink-charcoal">
+        <h3 className="font-heading text-base font-semibold text-ink-charcoal">
           {title}
         </h3>
       </div>

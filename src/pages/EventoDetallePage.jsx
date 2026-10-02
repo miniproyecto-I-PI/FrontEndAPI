@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { useEventSubtasks } from "../hooks/useEventSubtasks";
 import { deleteEvent } from "../services/api";
@@ -16,6 +16,8 @@ import DeleteSubtaskModal from "../components/eventos/DeleteSubtaskModal";
 import EventDossierHeader from "../components/eventos/EventDossierHeader";
 import SubtaskFilters from "../components/eventos/SubtaskFilters";
 import SubtaskListItem from "../components/eventos/SubtaskListItem";
+import PageContainer from "../components/layout/PageContainer";
+import { Breadcrumb } from "../components/layout/PageHeader";
 
 const isDone = (s) => s?.status === "EJECUTADA";
 
@@ -144,31 +146,18 @@ async function handleEditEvent(payload) {
   }
 
   return (
-    <div className="w-full min-h-screen bg-paper-base dot-grid-pattern font-body text-ink-charcoal antialiased">
-      <div className="max-w-[1280px] mx-auto px-4 md:px-8 lg:px-12 py-8">
+    <>
+      <PageContainer>
         {/* ---------- Breadcrumb bar ---------- */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-sepia-border">
-          <div className="flex items-center flex-wrap gap-3">
-            <Link
-              to="/hoy"
-              className="inline-flex items-center gap-1.5 font-body text-xs text-ink-muted hover:text-ink-charcoal px-2.5 py-1.5 rounded-sharp border border-sepia-border bg-paper-card hover:bg-paper-linen transition-colors focus:outline-none focus:ring-2 focus:ring-terracotta focus:ring-offset-1"
-            >
-              <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-              <span className="font-medium">Volver a hoy</span>
-            </Link>
-
-            <div className="h-4 w-px bg-sepia-border hidden sm:block" />
-
-            <nav className="flex items-center flex-wrap gap-2 font-body text-xs text-ink-muted">
-              <span>Convoka</span>
-              <span className="text-sepia-dark">/</span>
-              <span>Eventos</span>
-              <span className="text-sepia-dark">/</span>
-              <span className="text-ink-charcoal font-medium truncate max-w-[220px]">
-                {event?.name ?? "…"}
-              </span>
-            </nav>
-          </div>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-sepia-border">
+          <Breadcrumb
+            backTo="/eventos"
+            items={[
+              { label: "Convoka", to: "/hoy" },
+              { label: "Eventos", to: "/eventos" },
+              { label: event?.name ?? "…" },
+            ]}
+          />
 
           {status === "success" && event && (
             <div className="flex items-center gap-2">
@@ -204,7 +193,7 @@ async function handleEditEvent(payload) {
         <section className="mt-10 mb-12">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-sepia-border">
             <div className="flex items-center gap-3 flex-wrap">
-              <h3 className="font-serif text-2xl md:text-3xl text-ink-charcoal font-semibold tracking-tight">
+              <h3 className="font-heading text-2xl md:text-3xl text-ink-charcoal font-semibold tracking-tight">
                 Gestiones y subtareas operativas
               </h3>
               {status === "success" && (
@@ -262,7 +251,7 @@ async function handleEditEvent(payload) {
             </ul>
           )}
         </section>
-      </div>
+      </PageContainer>
 
 
       {editingSubtask && (
@@ -325,7 +314,7 @@ async function handleEditEvent(payload) {
 )}
 
       <Toast toast={toast} onClose={() => setToast(null)} />
-    </div>
+    </>
   );
 }
 
@@ -363,7 +352,7 @@ function ErrorCard({ message, onRetry }) {
       <div className="w-12 h-12 rounded-full bg-crimson-paper border border-crimson-urgent/30 flex items-center justify-center text-crimson-urgent mb-5">
         <span className="material-symbols-outlined text-[24px]">sync_problem</span>
       </div>
-      <h3 className="font-serif font-semibold text-ink-charcoal text-2xl md:text-3xl mb-2">
+      <h3 className="font-heading font-semibold text-ink-charcoal text-2xl md:text-3xl mb-2">
         {message || "No pudimos cargar las gestiones del evento"}
       </h3>
       <p className="max-w-md mx-auto font-body text-sm text-ink-muted mb-8 leading-relaxed">
@@ -389,7 +378,7 @@ function SubtasksEmpty({ eventName, onAdd }) {
           assignment_turned_in
         </span>
       </div>
-      <h3 className="font-serif font-semibold text-ink-charcoal text-2xl md:text-3xl mb-2">
+      <h3 className="font-heading font-semibold text-ink-charcoal text-2xl md:text-3xl mb-2">
         No tienes gestiones programadas
       </h3>
       <p className="max-w-md mx-auto font-body text-sm text-ink-muted mb-8 leading-relaxed">

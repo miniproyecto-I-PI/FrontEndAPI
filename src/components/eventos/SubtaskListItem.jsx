@@ -99,7 +99,7 @@ export default function SubtaskListItem({
 
           <h4
             className={[
-              "font-serif text-lg font-bold leading-snug",
+              "font-heading text-lg font-bold leading-snug",
               done
                 ? "line-through text-ink-muted"
                 : "text-ink-charcoal",

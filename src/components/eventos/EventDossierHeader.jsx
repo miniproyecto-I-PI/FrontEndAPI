@@ -29,12 +29,12 @@ export default function EventDossierHeader({ event, stats }) {
           </span>
         )}
 
-        <h1 className="font-serif text-4xl sm:text-5xl text-ink-charcoal font-semibold tracking-tight leading-[1.08]">
+        <h1 className="font-heading text-4xl sm:text-5xl text-ink-charcoal font-semibold tracking-tight leading-[1.08]">
           {event.name}
         </h1>
 
         {event.contact && (
-          <p className="font-serif italic text-lg text-terracotta font-normal">
+          <p className="font-heading italic text-lg text-terracotta font-normal">
             {event.contact}
           </p>
         )}

@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { useTodayGestiones } from "../hooks/useTodayGestiones";
 import { EVENT_TYPE_LABELS } from "../data/mockGestiones";
 import { formatFullDate } from "../utils/dateUtils";
 
-import Header from "../components/layout/Header";
-import Footer from "../components/layout/Footer";
+import PageContainer from "../components/layout/PageContainer";
+import PageHeader from "../components/layout/PageHeader";
 import PriorityRuleBanner from "../components/common/PriorityRuleBanner";
 import StatCard from "../components/common/StatCard";
 import EmptyState from "../components/common/EmptyState";
@@ -25,14 +25,13 @@ import SimulationToolbar from "../components/dev/SimulationToolbar";
  *   - Section I: "Urgencias & Vencidas" → "Vencidas".
  *   - Saludo: "Organización en marcha, usuario" (placeholder hasta Sprint 2).
  *
- * NOTE on Header placement: unlike the other pages, HoyPage renders its own
- * <Header> (with the search box wired up) instead of relying on
- * MainLayout's — see App.jsx for why /hoy is NOT nested under MainLayout.
+ * Sprint 2: Header/Footer y buscador vienen de MainLayout (useOutletContext).
  */
 export default function HoyPage() {
   const [simMode, setSimMode] = useState("normal"); // 'normal' | 'empty' | 'error'
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
 
+  const { search } = useOutletContext();
   const location = useLocation();
   const navigate = useNavigate();
   const [toast, setToast] = useState(() => location.state?.toast ? { message: location.state.toast } : null);
@@ -48,14 +47,13 @@ export default function HoyPage() {
     errorMessage,
     grouped,
     stats,
-    query,
-    setQuery,
     eventTypeFilter,
     setEventTypeFilter,
     availableEventTypes,
     actions,
     reload,
   } = useTodayGestiones({
+    query: search,
     simulateError: simMode === "error",
     simulateEmpty: simMode === "empty",
   });
@@ -79,25 +77,15 @@ export default function HoyPage() {
 
 
   return (
-    <div className="min-h-screen flex flex-col bg-paper-base dot-grid-pattern font-body text-ink-charcoal antialiased">
-      <Header searchValue={query} onSearchChange={setQuery} />
-
-      <main className="w-full pt-16 flex-1">
-        <div className="max-w-[1440px] mx-auto px-4 md:px-8 lg:px-12 py-8">
-          {/* ---------- Page header: greeting, title, filters, stats ---------- */}
+    <>
+      <PageContainer>
+          {/* ---------- Page header: date, title, filters, stats ---------- */}
           <section className="mb-7 relative">
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 pb-5 border-b border-sepia-border">
-              <div className="space-y-1.5 max-w-3xl">
-                <p className="font-body text-xs md:text-sm font-medium text-ink-muted">{formatFullDate()}</p>
-                <p className="font-serif italic text-terracotta text-lg md:text-xl font-normal">
-                  Organización en marcha, usuario
-                </p>
-                <h1 className="font-serif text-4xl sm:text-5xl lg:text-[50px] font-semibold tracking-tight text-ink-charcoal leading-[1.08]">
-                  Gestiones <span className="italic font-normal text-terracotta">para hoy</span>
-                </h1>
-              </div>
-
-              <div className="flex flex-col sm:items-end gap-2.5 self-start sm:self-end shrink-0">
+            <PageHeader
+              eyebrow={formatFullDate()}
+              title="Gestiones"
+              accent="para hoy"
+              aside={
                 <div className="flex items-center gap-1.5 flex-wrap justify-end">
                   <FilterChip
                     active={eventTypeFilter === "todos"}
@@ -113,8 +101,8 @@ export default function HoyPage() {
                     />
                   ))}
                 </div>
-              </div>
-            </div>
+              }
+            />
 
             <PriorityRuleBanner />
 
@@ -178,8 +166,8 @@ export default function HoyPage() {
               {grouped.vencidas.length > 0 && (
                 <section className="space-y-3.5">
                   <div className="flex items-baseline gap-2.5 pb-2 border-b-2 border-crimson-urgent/30">
-                      <span className="font-serif font-bold text-crimson-urgent text-xl">I.</span>
-                      <h2 className="font-serif text-2xl md:text-3xl text-ink-charcoal font-semibold tracking-tight">
+                      <span className="font-heading font-bold text-crimson-urgent text-xl">I.</span>
+                      <h2 className="font-heading text-2xl md:text-3xl text-ink-charcoal font-semibold tracking-tight">
                         Vencidas
                       </h2>
                       <span className="font-body text-xs text-ink-muted ml-1">Ordenadas por antigüedad</span>
@@ -202,8 +190,8 @@ export default function HoyPage() {
                 <section className="space-y-3.5">
                   <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pb-2 border-b border-sepia-border">
                     <div className="flex items-baseline gap-2.5">
-                      <span className="font-serif font-bold text-terracotta text-xl">II.</span>
-                      <h2 className="font-serif text-2xl md:text-3xl text-ink-charcoal font-semibold tracking-tight">
+                      <span className="font-heading font-bold text-terracotta text-xl">II.</span>
+                      <h2 className="font-heading text-2xl md:text-3xl text-ink-charcoal font-semibold tracking-tight">
                         Agenda de Hoy
                       </h2>
                       <span className="font-body text-xs text-ink-muted ml-1">
@@ -244,8 +232,8 @@ export default function HoyPage() {
               {grouped.proximas.length > 0 && (
                 <section className="space-y-3.5">
                   <div className="flex items-baseline gap-2.5 pb-2 border-b border-sepia-border">
-                    <span className="font-serif font-bold text-sepia-dark text-xl">III.</span>
-                    <h2 className="font-serif text-2xl md:text-3xl text-ink-charcoal font-semibold tracking-tight">
+                    <span className="font-heading font-bold text-sepia-dark text-xl">III.</span>
+                    <h2 className="font-heading text-2xl md:text-3xl text-ink-charcoal font-semibold tracking-tight">
                       Próximas Jornadas
                     </h2>
                     <span className="font-body text-xs text-ink-muted ml-1">Horizonte a 7 días</span>
@@ -265,10 +253,7 @@ export default function HoyPage() {
               )}
             </div>
           )}
-        </div>
-      </main>
-
-      <Footer />
+      </PageContainer>
 
       {/* ---------- Overlays ---------- */}
       <Toast toast={toast} onClose={() => setToast(null)} />
@@ -291,7 +276,7 @@ export default function HoyPage() {
           onToggleError={() => setSimMode((m) => (m === "error" ? "normal" : "error"))}
         />
       )}
-    </div>
+    </>
   );
 }
 

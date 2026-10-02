@@ -104,7 +104,7 @@ export default function EditEventModal({ initialEvent, onCancel, onSubmit }) {
           <div>
             <h2
               id="edit-event-title"
-              className="font-serif text-2xl font-bold text-ink-charcoal tracking-tight"
+              className="font-heading text-2xl font-bold text-ink-charcoal tracking-tight"
             >
               Editar ficha de evento
             </h2>
@@ -142,7 +142,7 @@ export default function EditEventModal({ initialEvent, onCancel, onSubmit }) {
                 <div className="flex items-center justify-between gap-3">
                   <label
                     htmlFor="edit-event-name"
-                    className="block font-serif font-semibold text-xs md:text-sm text-ink-charcoal"
+                    className="block font-heading font-semibold text-xs md:text-sm text-ink-charcoal"
                   >
                     Nombre o título del evento{" "}
                     <span className="text-crimson-urgent">*</span>
@@ -166,7 +166,7 @@ export default function EditEventModal({ initialEvent, onCancel, onSubmit }) {
               </div>
 
               <div className="space-y-1.5 pt-1">
-                <label className="block font-serif font-semibold text-xs md:text-sm text-ink-charcoal">
+                <label className="block font-heading font-semibold text-xs md:text-sm text-ink-charcoal">
                   Tipo de celebración{" "}
                   <span className="text-crimson-urgent">*</span>
                 </label>
@@ -179,7 +179,7 @@ export default function EditEventModal({ initialEvent, onCancel, onSubmit }) {
               <div className="space-y-1.5 pt-1">
                 <label
                   htmlFor="edit-event-host"
-                  className="block font-serif font-semibold text-xs md:text-sm text-ink-charcoal"
+                  className="block font-heading font-semibold text-xs md:text-sm text-ink-charcoal"
                 >
                   Cliente o anfitrión
                 </label>
@@ -206,7 +206,7 @@ export default function EditEventModal({ initialEvent, onCancel, onSubmit }) {
                 <div className="space-y-1.5">
                   <label
                     htmlFor="edit-event-date"
-                    className="block font-serif font-semibold text-xs md:text-sm text-ink-charcoal"
+                    className="block font-heading font-semibold text-xs md:text-sm text-ink-charcoal"
                   >
                     Fecha de celebración{" "}
                     <span className="text-crimson-urgent">*</span>
@@ -226,7 +226,7 @@ export default function EditEventModal({ initialEvent, onCancel, onSubmit }) {
                 <div className="space-y-1.5">
                   <label
                     htmlFor="edit-event-venue"
-                    className="block font-serif font-semibold text-xs md:text-sm text-ink-charcoal"
+                    className="block font-heading font-semibold text-xs md:text-sm text-ink-charcoal"
                   >
                     Lugar o recinto tentativo
                   </label>
@@ -258,7 +258,7 @@ export default function EditEventModal({ initialEvent, onCancel, onSubmit }) {
               type="button"
               onClick={onCancel}
               disabled={isLoading}
-              className="text-xs font-serif text-ink-muted hover:text-ink-charcoal underline hover:no-underline transition-colors order-last sm:order-first disabled:opacity-60"
+              className="text-xs font-heading text-ink-muted hover:text-ink-charcoal underline hover:no-underline transition-colors order-last sm:order-first disabled:opacity-60"
             >
               Descartar cambios
             </button>
@@ -288,10 +288,10 @@ function ModalSectionHeader({ number, title, badge }) {
   return (
     <div className="flex items-center justify-between pb-2 border-b border-sepia-border">
       <div className="flex items-center gap-2">
-        <span className="w-5 h-5 rounded-full bg-paper-base border border-sepia-border flex items-center justify-center font-serif text-[11px] font-bold text-terracotta">
+        <span className="w-5 h-5 rounded-full bg-paper-base border border-sepia-border flex items-center justify-center font-heading text-[11px] font-bold text-terracotta">
           {number}
         </span>
-        <h3 className="font-serif text-base font-semibold text-ink-charcoal">
+        <h3 className="font-heading text-base font-semibold text-ink-charcoal">
           {title}
         </h3>
       </div>

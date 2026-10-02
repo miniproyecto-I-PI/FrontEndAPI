@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getEvents } from "../services/api";
+import PageContainer from "../components/layout/PageContainer";
+import PageHeader from "../components/layout/PageHeader";
 
 export default function ProgresoPage() {
   const [events, setEvents] = useState([]);
@@ -13,12 +15,8 @@ export default function ProgresoPage() {
   }, []);
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8 md:px-8">
-      <header className="mb-7">
-        <p className="font-mono-stamp text-xs uppercase tracking-widest text-terracotta-dark">Resumen</p>
-        <h1 className="mt-1 font-serif text-4xl font-semibold text-ink-charcoal">Progreso</h1>
-        <p className="mt-2 text-sm text-ink-muted">Avance de las gestiones logísticas de cada evento.</p>
-      </header>
+    <PageContainer>
+      <PageHeader eyebrow="Resumen" title="Progreso" description="Avance de las gestiones logísticas de cada evento." />
       {status === "loading" && <p role="status">Cargando progreso…</p>}
       {status === "error" && <p role="alert" className="text-crimson-urgent">{error}</p>}
       {status === "success" && events.length === 0 && <p className="text-ink-muted">Aún no tienes eventos registrados.</p>}
@@ -35,6 +33,6 @@ export default function ProgresoPage() {
           </div>
         </li>;
       })}</ul>}
-    </main>
+    </PageContainer>
   );
 }

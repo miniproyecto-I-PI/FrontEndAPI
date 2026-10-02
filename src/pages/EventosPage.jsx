@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 
 import { useEvents } from "../hooks/useEvents";
 import {
@@ -8,8 +8,8 @@ import {
 } from "../services/api";
 import { diffInCalendarDays } from "../utils/dateUtils";
 
-import Header from "../components/layout/Header";
-import Footer from "../components/layout/Footer";
+import PageContainer from "../components/layout/PageContainer";
+import PageHeader, { Breadcrumb } from "../components/layout/PageHeader";
 import Toast from "../components/common/Toast";
 import UpdateEventSuccessModal from "../components/common/UpdateEventSuccessModal";
 import EditEventModal from "../components/common/EditEventModal";
@@ -27,8 +27,8 @@ const CATEGORY_CHIPS = [
 
 /**
  * EventosPage.jsx — route "/eventos".
- * Vista listado (Stitch, Sprint 1). Standalone, con su propio Header
- * (search cableado) y Footer — mismo patrón que HoyPage.
+ * Vista listado (Stitch). Header, Footer y buscador vienen de MainLayout;
+ * el filtro de la barra de controles comparte el mismo texto de búsqueda.
  *
  * NOTA (stats):
  * El diseño muestra "Completados: 12", un total histórico que NO se puede
@@ -41,7 +41,7 @@ export default function EventosPage() {
   const { events, status, errorMessage, reload } = useEvents();
 
   const [filter, setFilter] = useState("all");
-  const [query, setQuery] = useState("");
+  const { search: query, setSearch: setQuery } = useOutletContext();
   const [toast, setToast] = useState(null);
   const [updatedEventName, setUpdatedEventName] = useState(null);
 
@@ -119,35 +119,17 @@ const filtered = useMemo(() => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-paper-base dot-grid-pattern font-body text-ink-charcoal antialiased">
-      <Header searchValue={query} onSearchChange={setQuery} />
-
-      <main className="w-full pt-16 flex-1">
-        <div className="max-w-[1440px] mx-auto px-4 md:px-8 lg:px-12 py-8">
+    <>
+      <PageContainer>
           {/* ---------- Cabecera ---------- */}
           <section className="mb-6">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-5 border-b border-sepia-border">
-              <div className="space-y-1">
-                <nav
-                  aria-label="Breadcrumb"
-                  className="flex items-center gap-1.5 text-xs text-ink-muted font-body mb-1"
-                >
-                  <span>Convoka</span>
-                  <span className="text-sepia-dark">/</span>
-                  <span className="text-ink-charcoal font-semibold">Eventos</span>
-                </nav>
-                <h1 className="font-serif text-4xl sm:text-5xl font-semibold tracking-tight text-ink-charcoal leading-[1.1]">
-                  Todos los{" "}
-                  <span className="italic font-normal text-terracotta">eventos</span>
-                </h1>
-                <p className="font-body text-xs md:text-sm text-ink-muted pt-0.5">
-                  Expedientes de producción, fechas de celebración y estado
-                  operativo de tus clientes.
-                </p>
-              </div>
-
-              <MetricsBar stats={stats} />
-            </div>
+            <PageHeader
+              breadcrumb={<Breadcrumb backTo="/hoy" items={[{ label: "Convoka", to: "/hoy" }, { label: "Eventos" }]} />}
+              title="Todos los"
+              accent="eventos"
+              description="Expedientes de producción, fechas de celebración y estado operativo de tus clientes."
+              aside={<MetricsBar stats={stats} />}
+            />
 
             {status !== "error" && (
               <ControlsBar
@@ -185,10 +167,7 @@ const filtered = useMemo(() => {
               onDelete={setDeletingEvent}
             />
           )}
-        </div>
-      </main>
-
-      <Footer />
+      </PageContainer>
 
       {updatedEventName && (
   <UpdateEventSuccessModal
@@ -216,7 +195,7 @@ const filtered = useMemo(() => {
     onConfirm={handleDeleteConfirm}
   />
 )}
-    </div>
+    </>
   );
 }
 
@@ -245,7 +224,7 @@ function Metric({ label, value, tone }) {
         {label}
       </span>
       <span
-        className={`font-serif text-2xl font-bold leading-none ${valueClasses}`}
+        className={`font-heading text-2xl font-bold leading-none ${valueClasses}`}
       >
         {value}
       </span>
@@ -255,7 +234,7 @@ function Metric({ label, value, tone }) {
 
 function ControlsBar({ filter, onFilterChange, query, onQueryChange, counts, onCreate }) {
   return (
-    <div className="mt-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
         {CATEGORY_CHIPS.map((chip) => {
           const isActive = filter === chip.key;
@@ -333,7 +312,7 @@ function ErrorState({ message, onRetry }) {
       <span className="font-mono-stamp text-[10px] uppercase text-crimson-urgent font-bold tracking-wider mb-2 block">
         Incidencia de sincronización
       </span>
-      <h2 className="font-serif text-2xl md:text-3xl font-bold text-ink-charcoal mb-2">
+      <h2 className="font-heading text-2xl md:text-3xl font-bold text-ink-charcoal mb-2">
         {message || "No pudimos cargar tus eventos"}
       </h2>
       <p className="font-body text-xs md:text-sm text-ink-muted max-w-md mx-auto mb-6 leading-relaxed">
@@ -372,7 +351,7 @@ function EmptyState({ onCreate }) {
           assignment_turned_in
         </span>
       </div>
-      <h2 className="font-serif font-semibold text-ink-charcoal text-2xl md:text-3xl mb-2">
+      <h2 className="font-heading font-semibold text-ink-charcoal text-2xl md:text-3xl mb-2">
         No tienes eventos programados
       </h2>
       <p className="max-w-md mx-auto font-body text-sm text-ink-muted mb-8 leading-relaxed">
@@ -397,7 +376,7 @@ function NoResultsState({ onClear }) {
       <div className="w-12 h-12 mx-auto mb-3 rounded-sharp bg-paper-linen border border-sepia-border text-ink-muted flex items-center justify-center">
         <span className="material-symbols-outlined text-[24px]">search_off</span>
       </div>
-      <h3 className="font-serif text-xl font-bold text-ink-charcoal mb-1">
+      <h3 className="font-heading text-xl font-bold text-ink-charcoal mb-1">
         No se encontraron eventos
       </h3>
       <p className="font-body text-xs text-ink-muted mb-4">

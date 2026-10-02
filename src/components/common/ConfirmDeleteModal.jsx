@@ -55,7 +55,7 @@ export default function ConfirmDeleteModal({
       }}
     >
       <div className="relative w-full max-w-md bg-paper-card border border-sepia-border rounded-sharp p-6 shadow-xl warm-card-shadow border-l-[6px] border-l-crimson-urgent">
-        <h2 id="confirm-delete-title" className="font-serif text-2xl font-bold text-ink-charcoal">
+        <h2 id="confirm-delete-title" className="font-heading text-2xl font-bold text-ink-charcoal">
           {title}
         </h2>
         <p id="confirm-delete-desc" className="font-body text-sm text-ink-muted mt-2 leading-relaxed">

@@ -27,14 +27,13 @@ import {
 } from "../services/api";
 import { computeHoyStats, groupAndSortGestiones } from "../utils/sortGestiones";
 
-export function useTodayGestiones({ simulateError = false, simulateEmpty = false } = {}) {
+export function useTodayGestiones({ query = "", simulateError = false, simulateEmpty = false } = {}) {
   const EVENT_TYPE_ORDER = ["boda", "corporativo", "cumpleanos", "social", "otro"];
   const [rawGestiones, setRawGestiones] = useState([]);
   const [status, setStatus] = useState("loading"); // 'loading' | 'success' | 'error'
   const [errorMessage, setErrorMessage] = useState("");
   const [localOverrides, setLocalOverrides] = useState({}); // { [id]: Partial<Gestion> }
 
-  const [query, setQuery] = useState("");
   const [eventTypeFilter, setEventTypeFilter] = useState("todos");
 
   const fetchData = useCallback(async () => {
@@ -143,8 +142,6 @@ const availableEventTypes = useMemo(() => {
   errorMessage,
   grouped,
   stats,
-  query,
-  setQuery,
   eventTypeFilter,
   setEventTypeFilter,
   availableEventTypes,
