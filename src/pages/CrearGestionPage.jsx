@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import CreateSubtaskSuccessModal from "../components/common/CreateSubtaskSuccessModal";
 import { useEventSubtasks } from "../hooks/useEventSubtasks";
 import Toast from "../components/common/Toast";
+import StateCard from "../components/common/StateCard";
 import PageContainer from "../components/layout/PageContainer";
 import PageHeader, { Breadcrumb } from "../components/layout/PageHeader";
 import { formatShortDate } from "../utils/dateUtils";
@@ -22,7 +23,8 @@ const emptyForm = {
  */
 export default function CrearGestionPage() {
   const { id } = useParams();
-  const { event, addSubtask, status: eventStatus } = useEventSubtasks(id);
+  const navigate = useNavigate();
+  const { event, addSubtask, status: eventStatus, isRefreshing, reload } = useEventSubtasks(id);
 
   const [form, setForm] = useState(emptyForm);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -69,12 +71,14 @@ export default function CrearGestionPage() {
   }
   setStatus("loading");
   try {
-    const localDate = new Date(`${form.targetDate}T12:00:00`);
+    // target_date es una fecha local sin hora (AAAA-MM-DD); la hora
+    // opcional viaja aparte en `time` (comentario del backend).
     const created = await addSubtask({
       title: form.title.trim(),
       provider: form.provider.trim(),
-      targetDate: localDate.toISOString(),
+      targetDate: form.targetDate,
       estimatedHours: Number(form.estimatedHours),
+      time: form.time || null,
     });
     setCreatedSubtaskTitle(created?.title || form.title.trim());
     setStatus("idle");
@@ -117,6 +121,29 @@ export default function CrearGestionPage() {
         }
       />
 
+      {eventStatus === "notfound" && (
+        <StateCard
+          icon="search_off"
+          stamp="Expediente no disponible"
+          title="Evento no encontrado"
+          description="No puedes agregar gestiones a este evento: no existe o no pertenece a tu cuenta."
+          primaryAction={{ label: "Ir a Mis Eventos", icon: "arrow_back", onClick: () => navigate("/eventos") }}
+          compact
+        />
+      )}
+      {eventStatus === "error" && (
+        <StateCard
+          tone="error"
+          icon="sync_problem"
+          stamp="Incidencia de sincronización"
+          title="No pudimos cargar el evento"
+          description="Necesitamos los datos del evento para registrar la gestión. Tus datos guardados están a salvo."
+          primaryAction={{ label: isRefreshing ? "Reintentando…" : "Reintentar carga", icon: "refresh", onClick: reload, disabled: isRefreshing }}
+          compact
+        />
+      )}
+
+      {eventStatus !== "notfound" && eventStatus !== "error" && (
       <form onSubmit={handleSubmit} noValidate className="space-y-6">
         {generalError && (
           <div
@@ -352,6 +379,7 @@ export default function CrearGestionPage() {
           </div>
         </div>
       </form>
+      )}
 
               {createdSubtaskTitle && (
   <CreateSubtaskSuccessModal
