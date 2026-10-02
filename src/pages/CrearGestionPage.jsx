@@ -6,7 +6,7 @@ import Toast from "../components/common/Toast";
 import StateCard from "../components/common/StateCard";
 import PageContainer from "../components/layout/PageContainer";
 import PageHeader, { Breadcrumb } from "../components/layout/PageHeader";
-import { formatShortDate } from "../utils/dateUtils";
+import { formatShortDate, validateTargetDateAgainstEvent } from "../utils/dateUtils";
 
 const emptyForm = {
   title: "",
@@ -51,6 +51,10 @@ export default function CrearGestionPage() {
     if (!form.title.trim())
       errors.title = "Ponle un título para poder identificarla.";
     if (!form.targetDate) errors.targetDate = "Elige una fecha límite.";
+    else {
+      const afterEvent = validateTargetDateAgainstEvent(form.targetDate, event?.dateTime);
+      if (afterEvent) errors.targetDate = afterEvent;
+    }
     const hours = Number(form.estimatedHours);
     if (form.estimatedHours === "" || Number.isNaN(hours)) {
       errors.estimatedHours = "Indica las horas de dedicación.";
@@ -66,7 +70,8 @@ export default function CrearGestionPage() {
   const errors = validate();
   if (Object.keys(errors).length > 0) {
     setFieldErrors(errors);
-    setToast({ message: "Faltan campos obligatorios", intent: "error" })
+    const onlyDateRule = Object.keys(errors).length === 1 && errors.targetDate && form.targetDate;
+    setToast({ message: onlyDateRule ? "Revisa la fecha límite" : "Faltan campos obligatorios", intent: "error" })
     return;
   }
   setStatus("loading");
@@ -84,6 +89,10 @@ export default function CrearGestionPage() {
     setStatus("idle");
   } catch (err) {
     setStatus("idle");
+    if (err.code === "target_date_after_event") {
+      setFieldErrors((p) => ({ ...p, targetDate: err.details?.target_date?.[0] || err.message }));
+      return;
+    }
     setGeneralError(
       err.message || "No pudimos crear la gestión. Intenta de nuevo."
     );

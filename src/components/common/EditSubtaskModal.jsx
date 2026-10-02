@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { toDateInputValue } from "../../utils/dateUtils";
+import { toDateInputValue, validateTargetDateAgainstEvent } from "../../utils/dateUtils";
 
 // "Pospuesta" no está en el diseño, pero es un estado real del backend: sin
 // esta opción, editar una gestión pospuesta la devolvía a PENDIENTE.
@@ -13,10 +13,12 @@ const STATUS_OPTIONS = [
  * EditSubtaskModal.jsx — US-03.
  * Reemplaza al viejo AddSubtaskModal (modo edit). El diseño Stitch (Sprint 1)
  * agrega selector de Estado y separa visualmente en dos bloques numerados.
+ * `eventDateTime` (opcional): la fecha límite no puede pasar del día del evento.
  */
 export default function EditSubtaskModal({
   initialSubtask,
   eventName,
+  eventDateTime,
   onCancel,
   onSubmit,
 }) {
@@ -69,6 +71,10 @@ export default function EditSubtaskModal({
       errors.estimatedHours = "Debe ser mayor a 0.";
     }
     if (!form.date) errors.date = "Elige una fecha límite.";
+    else {
+      const afterEvent = validateTargetDateAgainstEvent(form.date, eventDateTime);
+      if (afterEvent) errors.date = afterEvent;
+    }
     return errors;
   }
 

@@ -1,5 +1,5 @@
 import { useId, useState } from "react";
-import { formatShortDate } from "../../utils/dateUtils";
+import { formatShortDate, validateTargetDateAgainstEvent } from "../../utils/dateUtils";
 
 const emptyDraft = { title: "", provider: "", targetDate: "", time: "", estimatedHours: "" };
 
@@ -12,8 +12,10 @@ const emptyDraft = { title: "", provider: "", targetDate: "", time: "", estimate
  *   targetDate = "AAAA-MM-DD"; provider y time ("HH:MM") son opcionales ("" si vacíos).
  * @param {(item) => void} onAdd
  * @param {(index: number) => void} onRemove
+ * @param {string} eventDate  "AAAA-MM-DD" del evento ("" si aún no se elige):
+ *   ninguna gestión puede quedar después de ese día.
  */
-export default function InitialSubtasks({ items, onAdd, onRemove, disabled = false }) {
+export default function InitialSubtasks({ items, onAdd, onRemove, eventDate = "", disabled = false }) {
   const [open, setOpen] = useState(true);
   const [draft, setDraft] = useState(emptyDraft);
   const [errors, setErrors] = useState({});
@@ -37,6 +39,10 @@ export default function InitialSubtasks({ items, onAdd, onRemove, disabled = fal
     const next = {};
     if (!draft.title.trim()) next.title = "Escribe el título de la gestión.";
     if (!draft.targetDate) next.targetDate = "Elige la fecha límite.";
+    else {
+      const afterEvent = validateTargetDateAgainstEvent(draft.targetDate, eventDate);
+      if (afterEvent) next.targetDate = afterEvent;
+    }
     const hours = Number(draft.estimatedHours);
     if (draft.estimatedHours === "" || Number.isNaN(hours)) next.estimatedHours = "Indica las horas.";
     else if (hours <= 0) next.estimatedHours = "Debe ser mayor a 0.";
@@ -183,14 +189,24 @@ export default function InitialSubtasks({ items, onAdd, onRemove, disabled = fal
                 <span className="font-body text-[11px] text-ink-muted">Se crearán junto con el evento</span>
               </div>
               <ul className="space-y-2">
-                {items.map((item, index) => (
+                {items.map((item, index) => {
+                  // Si luego se cambia la fecha del evento, la gestión puede quedar fuera de rango.
+                  const dateError = validateTargetDateAgainstEvent(item.targetDate, eventDate);
+                  return (
                   <li key={`${item.title}-${index}`} className="flex items-center gap-3 px-3 py-2.5 bg-paper-linen/50 border border-sepia-border rounded-sharp">
                     <span className="material-symbols-outlined text-[18px] text-terracotta" aria-hidden="true">assignment</span>
                     <span className="flex-1 min-w-0 truncate font-body text-sm text-ink-charcoal">
                       {item.title}
                       {item.provider && <span className="text-ink-muted"> · {item.provider}</span>}
                     </span>
-                    <span className="inline-flex items-center gap-1 font-mono-stamp text-[11px] text-ink-muted bg-paper-card border border-sepia-border px-2 py-0.5 rounded-sharp">
+                    <span
+                      title={dateError ?? undefined}
+                      className={`inline-flex items-center gap-1 font-mono-stamp text-[11px] px-2 py-0.5 rounded-sharp border ${
+                        dateError
+                          ? "text-crimson-urgent bg-crimson-paper border-crimson-urgent/30"
+                          : "text-ink-muted bg-paper-card border-sepia-border"
+                      }`}
+                    >
                       <span className="material-symbols-outlined text-[13px]" aria-hidden="true">calendar_today</span>
                       {formatShortDate(item.targetDate)}
                       {item.time && ` · ${item.time}`}
@@ -208,7 +224,8 @@ export default function InitialSubtasks({ items, onAdd, onRemove, disabled = fal
                       <span className="material-symbols-outlined text-[18px]" aria-hidden="true">close</span>
                     </button>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             </div>
           )}
