@@ -11,14 +11,15 @@ import { formatOverdueLabel, formatShortDate, formatUpcomingLabel } from "../../
  * La urgencia no depende solo del color (US-04, UX): las vencidas llevan
  * ícono de alerta y el texto "Vencida hace N días"; las pospuestas, la
  * etiqueta "Pospuesta". Las ejecutadas (sección "0. Ejecutadas") llevan la
- * etiqueta "Ejecutada" y solo el botón "Editar".
+ * etiqueta "Ejecutada" y solo el botón "Editar". En todas las variantes, el
+ * título es un botón que abre el modal "Editar gestión" (`onEdit`).
  *
  * @param {Object} props
  * @param {import('../../utils/sortGestiones').Gestion} props.gestion
  * @param {'vencida'|'hoy-hero'|'hoy-secundaria'|'proxima'|'ejecutada'} props.variant
  * @param {() => void} [props.onMarkDone]
  * @param {() => void} [props.onReschedule]
- * @param {() => void} [props.onEdit]  solo variante "ejecutada"
+ * @param {() => void} [props.onEdit]  abre "Editar gestión" (título y botón Editar)
  * @param {Date} [props.today]
  */
 export default function TaskCard({ gestion, variant, onMarkDone, onReschedule, onEdit, today = new Date() }) {
@@ -39,7 +40,7 @@ export default function TaskCard({ gestion, variant, onMarkDone, onReschedule, o
     .filter(Boolean)
     .join(" ");
 
-  const props = { gestion, today, onMarkDone, onReschedule };
+  const props = { gestion, today, onMarkDone, onReschedule, onEdit };
   return (
     <article className={containerClasses} data-gestion-id={gestion.id} aria-label={gestion.title}>
       {isVencida && <VencidaBody {...props} />}
@@ -89,6 +90,20 @@ function ActionButtons({ onMarkDone, onReschedule, size = "normal" }) {
   );
 }
 
+function EditableTitle({ gestion, onEdit }) {
+  if (!onEdit) return gestion.title;
+  return (
+    <button
+      type="button"
+      onClick={onEdit}
+      title="Editar gestión"
+      className="text-left rounded-sharp hover:underline decoration-sepia-dark underline-offset-4 decoration-1 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1"
+    >
+      {gestion.title}
+    </button>
+  );
+}
+
 function Hours({ value, long = false }) {
   return (
     <span className="font-stamp text-[11px] text-ink-muted">
@@ -97,7 +112,7 @@ function Hours({ value, long = false }) {
   );
 }
 
-function VencidaBody({ gestion, today, onMarkDone, onReschedule }) {
+function VencidaBody({ gestion, today, onMarkDone, onReschedule, onEdit }) {
   return (
     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
       <div className="space-y-1.5 flex-1 min-w-0">
@@ -111,7 +126,7 @@ function VencidaBody({ gestion, today, onMarkDone, onReschedule }) {
           <span className="text-sepia-dark" aria-hidden="true">•</span>
           <Hours value={gestion.estimatedHours} long />
         </div>
-        <h3 className="font-heading text-xl text-ink-charcoal font-semibold leading-snug">{gestion.title}</h3>
+        <h3 className="font-heading text-xl text-ink-charcoal font-semibold leading-snug"><EditableTitle gestion={gestion} onEdit={onEdit} /></h3>
         {(gestion.provider || gestion.note) && (
           <div className="flex flex-wrap items-center gap-x-2 text-xs font-body text-ink-muted pt-0.5">
             {gestion.provider && <span>{gestion.provider}</span>}
@@ -127,7 +142,7 @@ function VencidaBody({ gestion, today, onMarkDone, onReschedule }) {
   );
 }
 
-function HeroBody({ gestion, onMarkDone, onReschedule }) {
+function HeroBody({ gestion, onMarkDone, onReschedule, onEdit }) {
   return (
     <>
       <div className="space-y-3.5">
@@ -142,7 +157,7 @@ function HeroBody({ gestion, onMarkDone, onReschedule }) {
         </div>
         <div>
           <span className="font-body text-xs font-semibold text-ink-muted uppercase tracking-wider block">{gestion.eventName}</span>
-          <h3 className="font-heading text-2xl md:text-3xl text-ink-charcoal font-semibold mt-1 leading-tight">{gestion.title}</h3>
+          <h3 className="font-heading text-2xl md:text-3xl text-ink-charcoal font-semibold mt-1 leading-tight"><EditableTitle gestion={gestion} onEdit={onEdit} /></h3>
         </div>
         {gestion.note && (
           <div className="p-3.5 bg-paper-linen/80 rounded-sharp border border-sepia-border text-xs leading-relaxed space-y-1.5">
@@ -161,7 +176,7 @@ function HeroBody({ gestion, onMarkDone, onReschedule }) {
   );
 }
 
-function SecondaryBody({ gestion, onMarkDone, onReschedule }) {
+function SecondaryBody({ gestion, onMarkDone, onReschedule, onEdit }) {
   return (
     <>
       <div>
@@ -175,7 +190,7 @@ function SecondaryBody({ gestion, onMarkDone, onReschedule }) {
           <Hours value={gestion.estimatedHours} />
         </div>
         <span className="font-body text-xs font-semibold text-ink-muted block mt-2">{gestion.eventName}</span>
-        <h3 className="font-heading text-lg font-semibold text-ink-charcoal leading-snug mt-0.5">{gestion.title}</h3>
+        <h3 className="font-heading text-lg font-semibold text-ink-charcoal leading-snug mt-0.5"><EditableTitle gestion={gestion} onEdit={onEdit} /></h3>
         {(gestion.provider || gestion.note) && (
           <p className="text-xs font-body text-ink-muted mt-1">{[gestion.provider, gestion.note].filter(Boolean).join(" • ")}</p>
         )}
@@ -187,7 +202,7 @@ function SecondaryBody({ gestion, onMarkDone, onReschedule }) {
   );
 }
 
-function ProximaBody({ gestion, today, onMarkDone, onReschedule }) {
+function ProximaBody({ gestion, today, onMarkDone, onReschedule, onEdit }) {
   return (
     <>
       <div className="space-y-2">
@@ -202,7 +217,7 @@ function ProximaBody({ gestion, today, onMarkDone, onReschedule }) {
           <Hours value={gestion.estimatedHours} />
         </div>
         <span className="font-body text-xs font-semibold text-ink-muted block">{gestion.eventName}</span>
-        <h3 className="font-heading text-lg font-semibold text-ink-charcoal leading-snug">{gestion.title}</h3>
+        <h3 className="font-heading text-lg font-semibold text-ink-charcoal leading-snug"><EditableTitle gestion={gestion} onEdit={onEdit} /></h3>
         {gestion.note && <p className="font-body text-xs text-ink-muted leading-relaxed">{gestion.note}</p>}
       </div>
       <div className="pt-3 mt-3 border-t border-sepia-border/50">
@@ -246,7 +261,7 @@ function EjecutadaBody({ gestion, onEdit }) {
           <span className="text-sepia-dark" aria-hidden="true">•</span>
           <Hours value={gestion.estimatedHours} long />
         </div>
-        <h3 className="font-heading text-xl text-ink-muted font-semibold leading-snug">{gestion.title}</h3>
+        <h3 className="font-heading text-xl text-ink-muted font-semibold leading-snug"><EditableTitle gestion={gestion} onEdit={onEdit} /></h3>
         {(gestion.provider || gestion.note) && (
           <p className="text-xs font-body text-ink-muted pt-0.5">{[gestion.provider, gestion.note].filter(Boolean).join(" • ")}</p>
         )}

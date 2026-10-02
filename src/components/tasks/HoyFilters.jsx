@@ -44,9 +44,11 @@ export default function HoyFilters({
                   : "border-sepia-border bg-paper-linen text-ink-charcoal hover:border-ink-muted",
               ].join(" ")}
             >
-              <option value="">Todos los eventos</option>
+              {/* Las opciones heredan el fondo del select; se fijan en blanco
+                  para que la lista no se vuelva café al haber un evento activo. */}
+              <option value="" className="bg-white text-ink-charcoal font-normal">Todos los eventos</option>
               {eventOptions.map((o) => (
-                <option key={o.value} value={o.value}>
+                <option key={o.value} value={o.value} className="bg-white text-ink-charcoal font-normal">
                   {o.label}
                 </option>
               ))}
