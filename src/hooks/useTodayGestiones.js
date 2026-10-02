@@ -1,57 +1,74 @@
 /**
  * useTodayGestiones.js
  * ---------------------------------------------------------------------------
- * All the state and business logic behind the "/hoy" page lives here, kept
- * separate from the JSX so pages/HoyPage.jsx stays focused on layout.
+ * Estado y lógica de la vista "/hoy" (US-04 + US-05), separada del JSX.
  *
- * Responsibilities:
- *  - Fetch gestiones through services/api.js (loading / success / error).
- *  - Apply search + event-type filters.
- *  - Group + sort using utils/sortGestiones.js (the US-04 priority rule).
- *  - Apply OPTIMISTIC local updates for actions (mark done, postpone,
- *    reschedule) so the UI reacts instantly, with an `undo` escape hatch
- *    that the Toast component wires up to its "Deshacer" button.
- *
- * Optimistic-update pattern: each action stores a partial override keyed by
- * gestión id in `localOverrides`, merged on top of the last server response
- * (`rawGestiones`). `undo(id)` simply discards that override. If the backend
- * call fails, the override is discarded automatically as well, so the UI
- * self-corrects instead of silently drifting from server state.
+ *  - Carga GET /today. Los filtros por evento y estado (US-05) se envían al
+ *    backend como query params; el texto del buscador se filtra en memoria.
+ *  - Agrupa y ordena con utils/sortGestiones.js (regla de priorización).
+ *  - Estados: "loading" (primera carga), "success", "error". `isRefreshing`
+ *    indica una recarga con datos ya visibles (chip "Sincronizando…").
+ *    `errorKind` distingue un fallo de carga de un fallo al aplicar filtros.
+ *  - Acciones optimistas (marcar hecha / reprogramar) con "Deshacer", que
+ *    también revierte el cambio en el servidor.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  getToday,
-  markGestionAsDone,
-  postponeGestion,
-  rescheduleGestion,
-} from "../services/api";
+import { getEvents, getToday, markGestionAsDone, rescheduleGestion, updateSubtask } from "../services/api";
 import { computeHoyStats, groupAndSortGestiones } from "../utils/sortGestiones";
 
+export const STATUS_FILTERS = [
+  { value: "", label: "Todas" },
+  { value: "PENDIENTE", label: "Pendientes" },
+  { value: "POSPUESTA", label: "Pospuestas" },
+];
+
 export function useTodayGestiones({ query = "", simulateError = false, simulateEmpty = false } = {}) {
-  const EVENT_TYPE_ORDER = ["boda", "corporativo", "cumpleanos", "social", "otro"];
   const [rawGestiones, setRawGestiones] = useState([]);
   const [status, setStatus] = useState("loading"); // 'loading' | 'success' | 'error'
-  const [errorMessage, setErrorMessage] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [errorKind, setErrorKind] = useState(null); // 'load' | 'filter'
   const [localOverrides, setLocalOverrides] = useState({}); // { [id]: Partial<Gestion> }
 
-  const [eventTypeFilter, setEventTypeFilter] = useState("todos");
+  const [eventFilter, setEventFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [eventOptions, setEventOptions] = useState([]);
+
+  const hasServerFilters = Boolean(eventFilter || statusFilter);
 
   const fetchData = useCallback(async () => {
-    setStatus("loading");
+    setIsRefreshing(true);
     try {
-      const data = await getToday({ simulateError });
+      const data = await getToday({ eventId: eventFilter, status: statusFilter, simulateError });
       setRawGestiones(simulateEmpty ? [] : data);
       setLocalOverrides({});
+      setErrorKind(null);
       setStatus("success");
-    } catch (err) {
-      setErrorMessage(err.message || "No pudimos cargar tus gestiones");
+    } catch {
+      setErrorKind(eventFilter || statusFilter ? "filter" : "load");
       setStatus("error");
+    } finally {
+      setIsRefreshing(false);
     }
-  }, [simulateError, simulateEmpty]);
+  }, [eventFilter, statusFilter, simulateError, simulateEmpty]);
 
   useEffect(() => {
     Promise.resolve().then(fetchData);
   }, [fetchData]);
+
+  // Opciones del selector de evento: todos los eventos del organizador.
+  useEffect(() => {
+    let cancelled = false;
+    getEvents()
+      .then((events) => {
+        if (!cancelled) setEventOptions(events.map((e) => ({ value: e.id, label: e.name })));
+      })
+      .catch(() => {
+        // Sin la lista, el selector solo ofrece "Todos los eventos".
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const clearOverride = (id) =>
     setLocalOverrides((prev) => {
@@ -63,89 +80,82 @@ export function useTodayGestiones({ query = "", simulateError = false, simulateE
   const setOverride = (id, patch) =>
     setLocalOverrides((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
 
-  // Server data + optimistic overrides merged together.
+  // Datos del servidor + cambios optimistas.
   const effectiveGestiones = useMemo(
     () => rawGestiones.map((g) => (localOverrides[g.id] ? { ...g, ...localOverrides[g.id] } : g)),
     [rawGestiones, localOverrides]
   );
 
-  const filteredGestiones = useMemo(() => {
+  const searchedGestiones = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    return effectiveGestiones.filter((g) => {
-      const matchesType = eventTypeFilter === "todos" || g.eventType === eventTypeFilter;
-      const matchesQuery =
-        normalizedQuery === "" ||
-        `${g.eventName} ${g.title}`.toLowerCase().includes(normalizedQuery);
-      return matchesType && matchesQuery;
-    });
-  }, [effectiveGestiones, eventTypeFilter, query]);
+    if (!normalizedQuery) return effectiveGestiones;
+    return effectiveGestiones.filter((g) =>
+      `${g.eventName} ${g.title} ${g.provider ?? ""}`.toLowerCase().includes(normalizedQuery)
+    );
+  }, [effectiveGestiones, query]);
 
-  const grouped = useMemo(() => groupAndSortGestiones(filteredGestiones), [filteredGestiones]);
+  const grouped = useMemo(() => groupAndSortGestiones(searchedGestiones), [searchedGestiones]);
   const stats = useMemo(() => computeHoyStats(grouped), [grouped]);
 
-  /** US-09 — Marcar gestión como ejecutada. Returns the previous status for Undo. */
+  /** US-09 — Marcar como ejecutada (sale de /hoy). */
   const markAsDone = useCallback(async (id) => {
     setOverride(id, { status: "EJECUTADA" });
     try {
       await markGestionAsDone(id);
-    } catch {
-      clearOverride(id); // revert optimistic change if the backend call fails
-    }
-  }, []);
-
-  /** US-09 — Posponer con nota opcional. */
-  const postpone = useCallback(async (id, note) => {
-    setOverride(id, { status: "POSPUESTA", postponeNote: note });
-    try {
-      await postponeGestion(id, note);
+      return true;
     } catch {
       clearOverride(id);
+      return false;
     }
   }, []);
 
-  /** US-06 — Reprogramar una gestión a una nueva fecha/hora. */
-  const reschedule = useCallback(async (id, newTargetDateISO) => {
-    const previous = rawGestiones.find((g) => g.id === id)?.targetDate;
-    setOverride(id, { targetDate: newTargetDateISO });
-    try {
-      await rescheduleGestion(id, newTargetDateISO);
-    } catch {
-      if (previous) setOverride(id, { targetDate: previous });
-    }
-  }, [rawGestiones]);
-
-  /** Bulk version used by "Reprogramar todas" on the Vencidas section. */
-  const rescheduleMany = useCallback(
-    async (ids, newTargetDateISO) => {
-      await Promise.all(ids.map((id) => reschedule(id, newTargetDateISO)));
+  /** Deshacer "marcar como hecha": vuelve al estado previo también en el servidor. */
+  const undoMarkAsDone = useCallback(
+    async (id) => {
+      const previousStatus = rawGestiones.find((g) => g.id === id)?.status ?? "PENDIENTE";
+      clearOverride(id);
+      try {
+        await updateSubtask(id, { status: previousStatus });
+        return true;
+      } catch {
+        setOverride(id, { status: "EJECUTADA" });
+        return false;
+      }
     },
-    [reschedule]
+    [rawGestiones]
   );
 
-  /** Discards any optimistic override, restoring the last known server state ("Deshacer"). */
-  const undo = useCallback((id) => clearOverride(id), []);
+  /** US-06 — Reprogramar a una nueva fecha. */
+  const reschedule = useCallback(
+    async (id, newTargetDate) => {
+      const previous = rawGestiones.find((g) => g.id === id)?.targetDate;
+      setOverride(id, { targetDate: newTargetDate.split("T")[0] });
+      try {
+        await rescheduleGestion(id, newTargetDate);
+        return true;
+      } catch {
+        if (previous) setOverride(id, { targetDate: previous });
+        return false;
+      }
+    },
+    [rawGestiones]
+  );
 
-
-  /**
- * Tipos de evento disponibles para los chips de filtro.
- * Se deriva de `effectiveGestiones` (datos SIN filtrar por tipo), para que
- * los chips no desaparezcan cuando el usuario elige un filtro activo.
- * El orden es fijo (EVENT_TYPE_ORDER) para que no "salten" entre renders.
- */
-const availableEventTypes = useMemo(() => {
-  const present = new Set(effectiveGestiones.map((g) => g.eventType));
-  return EVENT_TYPE_ORDER.filter((t) => present.has(t));
-}, [effectiveGestiones]);
+  const clearFilters = useCallback(() => {
+    setEventFilter("");
+    setStatusFilter("");
+  }, []);
 
   return {
-  status,
-  errorMessage,
-  grouped,
-  stats,
-  eventTypeFilter,
-  setEventTypeFilter,
-  availableEventTypes,
-  actions: { markAsDone, postpone, reschedule, rescheduleMany, undo },
-  reload: fetchData,
-};
+    status,
+    isRefreshing,
+    errorKind,
+    grouped,
+    stats,
+    totalUnfiltered: rawGestiones.filter((g) => g.status !== "EJECUTADA").length,
+    filters: { eventFilter, setEventFilter, statusFilter, setStatusFilter, hasServerFilters, clearFilters },
+    eventOptions,
+    actions: { markAsDone, undoMarkAsDone, reschedule },
+    reload: fetchData,
+  };
 }

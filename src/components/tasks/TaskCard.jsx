@@ -1,20 +1,22 @@
-import { formatOverdueLabel, formatTime, formatUpcomingLabel } from "../../utils/dateUtils";
+import { formatOverdueLabel, formatUpcomingLabel } from "../../utils/dateUtils";
 
 /**
  * TaskCard.jsx
  * ---------------------------------------------------------------------------
- * Renders a single gestión (subtarea logística). One component with a
- * `variant` prop instead of four near-identical ones — the original HTML
- * prototype has four visually different card treatments (urgente / hero de
- * hoy / secundaria de hoy / próxima) but they share the same anatomy:
- * badge + event name + title + detail line + actions. Only spacing, border
- * emphasis and which badge to show actually change.
+ * Una gestión (subtarea logística) en "/hoy". Un solo componente con `variant`
+ * para los cuatro tratamientos del diseño (vencida / hero de hoy / secundaria
+ * de hoy / próxima); comparten anatomía: sello + evento + título + detalle +
+ * acciones.
+ *
+ * La urgencia no depende solo del color (US-04, UX): las vencidas llevan
+ * ícono de alerta y el texto "Vencida hace N días"; las pospuestas, la
+ * etiqueta "Pospuesta".
  *
  * @param {Object} props
  * @param {import('../../utils/sortGestiones').Gestion} props.gestion
  * @param {'vencida'|'hoy-hero'|'hoy-secundaria'|'proxima'} props.variant
  * @param {() => void} props.onMarkDone
- * @param {() => void} props.onReschedule - opens the single-item reschedule modal
+ * @param {() => void} props.onReschedule
  * @param {Date} [props.today]
  */
 export default function TaskCard({ gestion, variant, onMarkDone, onReschedule, today = new Date() }) {
@@ -26,82 +28,94 @@ export default function TaskCard({ gestion, variant, onMarkDone, onReschedule, t
   const containerClasses = [
     "bg-paper-card border border-sepia-border rounded-sharp warm-card-shadow warm-card-hover transition-all group",
     isVencida && "relative bg-crimson-paper/50 border-l-[6px] border-l-crimson-urgent p-4 md:p-5",
-    isHero && "border-l-[6px] border-l-terracotta p-6 rounded-asym-book flex flex-col justify-between h-full",
+    isHero && "border-l-[6px] border-l-terracotta p-5 md:p-6 flex flex-col justify-between h-full",
     isSecondary && "border-l-4 border-l-terracotta p-4 flex flex-col justify-between h-full",
     isProxima && "border-l-2 border-l-sepia-dark p-4 flex flex-col justify-between h-full",
   ]
     .filter(Boolean)
     .join(" ");
 
+  const props = { gestion, today, onMarkDone, onReschedule };
   return (
-    <article className={containerClasses} data-gestion-id={gestion.id}>
-      {isVencida && (
-        <VencidaBody gestion={gestion} today={today} onMarkDone={onMarkDone} onReschedule={onReschedule} />
-      )}
-      {isHero && <HeroBody gestion={gestion} onMarkDone={onMarkDone} onReschedule={onReschedule} />}
-      {isSecondary && <SecondaryBody gestion={gestion} onMarkDone={onMarkDone} onReschedule={onReschedule} />}
-      {isProxima && (
-        <ProximaBody gestion={gestion} today={today} onMarkDone={onMarkDone} onReschedule={onReschedule} />
-      )}
+    <article className={containerClasses} data-gestion-id={gestion.id} aria-label={gestion.title}>
+      {isVencida && <VencidaBody {...props} />}
+      {isHero && <HeroBody {...props} />}
+      {isSecondary && <SecondaryBody {...props} />}
+      {isProxima && <ProximaBody {...props} />}
     </article>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Variant bodies (kept private to this file — none are reused standalone)
-// ---------------------------------------------------------------------------
+
+const isPostponed = (g) => g.status === "POSPUESTA";
+const todayLabel = (g) => (g.time ? `Hoy • ${g.time}` : "Hoy");
+
+function PostponedTag() {
+  return (
+    <span className="inline-flex items-center gap-1 font-body text-[11px] font-semibold text-ink-charcoal bg-paper-accent border border-sepia-dark/50 px-2 py-0.5 rounded-sharp">
+      <span className="material-symbols-outlined text-[13px]" aria-hidden="true">pause_circle</span>
+      Pospuesta
+    </span>
+  );
+}
 
 function ActionButtons({ onMarkDone, onReschedule, size = "normal" }) {
-  const base =
-    size === "normal"
-      ? "px-3.5 py-1.5 text-xs"
-      : "px-3 py-1 text-xs";
+  const base = size === "normal" ? "px-3.5 py-1.5 text-xs" : "px-3 py-1 text-xs";
   return (
     <>
       <button
         type="button"
         onClick={onMarkDone}
-        className={`btn-mark-done ${base} rounded-sharp bg-terracotta text-[#FAF6F0] font-body font-semibold tracking-wide inline-flex items-center gap-1.5 border border-terracotta-dark shadow-sm hover:bg-terracotta-dark transition-colors`}
+        className={`${base} rounded-sharp bg-terracotta text-[#FAF6F0] font-body font-semibold tracking-wide inline-flex items-center gap-1.5 border border-terracotta-dark shadow-sm hover:bg-terracotta-dark transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1`}
       >
-        <span className="material-symbols-outlined text-[15px]">check_circle</span>
+        <span className="material-symbols-outlined text-[15px]" aria-hidden="true">check_circle</span>
         <span>Marcar como hecha</span>
       </button>
       <button
         type="button"
         onClick={onReschedule}
-        className={`${base} rounded-sharp bg-paper-card hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body font-medium inline-flex items-center gap-1.5 transition-colors`}
+        className={`${base} rounded-sharp bg-paper-card hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body font-medium inline-flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1`}
       >
-        <span className="material-symbols-outlined text-[15px] text-ink-muted">event_repeat</span>
+        <span className="material-symbols-outlined text-[15px] text-ink-muted" aria-hidden="true">event_repeat</span>
         <span>Reprogramar</span>
       </button>
     </>
   );
 }
 
+function Hours({ value, long = false }) {
+  return (
+    <span className="font-stamp text-[11px] text-ink-muted">
+      {value} {long ? "hrs estimadas" : "hrs"}
+    </span>
+  );
+}
+
 function VencidaBody({ gestion, today, onMarkDone, onReschedule }) {
   return (
     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-      <div className="space-y-1.5 flex-1">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs no-strike">
-          <span className="font-body text-[11px] font-bold text-crimson-tag bg-[#F6DDD7] border border-crimson-urgent/30 px-2 py-0.5 rounded-sharp uppercase tracking-wide">
+      <div className="space-y-1.5 flex-1 min-w-0">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+          <span className="inline-flex items-center gap-1 font-body text-[11px] font-bold text-crimson-tag bg-[#F6DDD7] border border-crimson-urgent/30 px-2 py-0.5 rounded-sharp uppercase tracking-wide">
+            <span className="material-symbols-outlined text-[13px]" aria-hidden="true">warning</span>
             {formatOverdueLabel(gestion.targetDate, today)}
           </span>
+          {isPostponed(gestion) && <PostponedTag />}
           <span className="font-body font-medium text-ink-charcoal">{gestion.eventName}</span>
-          <span className="text-sepia-dark">•</span>
-          <span className="font-mono-stamp text-[11px] text-ink-muted">{gestion.estimatedHours} hrs estimadas</span>
+          <span className="text-sepia-dark" aria-hidden="true">•</span>
+          <Hours value={gestion.estimatedHours} long />
         </div>
-        <h3 className="font-heading text-xl text-ink-charcoal font-bold group-hover:text-terracotta transition-colors leading-snug">
-          {gestion.title}
-        </h3>
-        {(gestion.provider || gestion.detail) && (
+        <h3 className="font-heading text-xl text-ink-charcoal font-semibold leading-snug">{gestion.title}</h3>
+        {(gestion.provider || gestion.note) && (
           <div className="flex flex-wrap items-center gap-x-2 text-xs font-body text-ink-muted pt-0.5">
             {gestion.provider && <span>{gestion.provider}</span>}
-            {gestion.provider && gestion.detail && <span className="text-sepia-dark">•</span>}
-            {gestion.detail && <span className="text-crimson-tag font-medium">{gestion.detail}</span>}
+            {gestion.provider && gestion.note && <span className="text-sepia-dark" aria-hidden="true">•</span>}
+            {gestion.note && <span className="text-crimson-tag font-medium">{gestion.note}</span>}
           </div>
         )}
       </div>
-      <div className="flex items-center gap-2 self-end lg:self-center shrink-0 pt-2 lg:pt-0 no-strike">
+      <div className="flex items-center gap-2 self-end lg:self-center shrink-0 pt-2 lg:pt-0">
         <ActionButtons onMarkDone={onMarkDone} onReschedule={onReschedule} />
       </div>
     </div>
@@ -112,32 +126,28 @@ function HeroBody({ gestion, onMarkDone, onReschedule }) {
   return (
     <>
       <div className="space-y-3.5">
-        <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-sepia-border/70 no-strike">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-sepia-border/70">
           <div className="flex items-center gap-2.5">
             <span className="font-body text-[11px] font-bold text-terracotta-dark bg-terracotta-light/70 border border-terracotta/30 px-2.5 py-0.5 rounded-sharp uppercase tracking-wide">
-              Hoy • {formatTime(gestion.targetDate)}
+              {todayLabel(gestion)}
             </span>
-            <span className="font-heading italic text-xs text-terracotta">Prioritaria</span>
+            {isPostponed(gestion) ? <PostponedTag /> : <span className="font-body italic text-xs text-terracotta">Prioritaria</span>}
           </div>
-          <span className="font-mono-stamp text-xs text-ink-muted">{gestion.estimatedHours} hrs estimadas</span>
+          <Hours value={gestion.estimatedHours} long />
         </div>
         <div>
-          <span className="font-body text-xs font-semibold text-ink-muted uppercase tracking-wider block no-strike">
-            {gestion.eventName}
-          </span>
-          <h3 className="font-heading text-2xl md:text-3xl text-ink-charcoal font-bold mt-1 group-hover:text-terracotta transition-colors leading-tight">
-            {gestion.title}
-          </h3>
+          <span className="font-body text-xs font-semibold text-ink-muted uppercase tracking-wider block">{gestion.eventName}</span>
+          <h3 className="font-heading text-2xl md:text-3xl text-ink-charcoal font-semibold mt-1 leading-tight">{gestion.title}</h3>
         </div>
-        {gestion.detail && (
-          <div className="p-3.5 bg-paper-linen/80 rounded-sharp border border-sepia-border text-xs leading-relaxed space-y-1.5 no-strike">
+        {gestion.note && (
+          <div className="p-3.5 bg-paper-linen/80 rounded-sharp border border-sepia-border text-xs leading-relaxed space-y-1.5">
             <p className="font-body font-semibold text-ink-charcoal">Puntos clave:</p>
-            <p className="text-ink-muted font-body">{gestion.detail}</p>
+            <p className="text-ink-muted font-body">{gestion.note}</p>
           </div>
         )}
       </div>
-      <div className="flex items-center justify-between pt-4 mt-3 border-t border-sepia-border no-strike">
-        <span className="font-body text-xs text-ink-muted">{gestion.contractRef ?? ""}</span>
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-4 mt-4 border-t border-sepia-border">
+        <span className="font-body text-xs text-ink-muted">{gestion.provider}</span>
         <div className="flex items-center gap-2">
           <ActionButtons onMarkDone={onMarkDone} onReschedule={onReschedule} />
         </div>
@@ -150,23 +160,22 @@ function SecondaryBody({ gestion, onMarkDone, onReschedule }) {
   return (
     <>
       <div>
-        <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-sepia-border/40 no-strike">
-          <span className="font-body text-[11px] font-bold text-terracotta-dark bg-terracotta-light/60 border border-terracotta/30 px-2 py-0.5 rounded-sharp uppercase tracking-wide">
-            Hoy • {formatTime(gestion.targetDate)}
-          </span>
-          <span className="font-mono-stamp text-[11px] text-ink-muted">{gestion.estimatedHours} hrs</span>
+        <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-sepia-border/40">
+          <div className="flex items-center gap-2">
+            <span className="font-body text-[11px] font-bold text-terracotta-dark bg-terracotta-light/60 border border-terracotta/30 px-2 py-0.5 rounded-sharp uppercase tracking-wide">
+              {todayLabel(gestion)}
+            </span>
+            {isPostponed(gestion) && <PostponedTag />}
+          </div>
+          <Hours value={gestion.estimatedHours} />
         </div>
-        <span className="font-body text-xs font-semibold text-ink-muted block mt-2 no-strike">{gestion.eventName}</span>
-        <h3 className="font-heading text-lg font-bold text-ink-charcoal group-hover:text-terracotta transition-colors leading-snug mt-0.5">
-          {gestion.title}
-        </h3>
-        {(gestion.provider || gestion.detail) && (
-          <p className="text-xs font-body text-ink-muted mt-1">
-            {[gestion.provider, gestion.detail].filter(Boolean).join(" • ")}
-          </p>
+        <span className="font-body text-xs font-semibold text-ink-muted block mt-2">{gestion.eventName}</span>
+        <h3 className="font-heading text-lg font-semibold text-ink-charcoal leading-snug mt-0.5">{gestion.title}</h3>
+        {(gestion.provider || gestion.note) && (
+          <p className="text-xs font-body text-ink-muted mt-1">{[gestion.provider, gestion.note].filter(Boolean).join(" • ")}</p>
         )}
       </div>
-      <div className="flex items-center justify-end gap-2 pt-2.5 mt-2 border-t border-sepia-border/50 no-strike">
+      <div className="flex items-center justify-end gap-2 pt-2.5 mt-2 border-t border-sepia-border/50">
         <ActionButtons onMarkDone={onMarkDone} onReschedule={onReschedule} size="compact" />
       </div>
     </>
@@ -177,35 +186,35 @@ function ProximaBody({ gestion, today, onMarkDone, onReschedule }) {
   return (
     <>
       <div className="space-y-2">
-        <div className="flex items-center justify-between gap-1 pb-1.5 border-b border-sepia-border/50 no-strike">
-          <span className="font-body text-[11px] font-semibold text-ink-charcoal bg-paper-linen border border-sepia-border px-2 py-0.5 rounded-sharp">
-            {formatUpcomingLabel(gestion.targetDate, today)}
-          </span>
-          <span className="font-mono-stamp text-[11px] text-ink-muted">{gestion.estimatedHours} hrs</span>
+        <div className="flex items-center justify-between gap-1 pb-1.5 border-b border-sepia-border/50">
+          <div className="flex items-center gap-2">
+            <span className="font-body text-[11px] font-semibold text-ink-charcoal bg-paper-linen border border-sepia-border px-2 py-0.5 rounded-sharp">
+              {formatUpcomingLabel(gestion.targetDate, today)}
+              {gestion.time ? ` • ${gestion.time}` : ""}
+            </span>
+            {isPostponed(gestion) && <PostponedTag />}
+          </div>
+          <Hours value={gestion.estimatedHours} />
         </div>
-        <span className="font-body text-xs font-semibold text-ink-muted block no-strike">{gestion.eventName}</span>
-        <h3 className="font-heading text-lg font-bold text-ink-charcoal group-hover:text-terracotta transition-colors leading-snug">
-          {gestion.title}
-        </h3>
-        {gestion.detail && <p className="font-body text-xs text-ink-muted leading-relaxed">{gestion.detail}</p>}
+        <span className="font-body text-xs font-semibold text-ink-muted block">{gestion.eventName}</span>
+        <h3 className="font-heading text-lg font-semibold text-ink-charcoal leading-snug">{gestion.title}</h3>
+        {gestion.note && <p className="font-body text-xs text-ink-muted leading-relaxed">{gestion.note}</p>}
       </div>
-      <div className="pt-3 mt-3 border-t border-sepia-border/50 no-strike">
-        {gestion.provider && (
-          <span className="font-body text-xs text-ink-muted block mb-2 font-medium">{gestion.provider}</span>
-        )}
+      <div className="pt-3 mt-3 border-t border-sepia-border/50">
+        {gestion.provider && <span className="font-body text-xs text-ink-muted block mb-2 font-medium">{gestion.provider}</span>}
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={onMarkDone}
-            className="flex-1 px-3 py-1.5 rounded-sharp bg-terracotta text-[#FAF6F0] font-body text-xs font-semibold inline-flex items-center justify-center gap-1 hover:bg-terracotta-dark transition-colors"
+            className="flex-1 px-3 py-1.5 rounded-sharp bg-terracotta text-[#FAF6F0] font-body text-xs font-semibold inline-flex items-center justify-center gap-1 hover:bg-terracotta-dark transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1"
           >
-            <span className="material-symbols-outlined text-[14px]">check</span>
+            <span className="material-symbols-outlined text-[14px]" aria-hidden="true">check</span>
             <span>Marcar hecha</span>
           </button>
           <button
             type="button"
             onClick={onReschedule}
-            className="px-3 py-1.5 rounded-sharp bg-paper-card hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body text-xs font-medium transition-colors"
+            className="px-3 py-1.5 rounded-sharp bg-paper-card hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1"
           >
             Reprogramar
           </button>

@@ -22,6 +22,17 @@
 
 import { classifyByDate } from "./dateUtils";
 
+/** Días hacia adelante que cubre el grupo "Próximas" (decisión UX, = backend). */
+export const UPCOMING_WINDOW_DAYS = 7;
+
+/**
+ * Texto visible de la regla (US-04, 2–4 líneas, sin jerga técnica). Lo muestra
+ * el tooltip "Criterio editorial" de /hoy y debe coincidir con
+ * groupAndSortGestiones(): si la regla cambia, actualizar ambos.
+ */
+export const PRIORITY_RULE_TEXT =
+  "Las gestiones vencidas aparecen primero (de la más antigua a la más reciente), luego las de hoy, y luego las próximas ordenadas por fecha más cercana. En caso de empate, se prioriza la de menor esfuerzo estimado.";
+
 /**
  * @typedef {Object} Gestion
  * @property {string} id
@@ -33,15 +44,15 @@ import { classifyByDate } from "./dateUtils";
  * @property {number} estimatedHours
  * @property {'PENDIENTE'|'EJECUTADA'|'POSPUESTA'} status
  * @property {string} [provider]
- * @property {string} [detail]
- * @property {string} [postponeNote]
+ * @property {string} [time] - "HH:MM" opcional (solo informativo, no altera el orden)
+ * @property {string} [note]
  */
 
 /**
  * Groups and sorts a flat list of gestiones into { vencidas, hoy, proximas }.
- * Gestiones already EJECUTADA or POSPUESTA are excluded (US-09: an executed
- * gestión "ya no aparece en /hoy"; a postponed one is surfaced elsewhere,
- * e.g. in the event detail history, not as an active priority).
+ * Gestiones EJECUTADA are excluded (US-04: "excluir gestiones ejecutadas").
+ * POSPUESTA stay in their date group with a "Pospuesta" tag (Sprint 2), so
+ * the US-05 status filter (Pendiente / Pospuesta) is meaningful.
  * Anything further than `upcomingWindowDays` away is excluded too — it will
  * "enter" the view naturally as the date approaches.
  *
@@ -49,9 +60,9 @@ import { classifyByDate } from "./dateUtils";
  * @param {{ today?: Date, upcomingWindowDays?: number }} [options]
  */
 export function groupAndSortGestiones(gestiones, options = {}) {
-  const { today = new Date(), upcomingWindowDays = 7 } = options;
+  const { today = new Date(), upcomingWindowDays = UPCOMING_WINDOW_DAYS } = options;
 
-  const active = gestiones.filter((g) => g.status === "PENDIENTE");
+  const active = gestiones.filter((g) => g.status !== "EJECUTADA");
 
   const vencidas = [];
   const hoy = [];
@@ -70,7 +81,7 @@ export function groupAndSortGestiones(gestiones, options = {}) {
     a.estimatedHours - b.estimatedHours;
 
   vencidas.sort(byDateThenEffort); // oldest overdue first
-  hoy.sort(byDateThenEffort); // earliest time first
+  hoy.sort(byDateThenEffort); // same day → less effort first
   proximas.sort(byDateThenEffort); // soonest date first
 
   return { vencidas, hoy, proximas };

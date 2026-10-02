@@ -98,9 +98,18 @@ function fromSubtask(task) {
   return payload;
 }
 
-export async function getToday({ simulateError = false } = {}) {
+/**
+ * GET /today — gestiones no ejecutadas (vencidas, hoy y próximos 7 días) del
+ * organizador autenticado. US-05: el filtrado por evento/estado ocurre en el
+ * backend con los query params `event_id` y `status` (PENDIENTE | POSPUESTA).
+ */
+export async function getToday({ eventId, status, simulateError = false } = {}) {
   if (simulateError) throw new Error("No pudimos cargar tus gestiones");
-  return (await request("/today")).map(toSubtask);
+  const params = new URLSearchParams();
+  if (eventId) params.set("event_id", eventId);
+  if (status) params.set("status", status.toUpperCase());
+  const query = params.toString();
+  return (await request(`/today${query ? `?${query}` : ""}`)).map(toSubtask);
 }
 export async function markGestionAsDone(id) { return toSubtask(await request(`/subtasks/${id}`, json("PATCH", { status: "EJECUTADA" }))); }
 export async function postponeGestion(id, note = "") { return toSubtask(await request(`/subtasks/${id}`, json("PATCH", { status: "POSPUESTA", note }))); }
