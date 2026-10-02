@@ -11,6 +11,10 @@
  *    `errorKind` distingue un fallo de carga de un fallo al aplicar filtros.
  *  - Acciones optimistas (marcar hecha / reprogramar) con "Deshacer", que
  *    también revierte el cambio en el servidor.
+ *  - Ejecutadas: GET /today las excluye por defecto. Se piden aparte
+ *    (?status=EJECUTADA) si el switch "Mostrar gestiones ejecutadas" está
+ *    activo, o llegan solas con el chip "Ejecutadas". Se muestran en la
+ *    sección "0. Ejecutadas" y se editan con el modal de /evento/:id.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getEvents, getToday, markGestionAsDone, rescheduleGestion, updateSubtask } from "../services/api";
@@ -20,6 +24,7 @@ export const STATUS_FILTERS = [
   { value: "", label: "Todas" },
   { value: "PENDIENTE", label: "Pendientes" },
   { value: "POSPUESTA", label: "Pospuestas" },
+  { value: "EJECUTADA", label: "Ejecutadas" },
 ];
 
 export function useTodayGestiones({ query = "", simulateError = false, simulateEmpty = false } = {}) {
@@ -31,6 +36,8 @@ export function useTodayGestiones({ query = "", simulateError = false, simulateE
 
   const [eventFilter, setEventFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [showExecuted, setShowExecuted] = useState(false); // switch, apagado por defecto
+  const executedVisible = showExecuted || statusFilter === "EJECUTADA";
   const [eventOptions, setEventOptions] = useState([]);
 
   const hasServerFilters = Boolean(eventFilter || statusFilter);
@@ -38,8 +45,12 @@ export function useTodayGestiones({ query = "", simulateError = false, simulateE
   const fetchData = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      const data = await getToday({ eventId: eventFilter, status: statusFilter, simulateError });
-      setRawGestiones(simulateEmpty ? [] : data);
+      const fetchExecutedApart = showExecuted && statusFilter !== "EJECUTADA";
+      const [data, executed] = await Promise.all([
+        getToday({ eventId: eventFilter, status: statusFilter, simulateError }),
+        fetchExecutedApart ? getToday({ eventId: eventFilter, status: "EJECUTADA", simulateError }) : [],
+      ]);
+      setRawGestiones(simulateEmpty ? [] : [...data, ...executed]);
       setLocalOverrides({});
       setErrorKind(null);
       setStatus("success");
@@ -49,7 +60,7 @@ export function useTodayGestiones({ query = "", simulateError = false, simulateE
     } finally {
       setIsRefreshing(false);
     }
-  }, [eventFilter, statusFilter, simulateError, simulateEmpty]);
+  }, [eventFilter, statusFilter, showExecuted, simulateError, simulateEmpty]);
 
   useEffect(() => {
     Promise.resolve().then(fetchData);
@@ -94,7 +105,11 @@ export function useTodayGestiones({ query = "", simulateError = false, simulateE
     );
   }, [effectiveGestiones, query]);
 
-  const grouped = useMemo(() => groupAndSortGestiones(searchedGestiones), [searchedGestiones]);
+  // Con la sección oculta, una gestión recién marcada como hecha no aparece en "0. Ejecutadas".
+  const grouped = useMemo(() => {
+    const groups = groupAndSortGestiones(searchedGestiones);
+    return executedVisible ? groups : { ...groups, ejecutadas: [] };
+  }, [searchedGestiones, executedVisible]);
   const stats = useMemo(() => computeHoyStats(grouped), [grouped]);
 
   /** US-09 — Marcar como ejecutada (sale de /hoy). */
@@ -141,6 +156,15 @@ export function useTodayGestiones({ query = "", simulateError = false, simulateE
     [rawGestiones]
   );
 
+  /** US-03 — Editar una gestión (modal de /evento/:id). Lanza si falla, para el modal. */
+  const editGestion = useCallback(
+    async (id, patch) => {
+      await updateSubtask(id, patch);
+      await fetchData();
+    },
+    [fetchData]
+  );
+
   const clearFilters = useCallback(() => {
     setEventFilter("");
     setStatusFilter("");
@@ -153,9 +177,10 @@ export function useTodayGestiones({ query = "", simulateError = false, simulateE
     grouped,
     stats,
     totalUnfiltered: rawGestiones.filter((g) => g.status !== "EJECUTADA").length,
-    filters: { eventFilter, setEventFilter, statusFilter, setStatusFilter, hasServerFilters, clearFilters },
+    executedVisible,
+    filters: { eventFilter, setEventFilter, statusFilter, setStatusFilter, hasServerFilters, clearFilters, showExecuted, setShowExecuted },
     eventOptions,
-    actions: { markAsDone, undoMarkAsDone, reschedule },
+    actions: { markAsDone, undoMarkAsDone, reschedule, editGestion },
     reload: fetchData,
   };
 }

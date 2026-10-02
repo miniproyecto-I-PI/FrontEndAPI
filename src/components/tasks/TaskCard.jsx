@@ -1,29 +1,32 @@
-import { formatOverdueLabel, formatUpcomingLabel } from "../../utils/dateUtils";
+import { formatOverdueLabel, formatShortDate, formatUpcomingLabel } from "../../utils/dateUtils";
 
 /**
  * TaskCard.jsx
  * ---------------------------------------------------------------------------
  * Una gestión (subtarea logística) en "/hoy". Un solo componente con `variant`
- * para los cuatro tratamientos del diseño (vencida / hero de hoy / secundaria
- * de hoy / próxima); comparten anatomía: sello + evento + título + detalle +
- * acciones.
+ * para los tratamientos del diseño (vencida / hero de hoy / secundaria de
+ * hoy / próxima / ejecutada); comparten anatomía: sello + evento + título +
+ * detalle + acciones.
  *
  * La urgencia no depende solo del color (US-04, UX): las vencidas llevan
  * ícono de alerta y el texto "Vencida hace N días"; las pospuestas, la
- * etiqueta "Pospuesta".
+ * etiqueta "Pospuesta". Las ejecutadas (sección "0. Ejecutadas") llevan la
+ * etiqueta "Ejecutada" y solo el botón "Editar".
  *
  * @param {Object} props
  * @param {import('../../utils/sortGestiones').Gestion} props.gestion
- * @param {'vencida'|'hoy-hero'|'hoy-secundaria'|'proxima'} props.variant
- * @param {() => void} props.onMarkDone
- * @param {() => void} props.onReschedule
+ * @param {'vencida'|'hoy-hero'|'hoy-secundaria'|'proxima'|'ejecutada'} props.variant
+ * @param {() => void} [props.onMarkDone]
+ * @param {() => void} [props.onReschedule]
+ * @param {() => void} [props.onEdit]  solo variante "ejecutada"
  * @param {Date} [props.today]
  */
-export default function TaskCard({ gestion, variant, onMarkDone, onReschedule, today = new Date() }) {
+export default function TaskCard({ gestion, variant, onMarkDone, onReschedule, onEdit, today = new Date() }) {
   const isHero = variant === "hoy-hero";
   const isSecondary = variant === "hoy-secundaria";
   const isVencida = variant === "vencida";
   const isProxima = variant === "proxima";
+  const isEjecutada = variant === "ejecutada";
 
   const containerClasses = [
     "bg-paper-card border border-sepia-border rounded-sharp warm-card-shadow warm-card-hover transition-all group",
@@ -31,6 +34,7 @@ export default function TaskCard({ gestion, variant, onMarkDone, onReschedule, t
     isHero && "border-l-[6px] border-l-terracotta p-5 md:p-6 flex flex-col justify-between h-full",
     isSecondary && "border-l-4 border-l-terracotta p-4 flex flex-col justify-between h-full",
     isProxima && "border-l-2 border-l-sepia-dark p-4 flex flex-col justify-between h-full",
+    isEjecutada && "border-l-[6px] border-l-sage-wax p-4 md:p-5",
   ]
     .filter(Boolean)
     .join(" ");
@@ -42,6 +46,7 @@ export default function TaskCard({ gestion, variant, onMarkDone, onReschedule, t
       {isHero && <HeroBody {...props} />}
       {isSecondary && <SecondaryBody {...props} />}
       {isProxima && <ProximaBody {...props} />}
+      {isEjecutada && <EjecutadaBody gestion={gestion} onEdit={onEdit} />}
     </article>
   );
 }
@@ -221,5 +226,43 @@ function ProximaBody({ gestion, today, onMarkDone, onReschedule }) {
         </div>
       </div>
     </>
+  );
+}
+
+function EjecutadaBody({ gestion, onEdit }) {
+  return (
+    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="space-y-1.5 flex-1 min-w-0">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+          <span className="inline-flex items-center gap-1 font-body text-[11px] font-bold text-sage-wax bg-sage-light border border-sage-wax/40 px-2 py-0.5 rounded-sharp uppercase tracking-wide">
+            <span className="material-symbols-outlined text-[13px]" aria-hidden="true">check_circle</span>
+            Ejecutada
+          </span>
+          <span className="font-body text-[11px] font-semibold text-ink-charcoal bg-paper-linen border border-sepia-border px-2 py-0.5 rounded-sharp">
+            {formatShortDate(gestion.targetDate)}
+            {gestion.time ? ` • ${gestion.time}` : ""}
+          </span>
+          <span className="font-body font-medium text-ink-charcoal">{gestion.eventName}</span>
+          <span className="text-sepia-dark" aria-hidden="true">•</span>
+          <Hours value={gestion.estimatedHours} long />
+        </div>
+        <h3 className="font-heading text-xl text-ink-muted font-semibold leading-snug">{gestion.title}</h3>
+        {(gestion.provider || gestion.note) && (
+          <p className="text-xs font-body text-ink-muted pt-0.5">{[gestion.provider, gestion.note].filter(Boolean).join(" • ")}</p>
+        )}
+      </div>
+      <div className="flex items-center gap-2 self-end lg:self-center shrink-0 pt-2 lg:pt-0">
+        <button
+          type="button"
+          onClick={onEdit}
+          title="Editar gestión"
+          aria-label={`Editar gestión ${gestion.title}`}
+          className="px-3.5 py-1.5 text-xs rounded-sharp bg-paper-card hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body font-medium inline-flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1"
+        >
+          <span className="material-symbols-outlined text-[15px] text-ink-muted" aria-hidden="true">edit</span>
+          <span>Editar</span>
+        </button>
+      </div>
+    </div>
   );
 }

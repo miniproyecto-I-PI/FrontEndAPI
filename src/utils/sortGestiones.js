@@ -31,6 +31,8 @@ export const UPCOMING_WINDOW_DAYS = 7;
  * coincidir con groupAndSortGestiones(): si la regla cambia, actualizar ambos.
  */
 export const PRIORITY_RULE_BY_GROUP = {
+  ejecutadas:
+    "Gestiones ya hechas, de la fecha más antigua a la más reciente. Si dos coinciden en fecha y hora, va antes la de menor esfuerzo estimado.",
   vencidas:
     "Aparecen primero, de la más antigua a la más reciente. Si dos vencieron a la misma hora, va antes la de menor esfuerzo estimado.",
   hoy: "Van después de las vencidas, ordenadas por hora. Si dos coinciden en la hora, va antes la de menor esfuerzo estimado.",
@@ -55,7 +57,9 @@ export const PRIORITY_RULE_BY_GROUP = {
 
 /**
  * Groups and sorts a flat list of gestiones into { vencidas, hoy, proximas }.
- * Gestiones EJECUTADA are excluded (US-04: "excluir gestiones ejecutadas").
+ * Gestiones EJECUTADA stay out of the three groups (US-04: "excluir
+ * gestiones ejecutadas") and are returned apart in `ejecutadas`, which /hoy
+ * only shows as section "0. Ejecutadas" (switch or "Ejecutadas" chip).
  * POSPUESTA stay in their date group with a "Pospuesta" tag (Sprint 2), so
  * the US-05 status filter (Pendiente / Pospuesta) is meaningful.
  * Anything further than `upcomingWindowDays` away is excluded too — it will
@@ -68,6 +72,7 @@ export function groupAndSortGestiones(gestiones, options = {}) {
   const { today = new Date(), upcomingWindowDays = UPCOMING_WINDOW_DAYS } = options;
 
   const active = gestiones.filter((g) => g.status !== "EJECUTADA");
+  const ejecutadas = gestiones.filter((g) => g.status === "EJECUTADA");
 
   const vencidas = [];
   const hoy = [];
@@ -88,8 +93,9 @@ export function groupAndSortGestiones(gestiones, options = {}) {
   vencidas.sort(byDateThenEffort); // oldest overdue first
   hoy.sort(byDateThenEffort); // same day → less effort first
   proximas.sort(byDateThenEffort); // soonest date first
+  ejecutadas.sort(byDateThenEffort); // same rule, oldest first
 
-  return { vencidas, hoy, proximas };
+  return { vencidas, hoy, proximas, ejecutadas };
 }
 
 /**
