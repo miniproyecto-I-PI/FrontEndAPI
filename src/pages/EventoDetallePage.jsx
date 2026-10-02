@@ -310,6 +310,7 @@ async function handleEditEvent(payload) {
   <EditSubtaskModal
     initialSubtask={editingSubtask}
     eventName={event?.name}
+    eventDateTime={event?.dateTime}
     onCancel={() => setEditingSubtask(null)}
     onSubmit={handleEditSubtask}
   />
@@ -344,6 +345,7 @@ async function handleEditEvent(payload) {
         <RescheduleModal
           mode="single"
           currentDateISO={rescheduleTarget.targetDate}
+          eventDateTime={event?.dateTime}
           onCancel={() => setRescheduleTarget(null)}
           onConfirm={handleConfirmReschedule}
         />

@@ -87,6 +87,9 @@ export default function HoyPage() {
     setToast({ message: "Gestión actualizada" });
   }
 
+  // /today no trae la fecha del evento; se toma de la lista de eventos.
+  const eventDateOf = (gestion) => eventOptions.find((o) => o.value === gestion.eventId)?.dateTime;
+
   const totalForBars = Math.max(1, totalVisible);
   const showStats = status !== "error";
 
@@ -265,6 +268,7 @@ export default function HoyPage() {
         <EditSubtaskModal
           initialSubtask={editTarget}
           eventName={editTarget.eventName}
+          eventDateTime={eventDateOf(editTarget)}
           onCancel={() => setEditTarget(null)}
           onSubmit={handleEditSubmit}
         />
@@ -274,6 +278,7 @@ export default function HoyPage() {
         <RescheduleModal
           mode="single"
           currentDateISO={rescheduleTarget.targetDate}
+          eventDateTime={eventDateOf(rescheduleTarget)}
           onCancel={() => setRescheduleTarget(null)}
           onConfirm={handleConfirmReschedule}
         />

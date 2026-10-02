@@ -67,11 +67,12 @@ export function useTodayGestiones({ query = "", simulateError = false, simulateE
   }, [fetchData]);
 
   // Opciones del selector de evento: todos los eventos del organizador.
+  // `dateTime` sirve para validar que una gestión no pase del día del evento.
   useEffect(() => {
     let cancelled = false;
     getEvents()
       .then((events) => {
-        if (!cancelled) setEventOptions(events.map((e) => ({ value: e.id, label: e.name })));
+        if (!cancelled) setEventOptions(events.map((e) => ({ value: e.id, label: e.name, dateTime: e.dateTime })));
       })
       .catch(() => {
         // Sin la lista, el selector solo ofrece "Todos los eventos".

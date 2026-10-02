@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { toDateInputValue } from "../../utils/dateUtils";
+import { toDateInputValue, validateTargetDateAgainstEvent } from "../../utils/dateUtils";
 
 /**
  * RescheduleModal.jsx
@@ -19,6 +19,8 @@ import { toDateInputValue } from "../../utils/dateUtils";
  *    (no time), so the picker is <input type="date"> and `onConfirm` gets
  *    "YYYY-MM-DD" — converting through toISOString() shifted the day for
  *    evening times in UTC-5. The optional hour is edited in EditSubtaskModal.
+ *    With `eventDateTime`, a date after the event day shows an error on
+ *    confirm (same rule as the backend's `target_date_after_event`).
  *
  * Accesibilidad (TS-06):
  *  - Escape cierra el modal.
@@ -26,8 +28,9 @@ import { toDateInputValue } from "../../utils/dateUtils";
  *  - aria-labelledby apunta al título → el lector anuncia qué modal es.
  *  - focus:ring visible en input y botones.
  */
-export default function RescheduleModal({ mode, count, currentDateISO, onCancel, onConfirm }) {
+export default function RescheduleModal({ mode, count, currentDateISO, eventDateTime, onCancel, onConfirm }) {
   const [newDate, setNewDate] = useState(() => toDateInputValue(currentDateISO));
+  const [dateError, setDateError] = useState(null);
 
   const dateInputRef = useRef(null);
   const dialogRef = useRef(null);
@@ -55,6 +58,13 @@ export default function RescheduleModal({ mode, count, currentDateISO, onCancel,
 
   function handleConfirm() {
     if (!canConfirm) return;
+    if (mode === "single") {
+      const afterEvent = validateTargetDateAgainstEvent(newDate, eventDateTime);
+      if (afterEvent) {
+        setDateError(afterEvent);
+        return;
+      }
+    }
     onConfirm(mode === "single" ? newDate : undefined);
   }
 
@@ -98,16 +108,20 @@ export default function RescheduleModal({ mode, count, currentDateISO, onCancel,
                 ref={dateInputRef}
                 type="date"
                 value={newDate}
-                onChange={(e) => setNewDate(e.target.value)}
-                aria-describedby={!canConfirm ? "reschedule-hint" : undefined}
+                onChange={(e) => {
+                  setNewDate(e.target.value);
+                  setDateError(null);
+                }}
+                aria-invalid={Boolean(dateError)}
+                aria-describedby={!canConfirm || dateError ? "reschedule-hint" : undefined}
                 className="mt-1 w-full border border-sepia-border rounded-sharp px-3 py-2 font-body text-sm text-ink-charcoal focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta focus:ring-offset-1 focus:ring-offset-paper-card"
               />
-              {!canConfirm && (
+              {(!canConfirm || dateError) && (
                 <p
                   id="reschedule-hint"
                   className="mt-1 font-body text-xs text-crimson-urgent"
                 >
-                  Elige una fecha para poder confirmar.
+                  {dateError || "Elige una fecha para poder confirmar."}
                 </p>
               )}
             </label>
