@@ -8,6 +8,7 @@ import PageHeader, { Breadcrumb } from "../components/layout/PageHeader";
 import EventTypeSelector from "../components/eventos/EventTypeSelector";
 import InitialSubtasks from "../components/eventos/InitialSubtasks";
 import { createEvent } from "../services/api";
+import { validateTargetDateAgainstEvent } from "../utils/dateUtils";
 
 const emptyForm = {
   title: "",
@@ -59,6 +60,8 @@ export default function CrearPage() {
       errors.title = "Ingresa un nombre para poder identificar la bitácora.";
     if (!form.date)
       errors.date = "Elige una fecha para programar las alertas.";
+    else if (initialSubtasks.some((s) => validateTargetDateAgainstEvent(s.targetDate, form.date)))
+      errors.date = "Hay gestiones iniciales con fecha posterior al evento. Cambia la fecha o quítalas.";
     return errors;
   }
 
@@ -68,7 +71,8 @@ export default function CrearPage() {
     const errors = validate();
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
-      setToast({ message: "Faltan campos obligatorios", intent: "error" })
+      const onlyDateRule = Object.keys(errors).length === 1 && errors.date && form.date;
+      setToast({ message: onlyDateRule ? "Revisa la fecha del evento" : "Faltan campos obligatorios", intent: "error" })
       window.scrollTo({ top: 120, behavior: "smooth" });
       return;
     }
@@ -256,6 +260,7 @@ function handleSuccessGoToEvents() {
 
         <InitialSubtasks
           items={initialSubtasks}
+          eventDate={form.date}
           onAdd={(item) => setInitialSubtasks((list) => [...list, item])}
           onRemove={(index) => setInitialSubtasks((list) => list.filter((_, i) => i !== index))}
           disabled={isLoading}
