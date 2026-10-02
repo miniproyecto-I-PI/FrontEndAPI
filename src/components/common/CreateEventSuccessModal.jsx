@@ -41,7 +41,7 @@ export default function CreateEventSuccessModal({
         <div className="space-y-2">
           <h3
             id="create-event-success-title"
-            className="font-serif text-2xl md:text-3xl font-bold text-ink-charcoal tracking-tight"
+            className="font-heading text-2xl md:text-3xl font-bold text-ink-charcoal tracking-tight"
           >
             ¡Evento creado con éxito!
           </h3>
@@ -66,7 +66,7 @@ export default function CreateEventSuccessModal({
           <button
             type="button"
             onClick={onGoToEvents}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-terracotta hover:bg-terracotta-dark text-[#FAF6F0] font-serif font-semibold text-xs md:text-sm rounded-sharp border border-terracotta-dark shadow-sm transition-colors active:translate-y-0.5"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-terracotta hover:bg-terracotta-dark text-[#FAF6F0] font-heading font-semibold text-xs md:text-sm rounded-sharp border border-terracotta-dark shadow-sm transition-colors active:translate-y-0.5"
           >
             <span>Ir a Mis Eventos</span>
             <span className="material-symbols-outlined text-[16px]">

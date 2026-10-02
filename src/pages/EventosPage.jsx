@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 
 import { useEvents } from "../hooks/useEvents";
 import {
@@ -8,9 +8,10 @@ import {
 } from "../services/api";
 import { diffInCalendarDays } from "../utils/dateUtils";
 
-import Header from "../components/layout/Header";
-import Footer from "../components/layout/Footer";
+import PageContainer from "../components/layout/PageContainer";
+import PageHeader, { Breadcrumb } from "../components/layout/PageHeader";
 import Toast from "../components/common/Toast";
+import StateCard from "../components/common/StateCard";
 import UpdateEventSuccessModal from "../components/common/UpdateEventSuccessModal";
 import EditEventModal from "../components/common/EditEventModal";
 import DeleteEventModal from "../components/eventos/DeleteEventModal";
@@ -22,13 +23,14 @@ const CATEGORY_CHIPS = [
   { key: "boda", label: "Bodas" },
   { key: "corporativo", label: "Corporativos" },
   { key: "cumpleanos", label: "Cumpleaños" },
+  { key: "social", label: "Gala / Cultural" },
   { key: "otro", label: "Otros" },
 ];
 
 /**
  * EventosPage.jsx — route "/eventos".
- * Vista listado (Stitch, Sprint 1). Standalone, con su propio Header
- * (search cableado) y Footer — mismo patrón que HoyPage.
+ * Vista listado (Stitch). Header, Footer y buscador vienen de MainLayout;
+ * el filtro de la barra de controles comparte el mismo texto de búsqueda.
  *
  * NOTA (stats):
  * El diseño muestra "Completados: 12", un total histórico que NO se puede
@@ -38,11 +40,18 @@ const CATEGORY_CHIPS = [
  */
 export default function EventosPage() {
   const navigate = useNavigate();
-  const { events, status, errorMessage, reload } = useEvents();
+  const location = useLocation();
+  const { events, status, reload } = useEvents();
 
   const [filter, setFilter] = useState("all");
-  const [query, setQuery] = useState("");
-  const [toast, setToast] = useState(null);
+  const { search: query, setSearch: setQuery } = useOutletContext();
+  const [toast, setToast] = useState(() => (location.state?.toast ? { message: location.state.toast } : null));
+  const closeToast = useCallback(() => setToast(null), []);
+
+  // Aviso que llega desde /crear ("Evento creado"); se limpia del historial.
+  useEffect(() => {
+    if (location.state?.toast) navigate(location.pathname, { replace: true, state: {} });
+  }, [location, navigate]);
   const [updatedEventName, setUpdatedEventName] = useState(null);
 
   const [editingEvent, setEditingEvent] = useState(null);
@@ -119,63 +128,65 @@ const filtered = useMemo(() => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-paper-base dot-grid-pattern font-body text-ink-charcoal antialiased">
-      <Header searchValue={query} onSearchChange={setQuery} />
-
-      <main className="w-full pt-16 flex-1">
-        <div className="max-w-[1440px] mx-auto px-4 md:px-8 lg:px-12 py-8">
+    <>
+      <PageContainer>
           {/* ---------- Cabecera ---------- */}
           <section className="mb-6">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-5 border-b border-sepia-border">
-              <div className="space-y-1">
-                <nav
-                  aria-label="Breadcrumb"
-                  className="flex items-center gap-1.5 text-xs text-ink-muted font-body mb-1"
-                >
-                  <span>Convoka</span>
-                  <span className="text-sepia-dark">/</span>
-                  <span className="text-ink-charcoal font-semibold">Eventos</span>
-                </nav>
-                <h1 className="font-serif text-4xl sm:text-5xl font-semibold tracking-tight text-ink-charcoal leading-[1.1]">
-                  Todos los{" "}
-                  <span className="italic font-normal text-terracotta">eventos</span>
-                </h1>
-                <p className="font-body text-xs md:text-sm text-ink-muted pt-0.5">
-                  Expedientes de producción, fechas de celebración y estado
-                  operativo de tus clientes.
-                </p>
-              </div>
+            <PageHeader
+              breadcrumb={<Breadcrumb backTo="/hoy" items={[{ label: "Convoka", to: "/hoy" }, { label: "Eventos" }]} />}
+              title="Todos los"
+              accent="eventos"
+              description="Expedientes de producción, fechas de celebración y estado operativo de tus clientes."
+              aside={<MetricsBar stats={stats} />}
+            />
 
-              <MetricsBar stats={stats} />
-            </div>
-
-            {status !== "error" && (
-              <ControlsBar
-                filter={filter}
-                onFilterChange={setFilter}
-                query={query}
-                onQueryChange={setQuery}
-                counts={categoryCounts}
-                onCreate={() => navigate("/crear")}
-              />
-            )}
+            <ControlsBar
+              filter={filter}
+              onFilterChange={setFilter}
+              query={query}
+              onQueryChange={setQuery}
+              counts={categoryCounts}
+              onCreate={() => navigate("/crear")}
+            />
           </section>
 
           {/* ---------- Cuerpo ---------- */}
           {status === "loading" && <LoadingState />}
 
           {status === "error" && (
-            <ErrorState message={errorMessage} onRetry={reload} />
+            <StateCard
+              tone="error"
+              icon="sync_problem"
+              stamp="Incidencia de sincronización"
+              title="No pudimos cargar tus eventos"
+              description="Hubo una incidencia al conectar con el servidor de eventos. Tus datos guardados están a salvo. Comprueba tu conexión o vuelve a intentarlo."
+              primaryAction={{ label: "Reintentar carga", icon: "refresh", onClick: reload }}
+              compact
+            />
           )}
 
           {status === "success" && events.length === 0 && (
-            <EmptyState onCreate={() => navigate("/crear")} />
+            <StateCard
+              icon="calendar_month"
+              stamp="Bitácora sin registros"
+              title="Tu bitácora de eventos está vacía"
+              description="Registra tu primera boda, gala corporativa o celebración para comenzar a planificar su hoja de ruta y gestiones operativas."
+              primaryAction={{ label: "Crear primer evento", icon: "add", onClick: () => navigate("/crear") }}
+              compact
+            />
           )}
 
           {status === "success" &&
             events.length > 0 &&
             filtered.length === 0 && (
-              <NoResultsState onClear={handleClearSearch} />
+              <StateCard
+                icon="search_off"
+                stamp="0 resultados encontrados"
+                title="No se encontraron eventos"
+                description="Ningún evento coincide con la categoría o la búsqueda seleccionadas."
+                primaryAction={{ label: "Limpiar filtros", icon: "filter_list_off", onClick: handleClearSearch }}
+                compact
+              />
             )}
 
           {status === "success" && filtered.length > 0 && (
@@ -185,10 +196,7 @@ const filtered = useMemo(() => {
               onDelete={setDeletingEvent}
             />
           )}
-        </div>
-      </main>
-
-      <Footer />
+      </PageContainer>
 
       {updatedEventName && (
   <UpdateEventSuccessModal
@@ -199,7 +207,7 @@ const filtered = useMemo(() => {
 )}
 
       {/* ---------- Overlays ---------- */}
-      <Toast toast={toast} onClose={() => setToast(null)} />
+      <Toast toast={toast} onClose={closeToast} />
 
       {editingEvent && (
         <EditEventModal
@@ -216,7 +224,7 @@ const filtered = useMemo(() => {
     onConfirm={handleDeleteConfirm}
   />
 )}
-    </div>
+    </>
   );
 }
 
@@ -245,7 +253,7 @@ function Metric({ label, value, tone }) {
         {label}
       </span>
       <span
-        className={`font-serif text-2xl font-bold leading-none ${valueClasses}`}
+        className={`font-heading text-2xl font-bold leading-none ${valueClasses}`}
       >
         {value}
       </span>
@@ -255,7 +263,7 @@ function Metric({ label, value, tone }) {
 
 function ControlsBar({ filter, onFilterChange, query, onQueryChange, counts, onCreate }) {
   return (
-    <div className="mt-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
         {CATEGORY_CHIPS.map((chip) => {
           const isActive = filter === chip.key;
@@ -265,6 +273,7 @@ function ControlsBar({ filter, onFilterChange, query, onQueryChange, counts, onC
               key={chip.key}
               type="button"
               onClick={() => onFilterChange(chip.key)}
+              aria-pressed={isActive}
               className={[
                 "px-3.5 py-1.5 border font-body text-xs rounded-sharp whitespace-nowrap transition-colors",
                 isActive
@@ -284,7 +293,8 @@ function ControlsBar({ filter, onFilterChange, query, onQueryChange, counts, onC
             search
           </span>
           <input
-            type="text"
+            type="search"
+            aria-label="Filtrar eventos por nombre o cliente"
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
             placeholder="Filtrar eventos..."
@@ -308,7 +318,7 @@ function ControlsBar({ filter, onFilterChange, query, onQueryChange, counts, onC
 }
 
 // ---------------------------------------------------------------------------
-// Estados: loading / error / empty / sin resultados
+// Estado de carga (vacío, sin resultados y error usan StateCard)
 // ---------------------------------------------------------------------------
 
 function LoadingState() {
@@ -320,98 +330,6 @@ function LoadingState() {
           className="h-14 bg-paper-linen border border-sepia-border rounded-sharp animate-warm-pulse"
         />
       ))}
-    </div>
-  );
-}
-
-function ErrorState({ message, onRetry }) {
-  return (
-    <div className="bg-paper-card border border-sepia-border rounded-sharp warm-card-shadow p-8 md:p-12 text-center max-w-2xl mx-auto my-6">
-      <div className="w-16 h-16 mx-auto mb-4 rounded-sharp bg-crimson-paper border border-crimson-urgent/30 text-crimson-urgent flex items-center justify-center">
-        <span className="material-symbols-outlined text-[32px]">sync_problem</span>
-      </div>
-      <span className="font-mono-stamp text-[10px] uppercase text-crimson-urgent font-bold tracking-wider mb-2 block">
-        Incidencia de sincronización
-      </span>
-      <h2 className="font-serif text-2xl md:text-3xl font-bold text-ink-charcoal mb-2">
-        {message || "No pudimos cargar tus eventos"}
-      </h2>
-      <p className="font-body text-xs md:text-sm text-ink-muted max-w-md mx-auto mb-6 leading-relaxed">
-        Hubo una incidencia al conectar con el servidor de eventos. Tus datos
-        guardados están a salvo. Por favor, comprueba tu conexión o vuelve a
-        intentarlo.
-      </p>
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-        <button
-          type="button"
-          onClick={onRetry}
-          className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-terracotta text-[#FAF6F0] font-body font-semibold text-xs md:text-sm tracking-wide rounded-sharp border border-terracotta-dark shadow-sm hover:bg-terracotta-dark transition-colors active:translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-terracotta focus:ring-offset-2 focus:ring-offset-paper-base"
-        >
-          <span className="material-symbols-outlined text-[16px]">refresh</span>
-          <span>Reintentar carga</span>
-        </button>
-        <button
-          type="button"
-          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-paper-base text-ink-charcoal border border-sepia-border font-body font-medium text-xs md:text-sm rounded-sharp hover:bg-paper-linen hover:border-sepia-dark transition-colors"
-        >
-          <span className="material-symbols-outlined text-[16px] text-ink-muted">
-            dns
-          </span>
-          <span>Comprobar estado del servicio</span>
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function EmptyState({ onCreate }) {
-  return (
-    <div className="bg-paper-card border border-sepia-border rounded-sharp warm-card-shadow p-10 sm:p-14 text-center max-w-2xl mx-auto my-6 flex flex-col items-center">
-      <div className="w-16 h-16 rounded-full bg-terracotta-light border border-terracotta/30 flex items-center justify-center text-terracotta mb-5">
-        <span className="material-symbols-outlined text-[32px]">
-          assignment_turned_in
-        </span>
-      </div>
-      <h2 className="font-serif font-semibold text-ink-charcoal text-2xl md:text-3xl mb-2">
-        No tienes eventos programados
-      </h2>
-      <p className="max-w-md mx-auto font-body text-sm text-ink-muted mb-8 leading-relaxed">
-        Registra tu primera boda, gala corporativa o celebración para comenzar
-        a planificar su hoja de ruta y gestiones operativas.
-      </p>
-      <button
-        type="button"
-        onClick={onCreate}
-        className="inline-flex items-center gap-2 px-5 py-2.5 bg-terracotta hover:bg-terracotta-dark text-[#FAF6F0] font-body text-sm font-semibold rounded-sharp shadow-sm transition-colors active:translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-terracotta focus:ring-offset-2 focus:ring-offset-paper-card"
-      >
-        <span className="material-symbols-outlined text-[18px]">add</span>
-        <span>Crear primer evento</span>
-      </button>
-    </div>
-  );
-}
-
-function NoResultsState({ onClear }) {
-  return (
-    <div className="bg-paper-card border border-sepia-border rounded-sharp p-8 md:p-12 text-center max-w-md mx-auto warm-card-shadow mt-6">
-      <div className="w-12 h-12 mx-auto mb-3 rounded-sharp bg-paper-linen border border-sepia-border text-ink-muted flex items-center justify-center">
-        <span className="material-symbols-outlined text-[24px]">search_off</span>
-      </div>
-      <h3 className="font-serif text-xl font-bold text-ink-charcoal mb-1">
-        No se encontraron eventos
-      </h3>
-      <p className="font-body text-xs text-ink-muted mb-4">
-        No hay ningún evento registrado que coincida con el criterio de
-        búsqueda seleccionado.
-      </p>
-      <button
-        type="button"
-        onClick={onClear}
-        className="px-3.5 py-1.5 bg-paper-base hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body text-xs font-semibold rounded-sharp transition-colors inline-flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-terracotta focus:ring-offset-1"
-      >
-        <span className="material-symbols-outlined text-[15px]">refresh</span>
-        <span>Restablecer filtros</span>
-      </button>
     </div>
   );
 }

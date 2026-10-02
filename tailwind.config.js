@@ -38,8 +38,10 @@ export default {
         sharp: "3px",
         "btn-editorial": "3px",
       },
+      // Sprint 2 (Stitch): Outfit para títulos, Plus Jakarta Sans para texto
+      // y Space Mono para sellos/etiquetas. Reemplaza a Playfair Display.
       fontFamily: {
-        serif: ["'Playfair Display'", "Georgia", "serif"],
+        heading: ["'Outfit'", "sans-serif"],
         body: ["'Plus Jakarta Sans'", "sans-serif"],
         stamp: ["'Space Mono'", "monospace"],
       },

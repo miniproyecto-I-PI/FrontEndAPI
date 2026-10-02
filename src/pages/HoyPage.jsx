@@ -1,288 +1,256 @@
-import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { useTodayGestiones } from "../hooks/useTodayGestiones";
-import { EVENT_TYPE_LABELS } from "../data/mockGestiones";
 import { formatFullDate } from "../utils/dateUtils";
+import { UPCOMING_WINDOW_DAYS } from "../utils/sortGestiones";
 
-import Header from "../components/layout/Header";
-import Footer from "../components/layout/Footer";
+import PageContainer from "../components/layout/PageContainer";
+import PageHeader from "../components/layout/PageHeader";
 import PriorityRuleBanner from "../components/common/PriorityRuleBanner";
 import StatCard from "../components/common/StatCard";
-import EmptyState from "../components/common/EmptyState";
-import ErrorState from "../components/common/ErrorState";
-import LoadingSkeleton from "../components/common/LoadingSkeleton";
+import StateCard from "../components/common/StateCard";
+import LoadingSkeleton, { StatsSkeleton } from "../components/common/LoadingSkeleton";
 import Toast from "../components/common/Toast";
 import RescheduleModal from "../components/common/RescheduleModal";
 import TaskCard from "../components/tasks/TaskCard";
+import HoyFilters from "../components/tasks/HoyFilters";
 import SimulationToolbar from "../components/dev/SimulationToolbar";
 
 /**
- * HoyPage.jsx — route "/hoy" (T2 — Arquitectura de Información C5, §3).
+ * HoyPage.jsx — ruta "/hoy" (T2: US-04 vista Hoy + US-05 filtros).
  *
- * Sprint 0: prototipo "Hoy" v1.
- * Sprint 1: migración al diseño final del UX Lead.
- *   - Se eliminó el toggle Agrupada/Compacto (decisión UX).
- *   - Section I: "Urgencias & Vencidas" → "Vencidas".
- *   - Saludo: "Organización en marcha, usuario" (placeholder hasta Sprint 2).
+ * Diseño Stitch (Sprint 2). Estados: cargando (esqueleto + "Sincronizando…"),
+ * vacío con acción "Crear evento", sin resultados por filtro con "Limpiar
+ * filtros", error de carga / error al filtrar con "Reintentar", y éxito con
+ * los tres grupos (Vencidas, Agenda de Hoy, Próximas) y la regla visible en
+ * el tooltip "Criterio editorial".
  *
- * NOTE on Header placement: unlike the other pages, HoyPage renders its own
- * <Header> (with the search box wired up) instead of relying on
- * MainLayout's — see App.jsx for why /hoy is NOT nested under MainLayout.
+ * Header, Footer y buscador vienen de MainLayout (useOutletContext).
  */
 export default function HoyPage() {
-  const [simMode, setSimMode] = useState("normal"); // 'normal' | 'empty' | 'error'
-  const [rescheduleTarget, setRescheduleTarget] = useState(null);
-
+  const { search, setSearch } = useOutletContext();
   const location = useLocation();
   const navigate = useNavigate();
-  const [toast, setToast] = useState(() => location.state?.toast ? { message: location.state.toast } : null);
+  const [simMode, setSimMode] = useState("normal"); // 'normal' | 'empty' | 'error' (solo desarrollo)
+  const [rescheduleTarget, setRescheduleTarget] = useState(null);
+  const [toast, setToast] = useState(() => (location.state?.toast ? { message: location.state.toast } : null));
+  const closeToast = useCallback(() => setToast(null), []);
 
   useEffect(() => {
-    if (location.state?.toast) {
-      navigate(location.pathname, { replace: true, state: {} });
-    }
+    if (location.state?.toast) navigate(location.pathname, { replace: true, state: {} });
   }, [location, navigate]);
 
-  const {
-    status,
-    errorMessage,
-    grouped,
-    stats,
-    query,
-    setQuery,
-    eventTypeFilter,
-    setEventTypeFilter,
-    availableEventTypes,
-    actions,
-    reload,
-  } = useTodayGestiones({
+  const { status, isRefreshing, errorKind, grouped, stats, filters, eventOptions, actions, reload } = useTodayGestiones({
+    query: search,
     simulateError: simMode === "error",
     simulateEmpty: simMode === "empty",
   });
 
-  
+  const totalVisible = grouped.vencidas.length + grouped.hoy.length + grouped.proximas.length;
+  const isFiltering = filters.hasServerFilters || search.trim() !== "";
 
-  const totalCount = grouped.vencidas.length + grouped.hoy.length + grouped.proximas.length;
-  const isEmpty = status === "success" && totalCount === 0;
-
-  function handleMarkDone(gestion) {
-    actions.markAsDone(gestion.id);
-    setToast({ message: "Gestión marcada como hecha", onUndo: () => actions.undo(gestion.id) });
+  function clearAllFilters() {
+    filters.clearFilters();
+    setSearch("");
   }
 
-  function handleConfirmSingleReschedule(newDateISO) {
+  async function handleMarkDone(gestion) {
+    const ok = await actions.markAsDone(gestion.id);
+    if (!ok) {
+      setToast({ message: "No se pudo marcar la gestión. Intenta de nuevo.", intent: "error" });
+      return;
+    }
+    setToast({
+      message: "Gestión marcada como hecha",
+      onUndo: async () => {
+        const undone = await actions.undoMarkAsDone(gestion.id);
+        if (!undone) setToast({ message: "No se pudo deshacer el cambio.", intent: "error" });
+      },
+    });
+  }
+
+  async function handleConfirmReschedule(newDateISO) {
     if (!rescheduleTarget) return;
-    actions.reschedule(rescheduleTarget.id, newDateISO);
+    const target = rescheduleTarget;
     setRescheduleTarget(null);
-    setToast({ message: "Gestión reprogramada" });
+    const ok = await actions.reschedule(target.id, newDateISO);
+    setToast(ok ? { message: "Gestión reprogramada" } : { message: "No se pudo reprogramar la gestión.", intent: "error" });
   }
 
+  const totalForBars = Math.max(1, totalVisible);
+  const showStats = status !== "error";
 
   return (
-    <div className="min-h-screen flex flex-col bg-paper-base dot-grid-pattern font-body text-ink-charcoal antialiased">
-      <Header searchValue={query} onSearchChange={setQuery} />
+    <>
+      <PageContainer>
+        <PageHeader
+          eyebrow={formatFullDate()}
+          title="Gestiones"
+          accent="para hoy"
+          aside={
+            <HoyFilters
+              eventOptions={eventOptions}
+              eventFilter={filters.eventFilter}
+              onEventChange={filters.setEventFilter}
+              statusFilter={filters.statusFilter}
+              onStatusChange={filters.setStatusFilter}
+              onClear={filters.clearFilters}
+              disabled={status === "loading"}
+            />
+          }
+        />
 
-      <main className="w-full pt-16 flex-1">
-        <div className="max-w-[1440px] mx-auto px-4 md:px-8 lg:px-12 py-8">
-          {/* ---------- Page header: greeting, title, filters, stats ---------- */}
-          <section className="mb-7 relative">
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 pb-5 border-b border-sepia-border">
-              <div className="space-y-1.5 max-w-3xl">
-                <p className="font-body text-xs md:text-sm font-medium text-ink-muted">{formatFullDate()}</p>
-                <p className="font-serif italic text-terracotta text-lg md:text-xl font-normal">
-                  Organización en marcha, usuario
-                </p>
-                <h1 className="font-serif text-4xl sm:text-5xl lg:text-[50px] font-semibold tracking-tight text-ink-charcoal leading-[1.08]">
-                  Gestiones <span className="italic font-normal text-terracotta">para hoy</span>
-                </h1>
+        {/* ---------- Resumen de actividad + regla ---------- */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+          <span className="font-stamp text-[11px] uppercase tracking-wider text-ink-muted font-bold">Resumen de actividad</span>
+          <div className="flex items-center gap-4">
+            {isRefreshing && (
+              <span role="status" className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-paper-card border border-sepia-border rounded-sharp font-body text-xs text-terracotta-dark">
+                <span className="material-symbols-outlined text-[15px] animate-spin" aria-hidden="true">sync</span>
+                Sincronizando bitácora y gestiones del día…
+              </span>
+            )}
+            <PriorityRuleBanner />
+          </div>
+        </div>
+
+        {showStats && (
+          <div className="mb-9">
+            {status === "loading" ? (
+              <StatsSkeleton />
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+                <StatCard label="Vencidas" tag={stats.overdueCount ? "Urgente" : "Al día"} value={stats.overdueCount} unit="gestiones atrasadas" accent="crimson" barWidthPercent={(stats.overdueCount / totalForBars) * 100} />
+                <StatCard label="Para hoy" tag="En curso" value={stats.todayCount} unit="prioritarias del día" accent="terracotta" barWidthPercent={(stats.todayCount / totalForBars) * 100} />
+                <StatCard label="Próximas" tag={`${UPCOMING_WINDOW_DAYS} días`} value={stats.upcomingCount} unit="en agenda" accent="neutral" barWidthPercent={(stats.upcomingCount / totalForBars) * 100} />
+                <StatCard label="Carga estimada" tag="Horas" value={stats.estimatedLoadHours} unit="hrs estimadas" accent="sage" barWidthPercent={stats.estimatedLoadHours ? (stats.todayLoadHours / stats.estimatedLoadHours) * 100 : 0} />
               </div>
+            )}
+          </div>
+        )}
 
-              <div className="flex flex-col sm:items-end gap-2.5 self-start sm:self-end shrink-0">
-                <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                  <FilterChip
-                    active={eventTypeFilter === "todos"}
-                    label={`Todos (${totalCount})`}
-                    onClick={() => setEventTypeFilter("todos")}
-                  />
-                  {availableEventTypes.map((type) => (
-                    <FilterChip
-                      key={type}
-                      active={eventTypeFilter === type}
-                      label={EVENT_TYPE_LABELS[type] ?? type}
-                      onClick={() => setEventTypeFilter(type)}
-                    />
+        {/* ---------- Cuerpo ---------- */}
+        {status === "loading" && <LoadingSkeleton />}
+
+        {status === "error" && (
+          <StateCard
+            tone="error"
+            icon={errorKind === "filter" ? "filter_alt_off" : "cloud_off"}
+            stamp="Incidencia de sincronización"
+            title={errorKind === "filter" ? "Ha ocurrido un fallo al aplicar el filtro" : "No pudimos cargar tus gestiones"}
+            description="Hubo una dificultad de conexión con el servidor. Tus datos guardados están a salvo. Revisa tu conexión o inténtalo de nuevo."
+            primaryAction={{ label: isRefreshing ? "Reintentando…" : "Reintentar", icon: "refresh", onClick: reload, disabled: isRefreshing }}
+            secondaryAction={errorKind === "filter" ? { label: "Limpiar filtros", icon: "filter_list_off", onClick: clearAllFilters } : undefined}
+          />
+        )}
+
+        {status === "success" && totalVisible === 0 && isFiltering && (
+          <StateCard
+            icon="filter_alt_off"
+            stamp="0 resultados encontrados"
+            title="No hay gestiones para este filtro"
+            description="No se encontraron gestiones con este evento, estado o búsqueda. Limpia los filtros para volver a ver toda tu agenda."
+            primaryAction={{ label: "Limpiar filtros", icon: "filter_list_off", onClick: clearAllFilters }}
+          />
+        )}
+
+        {status === "success" && totalVisible === 0 && !isFiltering && (
+          <StateCard
+            icon="event_available"
+            title="Hoy no tienes gestiones pendientes. ¿Creamos un evento?"
+            description="No hay tareas atrasadas ni actividades programadas para la jornada. Puedes comenzar planificando un nuevo evento o explorar tus eventos activos."
+            primaryAction={{ label: "Crear evento", icon: "add", onClick: () => navigate("/crear") }}
+            secondaryAction={{ label: "Explorar eventos activos", icon: "calendar_month", onClick: () => navigate("/eventos") }}
+            footnote={
+              <>
+                <span className="material-symbols-outlined text-[16px] text-sage-wax" aria-hidden="true">check_circle</span>
+                Tu agenda está completamente al día
+              </>
+            }
+          />
+        )}
+
+        {status === "success" && totalVisible > 0 && (
+          <div className={`space-y-9 transition-opacity ${isRefreshing ? "opacity-60" : ""}`} aria-busy={isRefreshing}>
+            {grouped.vencidas.length > 0 && (
+              <section className="space-y-3.5" aria-labelledby="hoy-vencidas">
+                <SectionHeading
+                  id="hoy-vencidas"
+                  numeral="I."
+                  title="Vencidas"
+                  subtitle="Ordenadas por antigüedad"
+                  tone="crimson"
+                  aside={
+                    <span className="inline-flex items-center gap-1 font-body text-xs font-semibold text-crimson-tag">
+                      <span className="material-symbols-outlined text-[16px]" aria-hidden="true">warning</span>
+                      Requieren atención inmediata
+                    </span>
+                  }
+                />
+                <div className="grid grid-cols-1 gap-3">
+                  {grouped.vencidas.map((g) => (
+                    <TaskCard key={g.id} gestion={g} variant="vencida" onMarkDone={() => handleMarkDone(g)} onReschedule={() => setRescheduleTarget(g)} />
                   ))}
                 </div>
-              </div>
-            </div>
+              </section>
+            )}
 
-            <PriorityRuleBanner />
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 mt-4">
-              <StatCard
-                label="Vencidas"
-                tag="Urgente"
-                value={stats.overdueCount}
-                unit="gestiones atrasadas"
-                accent="crimson"
-                barWidthPercent={Math.min(100, stats.overdueCount * 20)}
-              />
-              <StatCard
-                label="Para Hoy"
-                tag="En curso"
-                value={stats.todayCount}
-                unit="prioritarias del día"
-                accent="terracotta"
-                barWidthPercent={Math.min(100, stats.todayCount * 15)}
-              />
-              <StatCard
-                label="Próximas"
-                tag="7 días"
-                value={stats.upcomingCount}
-                unit="en agenda"
-                accent="neutral"
-                barWidthPercent={Math.min(100, stats.upcomingCount * 12)}
-              />
-              <StatCard
-                label="Carga Estimada"
-                tag="Horas"
-                value={stats.estimatedLoadHours}
-                unit="hrs estimadas"
-                accent="sage"
-                barWidthPercent={Math.min(100, stats.estimatedLoadHours * 4)}
-              />
-            </div>
-          </section>
-
-          {/* ---------- Body: loading / error / empty / active lists ---------- */}
-          {status === "loading" && <LoadingSkeleton />}
-
-          {status === "error" && (
-            <ErrorState
-              message={errorMessage}
-              onRetry={reload}
-              secondaryLabel="Volver al listado"
-              onSecondaryCta={reload}
-            />
-          )}
-
-          {status === "success" && isEmpty && (
-            <EmptyState
-              secondaryLabel="Volver al listado"
-              onSecondaryCta={reload}
-            />
-          )}
-
-          {status === "success" && !isEmpty && (
-            <div className="space-y-9">
-              {grouped.vencidas.length > 0 && (
-                <section className="space-y-3.5">
-                  <div className="flex items-baseline gap-2.5 pb-2 border-b-2 border-crimson-urgent/30">
-                      <span className="font-serif font-bold text-crimson-urgent text-xl">I.</span>
-                      <h2 className="font-serif text-2xl md:text-3xl text-ink-charcoal font-semibold tracking-tight">
-                        Vencidas
-                      </h2>
-                      <span className="font-body text-xs text-ink-muted ml-1">Ordenadas por antigüedad</span>
+            {grouped.hoy.length > 0 && (
+              <section className="space-y-3.5" aria-labelledby="hoy-hoy">
+                <SectionHeading
+                  id="hoy-hoy"
+                  numeral="II."
+                  title="Agenda de Hoy"
+                  subtitle={`${grouped.hoy.length} ${grouped.hoy.length === 1 ? "gestión" : "gestiones"} para la jornada`}
+                  tone="terracotta"
+                  aside={
+                    <span className="font-stamp text-xs text-terracotta-dark flex items-center gap-1.5 font-bold">
+                      <span className="material-symbols-outlined text-[15px] text-terracotta" aria-hidden="true">hourglass_top</span>
+                      {stats.todayLoadHours} hrs dedicación programada
+                    </span>
+                  }
+                />
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+                  <div className={grouped.hoy.length > 1 ? "lg:col-span-7" : "lg:col-span-12"}>
+                    <TaskCard gestion={grouped.hoy[0]} variant="hoy-hero" onMarkDone={() => handleMarkDone(grouped.hoy[0])} onReschedule={() => setRescheduleTarget(grouped.hoy[0])} />
+                  </div>
+                  {grouped.hoy.length > 1 && (
+                    <div className="lg:col-span-5 flex flex-col gap-3.5">
+                      {grouped.hoy.slice(1).map((g) => (
+                        <TaskCard key={g.id} gestion={g} variant="hoy-secundaria" onMarkDone={() => handleMarkDone(g)} onReschedule={() => setRescheduleTarget(g)} />
+                      ))}
                     </div>
-                  <div className="grid grid-cols-1 gap-3">
-                    {grouped.vencidas.map((g) => (
-                      <TaskCard
-                        key={g.id}
-                        gestion={g}
-                        variant="vencida"
-                        onMarkDone={() => handleMarkDone(g)}
-                        onReschedule={() => setRescheduleTarget(g)}
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
+                  )}
+                </div>
+              </section>
+            )}
 
-              {grouped.hoy.length > 0 && (
-                <section className="space-y-3.5">
-                  <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pb-2 border-b border-sepia-border">
-                    <div className="flex items-baseline gap-2.5">
-                      <span className="font-serif font-bold text-terracotta text-xl">II.</span>
-                      <h2 className="font-serif text-2xl md:text-3xl text-ink-charcoal font-semibold tracking-tight">
-                        Agenda de Hoy
-                      </h2>
-                      <span className="font-body text-xs text-ink-muted ml-1">
-                        {grouped.hoy.length} gestiones para la jornada
-                      </span>
-                    </div>
-                    <div className="font-mono-stamp text-xs text-terracotta-dark flex items-center gap-1.5 font-bold">
-                      <span className="material-symbols-outlined text-[15px] text-terracotta">hourglass_top</span>
-                      <span>{stats.todayLoadHours} hrs dedicación programada</span>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-                    <div className="lg:col-span-7">
-                      <TaskCard
-                        gestion={grouped.hoy[0]}
-                        variant="hoy-hero"
-                        onMarkDone={() => handleMarkDone(grouped.hoy[0])}
-                        onReschedule={() => setRescheduleTarget(grouped.hoy[0])}
-                      />
-                    </div>
-                    {grouped.hoy.length > 1 && (
-                      <div className="lg:col-span-5 flex flex-col justify-between gap-3.5">
-                        {grouped.hoy.slice(1).map((g) => (
-                          <TaskCard
-                            key={g.id}
-                            gestion={g}
-                            variant="hoy-secundaria"
-                            onMarkDone={() => handleMarkDone(g)}
-                            onReschedule={() => setRescheduleTarget(g)}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </section>
-              )}
+            {grouped.proximas.length > 0 && (
+              <section className="space-y-3.5" aria-labelledby="hoy-proximas">
+                <SectionHeading id="hoy-proximas" numeral="III." title="Próximas Jornadas" subtitle={`Horizonte a ${UPCOMING_WINDOW_DAYS} días`} />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {grouped.proximas.map((g) => (
+                    <TaskCard key={g.id} gestion={g} variant="proxima" onMarkDone={() => handleMarkDone(g)} onReschedule={() => setRescheduleTarget(g)} />
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        )}
+      </PageContainer>
 
-              {grouped.proximas.length > 0 && (
-                <section className="space-y-3.5">
-                  <div className="flex items-baseline gap-2.5 pb-2 border-b border-sepia-border">
-                    <span className="font-serif font-bold text-sepia-dark text-xl">III.</span>
-                    <h2 className="font-serif text-2xl md:text-3xl text-ink-charcoal font-semibold tracking-tight">
-                      Próximas Jornadas
-                    </h2>
-                    <span className="font-body text-xs text-ink-muted ml-1">Horizonte a 7 días</span>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {grouped.proximas.map((g) => (
-                      <TaskCard
-                        key={g.id}
-                        gestion={g}
-                        variant="proxima"
-                        onMarkDone={() => handleMarkDone(g)}
-                        onReschedule={() => setRescheduleTarget(g)}
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
-            </div>
-          )}
-        </div>
-      </main>
-
-      <Footer />
-
-      {/* ---------- Overlays ---------- */}
-      <Toast toast={toast} onClose={() => setToast(null)} />
+      <Toast toast={toast} onClose={closeToast} />
 
       {rescheduleTarget && (
         <RescheduleModal
           mode="single"
           currentDateISO={rescheduleTarget.targetDate}
           onCancel={() => setRescheduleTarget(null)}
-          onConfirm={handleConfirmSingleReschedule}
+          onConfirm={handleConfirmReschedule}
         />
       )}
 
-      {/* Dev-only QA tool — never rendered in a production build. */}
+      {/* Herramienta de QA solo en desarrollo — nunca en `npm run build`. */}
       {import.meta.env.DEV && (
         <SimulationToolbar
           mode={simMode}
@@ -291,23 +259,21 @@ export default function HoyPage() {
           onToggleError={() => setSimMode((m) => (m === "error" ? "normal" : "error"))}
         />
       )}
-    </div>
+    </>
   );
 }
 
-function FilterChip({ active, label, onClick }) {
+function SectionHeading({ id, numeral, title, subtitle, tone, aside }) {
+  const numeralColor = tone === "crimson" ? "text-crimson-urgent" : tone === "terracotta" ? "text-terracotta" : "text-sepia-dark";
+  const border = tone === "crimson" ? "border-b-2 border-crimson-urgent/30" : "border-b border-sepia-border";
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        "px-2.5 py-1 border font-body text-xs rounded-sharp whitespace-nowrap transition-colors",
-        active
-          ? "border-terracotta bg-terracotta text-[#FAF6F0] shadow-sm"
-          : "border-sepia-border bg-paper-linen text-ink-charcoal hover:border-ink-muted",
-      ].join(" ")}
-    >
-      {label}
-    </button>
+    <div className={`flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pb-2 ${border}`}>
+      <div className="flex items-baseline gap-2.5">
+        <span className={`font-heading font-bold text-xl ${numeralColor}`} aria-hidden="true">{numeral}</span>
+        <h2 id={id} className="font-heading text-2xl md:text-3xl text-ink-charcoal font-semibold tracking-tight">{title}</h2>
+        {subtitle && <span className="font-body text-xs text-ink-muted ml-1">{subtitle}</span>}
+      </div>
+      {aside}
+    </div>
   );
 }

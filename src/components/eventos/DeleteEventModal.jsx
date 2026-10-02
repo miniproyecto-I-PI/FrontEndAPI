@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { EVENT_TYPE_SINGULAR } from "../../data/mockEvents";
+import { EVENT_TYPE_LABEL } from "../../data/eventTypes";
 
 const MONTHS = [
   "Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic",
@@ -76,7 +76,7 @@ export default function DeleteEventModal({ event, onCancel, onConfirm }) {
               </span>
               <h2
                 id="delete-event-title"
-                className="font-serif text-xl md:text-2xl font-bold text-ink-charcoal leading-snug mt-0.5"
+                className="font-heading text-xl md:text-2xl font-bold text-ink-charcoal leading-snug mt-0.5"
               >
                 ¿Eliminar el evento «{event.name}»?
               </h2>
@@ -101,12 +101,12 @@ export default function DeleteEventModal({ event, onCancel, onConfirm }) {
         {/* Preview card */}
         <div className="bg-paper-linen/80 border border-sepia-border rounded-sharp p-3 text-xs text-ink-muted mb-6 space-y-1.5">
           <div className="flex items-center justify-between text-ink-charcoal gap-3">
-            <span className="font-serif font-bold text-[13px] truncate">
+            <span className="font-heading font-bold text-[13px] truncate">
               {event.name}
             </span>
             {event.type && (
               <span className="font-mono-stamp text-[10px] font-bold text-ink-charcoal bg-paper-card border border-sepia-border px-2 py-0.5 rounded-sharp uppercase shrink-0">
-                {EVENT_TYPE_SINGULAR[event.type] ?? event.type}
+                {EVENT_TYPE_LABEL[event.type] ?? event.type}
               </span>
             )}
           </div>

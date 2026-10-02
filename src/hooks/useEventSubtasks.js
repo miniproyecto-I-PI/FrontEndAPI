@@ -18,27 +18,43 @@ import {
   deleteSubtask as apiDeleteSubtask,
 } from "../services/api";
 
+/**
+ * status:
+ *  - "loading"
+ *  - "success"
+ *  - "notfound"        404: el evento no existe o es de otro organizador (US-11)
+ *  - "subtasksError"   el evento cargó pero sus gestiones no (diseño Stitch)
+ *  - "error"           no se pudo cargar el evento
+ */
 export function useEventSubtasks(eventId) {
   const [event, setEvent] = useState(null);
   const [subtasks, setSubtasks] = useState([]);
   const [status, setStatus] = useState("loading");
-  const [errorMessage, setErrorMessage] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!eventId) return;
-    setStatus("loading");
-    try {
-      const [evt, subs] = await Promise.all([
-        getEventById(eventId),
-        getEventSubtasks(eventId),
-      ]);
-      setEvent(evt);
-      setSubtasks(subs);
-      setStatus("success");
-    } catch (err) {
-      setErrorMessage(err.message || "No pudimos cargar este evento");
-      setStatus("error");
+    setIsRefreshing(true);
+    const [eventResult, subtasksResult] = await Promise.allSettled([
+      getEventById(eventId),
+      getEventSubtasks(eventId),
+    ]);
+    setIsRefreshing(false);
+
+    if (eventResult.status === "rejected") {
+      setEvent(null);
+      setSubtasks([]);
+      setStatus(eventResult.reason?.status === 404 ? "notfound" : "error");
+      return;
     }
+    setEvent(eventResult.value);
+    if (subtasksResult.status === "rejected") {
+      setSubtasks([]);
+      setStatus("subtasksError");
+      return;
+    }
+    setSubtasks(subtasksResult.value);
+    setStatus("success");
   }, [eventId]);
 
   useEffect(() => {
@@ -87,7 +103,7 @@ export function useEventSubtasks(eventId) {
     event,
     subtasks,
     status,
-    errorMessage,
+    isRefreshing,
     addSubtask,
     updateEvent,
     updateSubtask,

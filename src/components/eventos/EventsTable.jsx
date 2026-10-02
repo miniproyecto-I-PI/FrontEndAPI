@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { EVENT_TYPE_SINGULAR } from "../../data/mockEvents";
+import { EVENT_TYPE_LABEL } from "../../data/eventTypes";
 
 const MONTHS = [
   "Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic",
@@ -31,7 +31,7 @@ export default function EventsTable({ events, onEdit, onDelete }) {
               <tr key={evt.id} className="hover:bg-paper-linen/30 transition-colors">
                 <td className="py-4 px-5">
                   <Link to={`/evento/${evt.id}`} className="block group">
-                    <div className="font-bold font-serif text-[15px] leading-snug text-ink-charcoal group-hover:text-terracotta transition-colors">
+                    <div className="font-bold font-heading text-[15px] leading-snug text-ink-charcoal group-hover:text-terracotta transition-colors">
                       {evt.name}
                     </div>
                     {evt.contact && (
@@ -44,7 +44,7 @@ export default function EventsTable({ events, onEdit, onDelete }) {
 
                 <td className="py-4 px-4">
                   <span className="font-mono-stamp text-[10px] font-bold text-ink-charcoal bg-paper-linen/60 border border-sepia-border px-2 py-1 rounded-sharp uppercase tracking-wider inline-block">
-                    {EVENT_TYPE_SINGULAR[evt.type]?.toUpperCase() ??
+                    {EVENT_TYPE_LABEL[evt.type]?.toUpperCase() ??
                       (evt.type ?? "—").toUpperCase()}
                   </span>
                 </td>

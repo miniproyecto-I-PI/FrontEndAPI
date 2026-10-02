@@ -32,7 +32,7 @@ export default function SubtaskFilters({ value, onChange, counts }) {
             ].join(" ");
 
         return (
-          <button key={f.key} type="button" onClick={() => onChange(f.key)} className={classes}>
+          <button key={f.key} type="button" onClick={() => onChange(f.key)} aria-pressed={isActive} className={classes}>
             {isDanger && f.count > 0 && (
               <span className="w-1.5 h-1.5 rounded-full bg-crimson-urgent" />
             )}

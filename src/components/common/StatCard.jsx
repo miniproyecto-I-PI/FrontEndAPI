@@ -20,10 +20,10 @@ export default function StatCard({ label, tag, value, unit, accent = "neutral", 
     <div className="bg-paper-card border border-sepia-border p-3.5 px-4 rounded-sharp warm-card-shadow relative">
       <div className="flex items-center justify-between">
         <span className={`font-stamp text-[10px] uppercase tracking-wider font-bold ${styles.label}`}>{label}</span>
-        {tag && <span className={`font-serif italic text-xs font-medium ${styles.label}`}>{tag}</span>}
+        {tag && <span className={`font-body italic text-xs font-medium ${styles.label}`}>{tag}</span>}
       </div>
       <div className="flex items-baseline gap-2 mt-1">
-        <span className={`font-serif text-3xl font-bold ${styles.value}`}>{value}</span>
+        <span className={`font-heading text-3xl font-bold ${styles.value}`}>{value}</span>
         <span className="font-body text-xs text-ink-muted">{unit}</span>
       </div>
       <div className={`w-full h-1 mt-2.5 rounded-none overflow-hidden ${styles.track}`}>

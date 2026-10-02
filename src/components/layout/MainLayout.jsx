@@ -1,25 +1,38 @@
-import { Outlet } from "react-router-dom";
+import { useState } from "react";
+import { Outlet, useLocation } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
+
+/** Rutas cuyo contenido filtra con el buscador del Header. */
+const SEARCHABLE_ROUTES = ["/hoy", "/eventos"];
 
 /**
  * MainLayout.jsx
  * ---------------------------------------------------------------------------
- * Shared shell for every route defined in the Arquitectura de Información
- * (C5): /hoy, /crear, /evento/:id, /progreso. `/login` intentionally does
- * NOT use this layout (see App.jsx) since a login screen shouldn't show the
- * app's main navigation before the user is authenticated.
+ * Estructura compartida de todas las rutas autenticadas (C5): Header fijo,
+ * contenido y Footer. `/login` y `/registro` NO lo usan: una pantalla de
+ * acceso no debe mostrar la navegación principal.
  *
- * `<Outlet />` is React Router's placeholder for whichever page component
- * matched the current route — this is what makes the layout reusable across
- * all of them without duplicating the Header/Footer per page.
+ * El texto del buscador vive aquí y se entrega a la página activa con
+ * `useOutletContext()` → `{ search, setSearch }`. Se limpia al cambiar de ruta.
  */
 export default function MainLayout() {
+  const { pathname } = useLocation();
+  const [searchState, setSearchState] = useState({ path: pathname, value: "" });
+
+  // Reiniciar el buscador al navegar sin un efecto adicional.
+  const search = searchState.path === pathname ? searchState.value : "";
+  const setSearch = (value) => setSearchState({ path: pathname, value });
+  const isSearchable = SEARCHABLE_ROUTES.includes(pathname);
+
   return (
-    <div className="min-h-screen flex flex-col bg-paper-base font-body text-ink-charcoal antialiased selection:bg-terracotta-light selection:text-terracotta-dark">
-      <Header />
+    <div className="min-h-screen flex flex-col bg-paper-base dot-grid-pattern font-body text-ink-charcoal antialiased selection:bg-terracotta-light selection:text-terracotta-dark">
+      <Header
+        searchValue={isSearchable ? search : undefined}
+        onSearchChange={isSearchable ? setSearch : undefined}
+      />
       <main className="w-full pt-16 flex-1">
-        <Outlet />
+        <Outlet context={{ search, setSearch }} />
       </main>
       <Footer />
     </div>

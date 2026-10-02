@@ -1,24 +1,60 @@
 export const API_BASE_URL = (import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:8000/api" : "")).replace(/\/$/, "");
 
+// --- Sesión (US-11) ---------------------------------------------------------
+// El token vive en localStorage si el usuario marca "Mantener sesión activa";
+// si no, en sessionStorage (se borra al cerrar el navegador).
+const TOKEN_KEY = "convoka.token";
+
+export function getStoredToken() {
+  return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+}
+function storeToken(token, remember) {
+  clearStoredToken();
+  (remember ? localStorage : sessionStorage).setItem(TOKEN_KEY, token);
+}
+export function clearStoredToken() {
+  localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
+}
+
+/** Evento global que AuthContext escucha para cerrar la sesión ante un 401. */
+export const UNAUTHORIZED_EVENT = "convoka:unauthorized";
+
 async function request(path, options = {}) {
   if (!API_BASE_URL) {
     throw new Error("El backend no está configurado para este despliegue. Define VITE_API_URL en Vercel.");
   }
+  // `anonymous`: login/registro no envían token ni disparan el cierre por 401.
+  const { anonymous = false, ...fetchOptions } = options;
+  const token = getStoredToken();
   let response;
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
-      ...options,
-      headers: { "Content-Type": "application/json", ...options.headers },
+      ...fetchOptions,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && !anonymous ? { Authorization: `Token ${token}` } : {}),
+        ...fetchOptions.headers,
+      },
     });
   } catch {
-    throw new Error("No pudimos conectar con el servidor. Revisa que el backend esté activo.");
+    const error = new Error("No pudimos conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.");
+    error.code = "network_error";
+    throw error;
   }
   const body = await response.json().catch(() => ({}));
+  if (response.status === 401 && !anonymous) {
+    // Token ausente, inválido o revocado: se cierra la sesión local.
+    clearStoredToken();
+    window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+  }
   if (!response.ok || body.success === false) {
     const fallback = response.status === 404
       ? `El backend no tiene disponible ${path} (404). Actualiza el despliegue de la API.`
       : `El backend respondió con error ${response.status} en ${path}.`;
     const error = new Error(body.error?.message || body.message || body.detail || fallback);
+    error.status = response.status;
+    error.code = body.error?.code;
     error.details = body.error?.details ?? {};
     throw error;
   }
@@ -32,7 +68,8 @@ const statusToFrontend = (status) => status?.toUpperCase() ?? "PENDIENTE";
 function toSubtask(task) {
   return { ...task, id: String(task.id), eventId: String(task.event), title: task.name,
     targetDate: task.target_date, estimatedHours: Number(task.estimated_hours), status: statusToFrontend(task.status),
-    eventName: task.event_name, eventType: typeToFrontend(task.event_type) };
+    eventName: task.event_name, eventType: typeToFrontend(task.event_type),
+    provider: task.provider ?? "", time: task.time ?? "" };
 }
 function toEvent(event) {
   if (!event) return event;
@@ -57,12 +94,22 @@ function fromSubtask(task) {
   if (task.status !== undefined) payload.status = task.status.toUpperCase();
   if (task.note !== undefined) payload.note = task.note;
   if (task.provider !== undefined) payload.provider = task.provider;
+  if (task.time !== undefined) payload.time = task.time || null;
   return payload;
 }
 
-export async function getToday({ simulateError = false } = {}) {
+/**
+ * GET /today — gestiones no ejecutadas (vencidas, hoy y próximos 7 días) del
+ * organizador autenticado. US-05: el filtrado por evento/estado ocurre en el
+ * backend con los query params `event_id` y `status` (PENDIENTE | POSPUESTA).
+ */
+export async function getToday({ eventId, status, simulateError = false } = {}) {
   if (simulateError) throw new Error("No pudimos cargar tus gestiones");
-  return (await request("/today")).map(toSubtask);
+  const params = new URLSearchParams();
+  if (eventId) params.set("event_id", eventId);
+  if (status) params.set("status", status.toUpperCase());
+  const query = params.toString();
+  return (await request(`/today${query ? `?${query}` : ""}`)).map(toSubtask);
 }
 export async function markGestionAsDone(id) { return toSubtask(await request(`/subtasks/${id}`, json("PATCH", { status: "EJECUTADA" }))); }
 export async function postponeGestion(id, note = "") { return toSubtask(await request(`/subtasks/${id}`, json("PATCH", { status: "POSPUESTA", note }))); }
@@ -82,8 +129,33 @@ export async function deleteEvent(id) { await request(`/events/${id}`, { method:
 export async function updateSubtask(id, patch) { return toSubtask(await request(`/subtasks/${id}`, json("PATCH", fromSubtask(patch)))); }
 export async function deleteSubtask(id) { await request(`/subtasks/${id}`, { method: "DELETE" }); return { id, deleted: true }; }
 
-// La autenticación pertenece al Sprint 2 y aún no tiene endpoint en Django.
-export async function login() { throw new Error("Login aún no disponible — se implementa desde el Sprint 2 (US-11)."); }
+// --- Autenticación (US-11) --------------------------------------------------
+/** POST /auth/login — acepta correo o usuario; guarda el token si es válido. */
+export async function login({ identifier, password, remember = true }) {
+  const id = identifier.trim();
+  const credentials = id.includes("@") ? { email: id, password } : { username: id, password };
+  const data = await request("/auth/login", { ...json("POST", credentials), anonymous: true });
+  storeToken(data.token, remember);
+  return data.user;
+}
+/** POST /auth/logout — invalida el token en el servidor; la sesión local se limpia siempre. */
+export async function logout() {
+  try {
+    await request("/auth/logout", { method: "POST" });
+  } finally {
+    clearStoredToken();
+  }
+}
+/** GET /auth/me — restaura el usuario al recargar la página. */
+export async function getMe() { return request("/auth/me"); }
+/** POST /auth/register — crea la cuenta; NO inicia sesión (el usuario va a /login). */
+export async function register({ username, email, password }) {
+  const data = await request("/auth/register", {
+    ...json("POST", { username: username.trim(), email: email.trim(), password }),
+    anonymous: true,
+  });
+  return data.user;
+}
 
 export const dailyLimitApi = {
   async get() { const data = await request("/settings/daily-limit"); return { dailyLimitHours: Number(data.daily_limit_hours) }; },

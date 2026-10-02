@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { toDateInputValue } from "../../utils/dateUtils";
 
+// "Pospuesta" no está en el diseño, pero es un estado real del backend: sin
+// esta opción, editar una gestión pospuesta la devolvía a PENDIENTE.
 const STATUS_OPTIONS = [
   { key: "PENDIENTE", label: "Pendiente",  icon: null,    dot: "bg-terracotta" },
+  { key: "POSPUESTA", label: "Pospuesta",  icon: "pause_circle", dot: null },
   { key: "EJECUTADA", label: "Completada", icon: "check", dot: null },
 ];
 
@@ -22,9 +25,8 @@ export default function EditSubtaskModal({
   provider: initialSubtask.provider ?? "",
   estimatedHours: String(initialSubtask.estimatedHours ?? ""),
   date: toDateInputValue(initialSubtask.targetDate),
-  time: "",
-  status:
-    initialSubtask.status === "EJECUTADA" ? "EJECUTADA" : "PENDIENTE",
+  time: initialSubtask.time ?? "",
+  status: STATUS_OPTIONS.some((s) => s.key === initialSubtask.status) ? initialSubtask.status : "PENDIENTE",
 }));
   const [fieldErrors, setFieldErrors] = useState({});
   const [generalError, setGeneralError] = useState(null);
@@ -80,13 +82,14 @@ export default function EditSubtaskModal({
     }
     setStatus("loading");
     try {
-      const timeSuffix = form.time ? `T${form.time}:00` : "T12:00:00";
-      const localDate = new Date(`${form.date}${timeSuffix}`);
+      // target_date es una fecha local sin hora: se envía tal cual
+      // ("YYYY-MM-DD"); la hora opcional viaja aparte en `time`.
       await onSubmit({
         title: form.title.trim(),
         provider: form.provider.trim(),
         estimatedHours: Number(form.estimatedHours),
-        targetDate: localDate.toISOString(),
+        targetDate: form.date,
+        time: form.time || null,
         status: form.status,
       });
     } catch (err) {
@@ -116,7 +119,7 @@ export default function EditSubtaskModal({
           <div>
             <h2
               id="edit-subtask-title"
-              className="font-serif text-2xl font-bold text-ink-charcoal tracking-tight"
+              className="font-heading text-2xl font-bold text-ink-charcoal tracking-tight"
             >
               Editar gestión
             </h2>
@@ -161,7 +164,7 @@ export default function EditSubtaskModal({
                 <div className="flex items-center justify-between gap-3">
                   <label
                     htmlFor="edit-subtask-title-input"
-                    className="block font-serif font-semibold text-xs md:text-sm text-ink-charcoal"
+                    className="block font-heading font-semibold text-xs md:text-sm text-ink-charcoal"
                   >
                     Título de la subtarea o gestión{" "}
                     <span className="text-crimson-urgent">*</span>
@@ -188,7 +191,7 @@ export default function EditSubtaskModal({
                 <div className="space-y-1.5">
                   <label
                     htmlFor="edit-subtask-provider"
-                    className="block font-serif font-semibold text-xs md:text-sm text-ink-charcoal"
+                    className="block font-heading font-semibold text-xs md:text-sm text-ink-charcoal"
                   >
                     Proveedor o encargado{" "}
                     <span className="font-body text-xs text-ink-muted font-normal">
@@ -212,7 +215,7 @@ export default function EditSubtaskModal({
                 <div className="space-y-1.5">
                   <label
                     htmlFor="edit-subtask-hours"
-                    className="block font-serif font-semibold text-xs md:text-sm text-ink-charcoal"
+                    className="block font-heading font-semibold text-xs md:text-sm text-ink-charcoal"
                   >
                     Dedicación estimada{" "}
                     <span className="font-body text-xs text-ink-muted font-normal">
@@ -255,7 +258,7 @@ export default function EditSubtaskModal({
                 <div className="space-y-1.5">
                   <label
                     htmlFor="edit-subtask-date"
-                    className="block font-serif font-semibold text-xs md:text-sm text-ink-charcoal"
+                    className="block font-heading font-semibold text-xs md:text-sm text-ink-charcoal"
                   >
                     Fecha límite de resolución{" "}
                     <span className="text-crimson-urgent">*</span>
@@ -275,7 +278,7 @@ export default function EditSubtaskModal({
                 <div className="space-y-1.5">
                   <label
                     htmlFor="edit-subtask-time"
-                    className="block font-serif font-semibold text-xs md:text-sm text-ink-charcoal"
+                    className="block font-heading font-semibold text-xs md:text-sm text-ink-charcoal"
                   >
                     Hora límite o reunión{" "}
                     <span className="font-body text-xs text-ink-muted font-normal">
@@ -293,10 +296,10 @@ export default function EditSubtaskModal({
               </div>
 
               <div className="space-y-2 pt-1">
-                <label className="block font-serif font-semibold text-xs md:text-sm text-ink-charcoal">
+                <span id="edit-subtask-status-label" className="block font-heading font-semibold text-xs md:text-sm text-ink-charcoal">
                   Estado de la gestión
-                </label>
-                <div className="grid grid-cols-2 gap-2.5">
+                </span>
+                <div className="grid grid-cols-3 gap-2.5" role="group" aria-labelledby="edit-subtask-status-label">
                   {STATUS_OPTIONS.map((s) => {
                     const isActive = form.status === s.key;
                     return (
@@ -306,6 +309,7 @@ export default function EditSubtaskModal({
                         onClick={() =>
                           setForm((p) => ({ ...p, status: s.key }))
                         }
+                        aria-pressed={isActive}
                         className={[
                           "flex items-center justify-center gap-2 p-2.5 rounded-sharp font-body text-xs transition-all",
                           isActive
@@ -354,7 +358,7 @@ export default function EditSubtaskModal({
               type="button"
               onClick={onCancel}
               disabled={isLoading}
-              className="text-xs font-serif text-ink-muted hover:text-ink-charcoal underline hover:no-underline transition-colors order-last sm:order-first disabled:opacity-60"
+              className="text-xs font-heading text-ink-muted hover:text-ink-charcoal underline hover:no-underline transition-colors order-last sm:order-first disabled:opacity-60"
             >
               Descartar cambios
             </button>
@@ -384,10 +388,10 @@ function ModalSectionHeader({ number, title, badge }) {
   return (
     <div className="flex items-center justify-between pb-2 border-b border-sepia-border">
       <div className="flex items-center gap-2">
-        <span className="w-5 h-5 rounded-full bg-paper-base border border-sepia-border flex items-center justify-center font-serif text-[11px] font-bold text-terracotta">
+        <span className="w-5 h-5 rounded-full bg-paper-base border border-sepia-border flex items-center justify-center font-heading text-[11px] font-bold text-terracotta">
           {number}
         </span>
-        <h3 className="font-serif text-base font-semibold text-ink-charcoal">
+        <h3 className="font-heading text-base font-semibold text-ink-charcoal">
           {title}
         </h3>
       </div>

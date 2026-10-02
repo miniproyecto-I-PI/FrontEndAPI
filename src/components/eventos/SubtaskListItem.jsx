@@ -52,13 +52,14 @@ export default function SubtaskListItem({
     if (bucket === "hoy") {
       return (
         <span className="font-mono-stamp text-[10px] uppercase px-2 py-0.5 rounded-sharp bg-terracotta-light/70 border border-terracotta/30 text-terracotta-dark font-bold tracking-wide">
-          Hoy
+          {subtask.time ? `Hoy • ${subtask.time}` : "Hoy"}
         </span>
       );
     }
     return (
       <span className="font-mono-stamp text-[10px] uppercase px-2 py-0.5 rounded-sharp bg-paper-linen border border-sepia-border text-ink-muted font-medium tracking-wide">
         {formatUpcomingLabel(subtask.targetDate) || formatShortDate(subtask.targetDate)}
+        {subtask.time ? ` • ${subtask.time}` : ""}
       </span>
     );
   })();
@@ -91,6 +92,12 @@ export default function SubtaskListItem({
         <div className="flex-1 min-w-0">
           <div className="flex items-center flex-wrap gap-2 mb-1">
             {badge}
+            {!done && subtask.status === "POSPUESTA" && (
+              <span className="inline-flex items-center gap-1 font-body text-[11px] font-semibold text-ink-charcoal bg-paper-accent border border-sepia-dark/50 px-2 py-0.5 rounded-sharp">
+                <span className="material-symbols-outlined text-[13px]" aria-hidden="true">pause_circle</span>
+                Pospuesta
+              </span>
+            )}
             <span className="font-mono-stamp text-[11px] text-terracotta-dark font-medium inline-flex items-center gap-1">
               <span className="material-symbols-outlined text-[13px]">timer</span>
               {subtask.estimatedHours} hrs estimadas
@@ -99,7 +106,7 @@ export default function SubtaskListItem({
 
           <h4
             className={[
-              "font-serif text-lg font-bold leading-snug",
+              "font-heading text-lg font-bold leading-snug",
               done
                 ? "line-through text-ink-muted"
                 : "text-ink-charcoal",

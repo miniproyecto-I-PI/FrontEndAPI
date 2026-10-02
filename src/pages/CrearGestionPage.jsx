@@ -1,8 +1,11 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import CreateSubtaskSuccessModal from "../components/common/CreateSubtaskSuccessModal";
 import { useEventSubtasks } from "../hooks/useEventSubtasks";
 import Toast from "../components/common/Toast";
+import StateCard from "../components/common/StateCard";
+import PageContainer from "../components/layout/PageContainer";
+import PageHeader, { Breadcrumb } from "../components/layout/PageHeader";
 import { formatShortDate } from "../utils/dateUtils";
 
 const emptyForm = {
@@ -20,7 +23,8 @@ const emptyForm = {
  */
 export default function CrearGestionPage() {
   const { id } = useParams();
-  const { event, addSubtask, status: eventStatus } = useEventSubtasks(id);
+  const navigate = useNavigate();
+  const { event, addSubtask, status: eventStatus, isRefreshing, reload } = useEventSubtasks(id);
 
   const [form, setForm] = useState(emptyForm);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -67,12 +71,14 @@ export default function CrearGestionPage() {
   }
   setStatus("loading");
   try {
-    const localDate = new Date(`${form.targetDate}T12:00:00`);
+    // target_date es una fecha local sin hora (AAAA-MM-DD); la hora
+    // opcional viaja aparte en `time` (comentario del backend).
     const created = await addSubtask({
       title: form.title.trim(),
       provider: form.provider.trim(),
-      targetDate: localDate.toISOString(),
+      targetDate: form.targetDate,
       estimatedHours: Number(form.estimatedHours),
+      time: form.time || null,
     });
     setCreatedSubtaskTitle(created?.title || form.title.trim());
     setStatus("idle");
@@ -91,60 +97,53 @@ export default function CrearGestionPage() {
   const eventDateLabel = event?.dateTime ? formatShortDate(event.dateTime) : null;
 
   return (
-    <div className="max-w-[1080px] mx-auto px-4 md:px-8 py-8">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-xs font-body text-ink-muted mb-6">
-        <Link
-          to={`/evento/${id}`}
-          title="Volver al detalle del evento"
-          className="w-7 h-7 flex items-center justify-center rounded-sharp border border-sepia-border bg-paper-card text-ink-muted hover:text-ink-charcoal hover:border-ink-muted transition-colors"
-        >
-          <span className="material-symbols-outlined text-[16px]">
-            arrow_back
-          </span>
-        </Link>
-        <div className="flex items-center gap-1.5 ml-1">
-          <Link to="/hoy" className="hover:text-ink-charcoal transition-colors">
-            Convoka
-          </Link>
-          <span className="text-sepia-dark">/</span>
-          <Link
-            to="/eventos"
-            className="hover:text-ink-charcoal transition-colors"
-          >
-            Eventos
-          </Link>
-          <span className="text-sepia-dark">/</span>
-          <Link
-            to={`/evento/${id}`}
-            className="hover:text-ink-charcoal font-medium transition-colors truncate max-w-[180px]"
-          >
-            {eventName}
-          </Link>
-          <span className="text-sepia-dark">/</span>
-          <span className="text-ink-charcoal font-semibold">Nueva gestión</span>
-        </div>
-      </div>
+    <PageContainer narrow>
+      <PageHeader
+        breadcrumb={
+          <Breadcrumb
+            backTo={`/evento/${id}`}
+            items={[
+              { label: "Convoka", to: "/hoy" },
+              { label: "Eventos", to: "/eventos" },
+              { label: eventName, to: `/evento/${id}` },
+              { label: "Nueva gestión" },
+            ]}
+          />
+        }
+        eyebrow={eventName}
+        title="Crear"
+        accent="nueva gestión"
+        aside={
+          <p className="font-body text-xs md:text-sm text-ink-muted max-w-sm lg:text-right leading-relaxed">
+            Registra una subtarea operativa en la bitácora con proveedor asignado,
+            fecha límite y estimación de esfuerzo.
+          </p>
+        }
+      />
 
-      {/* Encabezado */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 pb-6 mb-8 border-b border-sepia-border">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs font-body text-ink-muted">
-            <span>{eventName}</span>
-          </div>
-          <h1 className="font-serif text-4xl sm:text-5xl font-semibold tracking-tight text-ink-charcoal leading-tight">
-            Crear{" "}
-            <span className="italic font-normal text-terracotta">
-              nueva gestión
-            </span>
-          </h1>
-        </div>
-        <p className="font-body text-xs md:text-sm text-ink-muted max-w-sm lg:text-right leading-relaxed">
-          Registra una subtarea operativa en la bitácora con proveedor asignado,
-          fecha límite y estimación de esfuerzo.
-        </p>
-      </div>
+      {eventStatus === "notfound" && (
+        <StateCard
+          icon="search_off"
+          stamp="Expediente no disponible"
+          title="Evento no encontrado"
+          description="No puedes agregar gestiones a este evento: no existe o no pertenece a tu cuenta."
+          primaryAction={{ label: "Ir a Mis Eventos", icon: "arrow_back", onClick: () => navigate("/eventos") }}
+          compact
+        />
+      )}
+      {eventStatus === "error" && (
+        <StateCard
+          tone="error"
+          icon="sync_problem"
+          stamp="Incidencia de sincronización"
+          title="No pudimos cargar el evento"
+          description="Necesitamos los datos del evento para registrar la gestión. Tus datos guardados están a salvo."
+          primaryAction={{ label: isRefreshing ? "Reintentando…" : "Reintentar carga", icon: "refresh", onClick: reload, disabled: isRefreshing }}
+          compact
+        />
+      )}
 
+      {eventStatus !== "notfound" && eventStatus !== "error" && (
       <form onSubmit={handleSubmit} noValidate className="space-y-6">
         {generalError && (
           <div
@@ -380,6 +379,7 @@ export default function CrearGestionPage() {
           </div>
         </div>
       </form>
+      )}
 
               {createdSubtaskTitle && (
   <CreateSubtaskSuccessModal
@@ -389,7 +389,7 @@ export default function CrearGestionPage() {
   />
 )}
       <Toast toast={toast} onClose={() => setToast(null)} />
-    </div>
+    </PageContainer>
   );
 }
 
@@ -399,10 +399,10 @@ function SectionHeader({ number, title, badge }) {
   return (
     <div className="flex items-center justify-between pb-3 border-b border-sepia-border/70">
       <div className="flex items-center gap-2.5">
-        <span className="w-6 h-6 rounded-full border border-sepia-border bg-paper-base flex items-center justify-center font-serif text-xs font-bold text-ink-charcoal">
+        <span className="w-6 h-6 rounded-full border border-sepia-border bg-paper-base flex items-center justify-center font-heading text-xs font-bold text-ink-charcoal">
           {number}
         </span>
-        <h2 className="font-serif text-xl md:text-2xl text-ink-charcoal font-semibold">
+        <h2 className="font-heading text-xl md:text-2xl text-ink-charcoal font-semibold">
           {title}
         </h2>
       </div>
