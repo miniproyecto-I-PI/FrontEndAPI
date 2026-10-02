@@ -2,18 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 
 import { useEvents } from "../hooks/useEvents";
-import {
-  deleteEvent as apiDeleteEvent,
-  updateEvent as apiUpdateEvent,
-} from "../services/api";
+import { deleteEvent as apiDeleteEvent } from "../services/api";
 import { diffInCalendarDays } from "../utils/dateUtils";
 
 import PageContainer from "../components/layout/PageContainer";
 import PageHeader, { Breadcrumb } from "../components/layout/PageHeader";
 import Toast from "../components/common/Toast";
 import StateCard from "../components/common/StateCard";
-import UpdateEventSuccessModal from "../components/common/UpdateEventSuccessModal";
-import EditEventModal from "../components/common/EditEventModal";
 import DeleteEventModal from "../components/eventos/DeleteEventModal";
 import EventsTable from "../components/eventos/EventsTable";
 
@@ -52,9 +47,7 @@ export default function EventosPage() {
   useEffect(() => {
     if (location.state?.toast) navigate(location.pathname, { replace: true, state: {} });
   }, [location, navigate]);
-  const [updatedEventName, setUpdatedEventName] = useState(null);
 
-  const [editingEvent, setEditingEvent] = useState(null);
   const [deletingEvent, setDeletingEvent] = useState(null);
 
   // --- Derivados ---
@@ -108,13 +101,6 @@ const filtered = useMemo(() => {
   }, [events]);
 
   // --- Handlers ---
-  async function handleEditSubmit(payload) {
-  await apiUpdateEvent(editingEvent.id, payload);
-  setEditingEvent(null);
-  setUpdatedEventName(payload.name);
-  reload();
-}
-
   async function handleDeleteConfirm() {
     await apiDeleteEvent(deletingEvent.id);
     setDeletingEvent(null);
@@ -192,30 +178,13 @@ const filtered = useMemo(() => {
           {status === "success" && filtered.length > 0 && (
             <EventsTable
               events={filtered}
-              onEdit={setEditingEvent}
               onDelete={setDeletingEvent}
             />
           )}
       </PageContainer>
 
-      {updatedEventName && (
-  <UpdateEventSuccessModal
-    eventName={updatedEventName}
-    onStay={() => setUpdatedEventName(null)}
-    onGoToEvents={() => setUpdatedEventName(null)}
-  />
-)}
-
       {/* ---------- Overlays ---------- */}
       <Toast toast={toast} onClose={closeToast} />
-
-      {editingEvent && (
-        <EditEventModal
-          initialEvent={editingEvent}
-          onCancel={() => setEditingEvent(null)}
-          onSubmit={handleEditSubmit}
-        />
-      )}
 
       {deletingEvent && (
   <DeleteEventModal
