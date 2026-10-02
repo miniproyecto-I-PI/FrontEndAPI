@@ -207,6 +207,7 @@ function MetricsBar({ stats }) {
       <Metric label="En curso" value={stats.active} tone="ink" />
       <div className="h-7 w-px bg-sepia-border" />
       <Metric label="Próx. 30 días" value={stats.upcoming30d} tone="terracotta" />
+      <div className="h-7 w-px bg-sepia-border" />
       <Metric label="Completados" value={stats.completed} tone="ink" />
     </div>
   );
