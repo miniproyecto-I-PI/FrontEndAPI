@@ -179,6 +179,7 @@ export function useTodayGestiones({ query = "", simulateError = false, simulateE
     stats,
     totalUnfiltered: rawGestiones.filter((g) => g.status !== "EJECUTADA").length,
     executedVisible,
+    allGestiones: rawGestiones,
     filters: { eventFilter, setEventFilter, statusFilter, setStatusFilter, hasServerFilters, clearFilters, showExecuted, setShowExecuted },
     eventOptions,
     actions: { markAsDone, undoMarkAsDone, reschedule, editGestion },

@@ -16,6 +16,8 @@ export default function HoyFilters({
   onClear,
   showExecuted,
   onShowExecutedChange,
+  viewMode = "agenda",
+  onViewModeChange,
   disabled = false,
 }) {
   const selectId = useId();
@@ -92,7 +94,43 @@ export default function HoyFilters({
         </div>
       </div>
 
-      <ExecutedSwitch checked={showExecuted} onChange={onShowExecutedChange} disabled={disabled} />
+      <div className="flex flex-wrap items-center justify-end gap-3.5">
+        {onViewModeChange && (
+          <div
+            className="inline-flex rounded-sharp border border-sepia-border bg-paper-linen p-0.5"
+            role="group"
+            aria-label="Seleccionar vista"
+          >
+            <button
+              type="button"
+              onClick={() => onViewModeChange("agenda")}
+              aria-pressed={viewMode === "agenda"}
+              title="Vista principal"
+              className={`p-1 rounded-sharp transition-colors flex items-center justify-center ${
+                viewMode === "agenda"
+                  ? "bg-paper-card text-terracotta shadow-xs border border-sepia-border/60"
+                  : "text-ink-muted hover:text-ink-charcoal"
+              }`}
+            >
+              <span className="material-symbols-outlined text-[18px]">view_agenda</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onViewModeChange("kanban")}
+              aria-pressed={viewMode === "kanban"}
+              title="Vista por columnas"
+              className={`p-1 rounded-sharp transition-colors flex items-center justify-center ${
+                viewMode === "kanban"
+                  ? "bg-paper-card text-terracotta shadow-xs border border-sepia-border/60"
+                  : "text-ink-muted hover:text-ink-charcoal"
+              }`}
+            >
+              <span className="material-symbols-outlined text-[18px]">view_kanban</span>
+            </button>
+          </div>
+        )}
+        <ExecutedSwitch checked={showExecuted} onChange={onShowExecutedChange} disabled={disabled} />
+      </div>
 
       {hasActive && (
         <div className="flex flex-wrap items-center justify-end gap-2 px-2.5 py-1.5 bg-paper-card border border-sepia-border rounded-sharp" role="status">

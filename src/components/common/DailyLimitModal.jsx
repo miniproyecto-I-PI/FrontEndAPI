@@ -1,92 +1,192 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useDailyLimit } from "../../hooks/useDailyLimit";
+import Toast from "./Toast";
 
 /**
  * DailyLimitModal.jsx
  * ---------------------------------------------------------------------------
- * US-12 — "Configurar límite diario de horas de gestión". Per the
- * Arquitectura de Información (C5, §3/§9), this is a global modal reachable
- * from the header icon, NOT a dedicated route — that decision is why this
- * component lives under components/common instead of pages/.
+ * US-12 — "Configurar límite diario de horas de gestión".
+ * Renderizado vía React Portal para garantizar centrado perfecto en viewport
+ * y evitar que backdrop-filter o position:fixed de Header lo desplace.
  *
- * Validation mirrors the acceptance criteria: the value must be within
- * [MIN_HOURS, MAX_HOURS]; on an invalid value we show an inline error and
- * keep the user's input instead of clearing the field.
+ * Validación estándar con:
+ * - noValidate en form (evita tooltips del navegador en inglés)
+ * - Borde rojo e indicación textual en campo
+ * - Toast / letrero de error en la esquina inferior izquierda
  */
-export default function DailyLimitModal({ onClose }) {
-  const { hours, isLoaded, update, MIN_HOURS, MAX_HOURS } = useDailyLimit();
+export default function DailyLimitModal({ onClose, onSuccess }) {
+  const { hours, allowOverload, isLoaded, update, MIN_HOURS, MAX_HOURS } = useDailyLimit();
   const [inputValue, setInputValue] = useState(null);
+  const [allowOverloadState, setAllowOverloadState] = useState(null);
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [localToast, setLocalToast] = useState(null);
 
-  const displayedValue = inputValue ?? String(hours);
+  const inputRef = useRef(null);
+  const displayedValue = inputValue ?? (isLoaded ? String(hours) : "6");
+  const currentAllowOverload = allowOverloadState ?? (isLoaded ? allowOverload : false);
 
-  async function handleSave() {
+  useEffect(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, [isLoaded]);
+
+  useEffect(() => {
+    function onKeyDown(e) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
+  async function handleSave(e) {
+    e?.preventDefault();
     const numericValue = Number(displayedValue);
-    if (Number.isNaN(numericValue)) {
-      setError("Ingresa un número válido");
+    if (!Number.isFinite(numericValue) || numericValue < MIN_HOURS || numericValue > MAX_HOURS) {
+      const msg = `El límite debe estar entre ${MIN_HOURS} y ${MAX_HOURS} horas`;
+      setError(msg);
+      setLocalToast({ message: msg, intent: "error" });
+      inputRef.current?.focus();
       return;
     }
+
     setIsSaving(true);
     setError("");
+    setLocalToast(null);
     try {
-      await update(numericValue);
+      await update({
+        dailyLimitHours: numericValue,
+        allowOverload: currentAllowOverload,
+      });
+      onSuccess?.("Preferencias actualizadas");
       onClose();
     } catch (err) {
-      setError(err.message || `El límite debe estar entre ${MIN_HOURS} y ${MAX_HOURS} horas`);
+      const msg = err.message || `El límite debe estar entre ${MIN_HOURS} y ${MAX_HOURS} horas`;
+      setError(msg);
+      setLocalToast({ message: msg, intent: "error" });
     } finally {
       setIsSaving(false);
     }
   }
 
-  return (
+  const modalContent = (
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-charcoal/40 backdrop-blur-sm"
+      aria-labelledby="daily-limit-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-charcoal/40 backdrop-blur-sm focus:outline-none"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="relative w-full max-w-sm bg-paper-card border border-sepia-border rounded-sharp p-6 shadow-xl warm-card-shadow">
-        <h3 className="font-heading text-xl font-bold text-ink-charcoal">Límite diario de horas</h3>
-        <p className="font-body text-xs text-ink-muted mt-2 leading-relaxed">
-          Se usa para detectar sobrecarga cuando reprogramas gestiones (US-07/US-08). Valor
-          actual: {isLoaded ? `${hours}h` : "cargando…"}.
+      <div className="relative w-full max-w-md bg-paper-card border border-sepia-border rounded-sharp p-6 shadow-xl warm-card-shadow">
+        <h3 id="daily-limit-title" className="font-heading text-xl font-bold text-ink-charcoal">
+          Configuración de jornada
+        </h3>
+        <p id="daily-limit-desc" className="font-body text-xs text-ink-muted mt-1 leading-relaxed">
+          Define tus reglas de dedicación y tolerancia a sobrecarga para la programación y reprogramación de gestiones.
         </p>
 
-        <label className="block mt-4">
-          <span className="font-body text-xs font-medium text-ink-muted">
-            Nuevo límite ({MIN_HOURS}–{MAX_HOURS} horas)
-          </span>
-          <input
-            type="number"
-            min={MIN_HOURS}
-            max={MAX_HOURS}
-            step="0.5"
-            value={displayedValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            className="mt-1 w-full border border-sepia-border rounded-sharp px-3 py-2 font-body text-sm text-ink-charcoal focus:outline-none focus:border-terracotta"
-          />
-        </label>
-        {error && <p className="text-crimson-urgent text-xs font-body mt-2">{error}</p>}
+        <form onSubmit={handleSave} noValidate className="mt-4 space-y-4">
+          <label className="block">
+            <div className="flex items-center justify-between">
+              <span className="font-body text-xs font-semibold text-ink-charcoal">
+                Límite diario de horas
+              </span>
+              <span className="font-stamp text-[11px] text-ink-muted">
+                {MIN_HOURS}–{MAX_HOURS} horas
+              </span>
+            </div>
+            <input
+              ref={inputRef}
+              type="number"
+              min={MIN_HOURS}
+              max={MAX_HOURS}
+              step="0.5"
+              value={displayedValue}
+              onChange={(e) => {
+                setInputValue(e.target.value);
+                if (error) setError("");
+                if (localToast) setLocalToast(null);
+              }}
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? "daily-limit-error" : "daily-limit-desc"}
+              className={`mt-1.5 w-full border rounded-sharp px-3 py-2 font-body text-sm text-ink-charcoal bg-paper-card focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-paper-card ${
+                error
+                  ? "border-crimson-urgent ring-1 ring-crimson-urgent focus:border-crimson-urgent focus:ring-crimson-urgent text-crimson-urgent"
+                  : "border-sepia-border focus:border-terracotta focus:ring-terracotta"
+              }`}
+            />
+          </label>
+          {error && (
+            <p id="daily-limit-error" role="alert" className="text-crimson-urgent text-xs font-body mt-1">
+              {error}
+            </p>
+          )}
 
-        <div className="flex items-center justify-end gap-2.5 pt-6 mt-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 rounded-sharp bg-paper-base hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body text-xs font-medium transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            disabled={isSaving}
-            onClick={handleSave}
-            className="px-5 py-2 rounded-sharp bg-terracotta hover:bg-terracotta-dark disabled:opacity-60 text-[#FAF6F0] font-body text-xs font-semibold tracking-wide border border-terracotta-dark shadow-sm transition-colors"
-          >
-            {isSaving ? "Guardando…" : "Guardar"}
-          </button>
-        </div>
+          {/* Opción US-12 / Sprint 3: Permitir cargas de trabajo por encima del límite diario */}
+          <div className="pt-3.5 border-t border-sepia-border/70">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <span className="font-body text-xs font-semibold text-ink-charcoal block">
+                  Permitir cargas de trabajo por encima del límite diario
+                </span>
+                <p className="font-body text-[11px] text-ink-muted leading-relaxed">
+                  Por defecto en <strong>No</strong>. Si se desactiva, deberás resolver el conflicto (mover de fecha o reducir horas) antes de poder guardar una gestión sobrecargada.
+                </p>
+              </div>
+
+              {/* Selector Sí / No */}
+              <div className="inline-flex rounded-sharp border border-sepia-border bg-paper-linen p-0.5 shrink-0" role="group" aria-label="Permitir sobrecarga">
+                <button
+                  type="button"
+                  onClick={() => setAllowOverloadState(false)}
+                  className={`px-3 py-1 text-xs font-body font-semibold rounded-sharp transition-colors ${
+                    !currentAllowOverload
+                      ? "bg-terracotta text-[#FAF6F0] shadow-xs"
+                      : "text-ink-muted hover:text-ink-charcoal"
+                  }`}
+                >
+                  No
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAllowOverloadState(true)}
+                  className={`px-3 py-1 text-xs font-body font-semibold rounded-sharp transition-colors ${
+                    currentAllowOverload
+                      ? "bg-terracotta text-[#FAF6F0] shadow-xs"
+                      : "text-ink-muted hover:text-ink-charcoal"
+                  }`}
+                >
+                  Sí
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-sepia-border/60">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-sharp bg-paper-base hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-terracotta"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="px-5 py-2 rounded-sharp bg-terracotta hover:bg-terracotta-dark disabled:opacity-60 text-[#FAF6F0] font-body text-xs font-semibold tracking-wide border border-terracotta-dark shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-terracotta disabled:cursor-not-allowed"
+            >
+              {isSaving ? "Guardando…" : "Guardar"}
+            </button>
+          </div>
+        </form>
       </div>
+
+      {localToast && (
+        <Toast toast={localToast} onClose={() => setLocalToast(null)} />
+      )}
     </div>
   );
+
+  return typeof document !== "undefined" ? createPortal(modalContent, document.body) : modalContent;
 }
