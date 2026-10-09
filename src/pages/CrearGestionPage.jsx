@@ -137,10 +137,9 @@ export default function CrearGestionPage() {
         setToast({ message: "La fecha límite no puede ser posterior al evento", intent: "error" });
         return;
       }
-      setGeneralError(
-        err.message || "No pudimos crear la gestión. Intenta de nuevo."
-      );
-      setToast({ message: "No pudimos crear la gestión", intent: "error" });
+      const errorMsg = err.message || "No pudimos crear la gestión. Intenta de nuevo.";
+      setGeneralError(errorMsg);
+      setToast({ message: errorMsg, intent: "error" });
     }
   }
 

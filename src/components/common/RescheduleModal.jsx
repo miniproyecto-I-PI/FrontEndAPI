@@ -89,7 +89,7 @@ export default function RescheduleModal({
   }, [onCancel]);
 
   // Ejecución real de reprogramación de fecha
-  async function executeDateReschedule(dateToSet, isOverride = false) {
+  async function executeDateReschedule(dateToSet, isOverride = false, fromConflict = false) {
     setIsSubmitting(true);
     setLastAttempt({
       type: "date",
@@ -108,7 +108,11 @@ export default function RescheduleModal({
       const totalInNewDay = Math.round((newDayHours + taskHours) * 10) / 10;
 
       setSuccessData({
-        title: isOverride ? "Fecha actualizada (Con sobrecarga)" : "Conflicto resuelto",
+        title: isOverride
+          ? "Fecha actualizada (Con sobrecarga)"
+          : fromConflict
+            ? "Conflicto resuelto"
+            : "Gestión reprogramada",
         description: `La gestión se ha movido al ${formatShortDate(dateToSet)}.`,
         previousDayLabel: formatShortDate(originalDateISO),
         previousDayHours: prevHours,
@@ -212,7 +216,7 @@ export default function RescheduleModal({
       }
 
       // Sin conflicto: guardar directamente
-      executeDateReschedule(targetDate);
+      executeDateReschedule(targetDate, false, false);
     } else {
       // Modo bulk
       onConfirm?.();
@@ -231,7 +235,7 @@ export default function RescheduleModal({
     });
 
     if (nextDay) {
-      executeDateReschedule(nextDay.dateISO);
+      executeDateReschedule(nextDay.dateISO, false, true);
     } else {
       // Si no encuentra en el escaneo rápido, abrir selector de sugerencias/manual
       setStep("SUGGESTED_DAYS");
@@ -270,7 +274,7 @@ export default function RescheduleModal({
         onChooseMove={() => setStep("SUGGESTED_DAYS")}
         onChooseReduce={() => setStep("REDUCE_HOURS")}
         onChoosePostpone={handlePostpone}
-        onKeepAnyway={() => executeDateReschedule(conflictData.targetDateISO, true)}
+        onKeepAnyway={() => executeDateReschedule(conflictData.targetDateISO, true, true)}
         onCancel={() => setStep("PICK_DATE")}
       />
     );
@@ -295,7 +299,7 @@ export default function RescheduleModal({
         taskHours={taskHours}
         dailyLimitHours={dailyLimitHours}
         isSubmitting={isSubmitting}
-        onConfirmDate={(newDate) => executeDateReschedule(newDate)}
+        onConfirmDate={(newDate) => executeDateReschedule(newDate, false, Boolean(conflictData))}
         onBack={() => setStep(conflictData ? "CONFLICT_ALERT" : "PICK_DATE")}
       />
     );

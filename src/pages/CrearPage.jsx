@@ -92,10 +92,9 @@ export default function CrearPage() {
 
     } catch (err) {
       setStatus("idle");
-      setGeneralError(
-        err.message || "No pudimos crear el evento. Intenta de nuevo."
-      );
-      setToast({ message: "No se pudo crear el evento", intent: "error" })
+      const errorMsg = err.message || "No pudimos crear el evento. Intenta de nuevo.";
+      setGeneralError(errorMsg);
+      setToast({ message: errorMsg, intent: "error" });
     }
   }
 

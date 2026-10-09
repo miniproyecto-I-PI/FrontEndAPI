@@ -1,3 +1,6 @@
+import { useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+
 /**
  * RescheduleSuccessModal.jsx
  * ---------------------------------------------------------------------------
@@ -5,7 +8,7 @@
  * Muestra el balance óptimo y comparativa entre la fecha anterior y la nueva.
  */
 export default function RescheduleSuccessModal({
-  title = "Conflicto resuelto",
+  title = "Gestión reprogramada",
   description,
   previousDayLabel,
   previousDayHours = 0,
@@ -15,7 +18,29 @@ export default function RescheduleSuccessModal({
   dailyLimitHours = 6,
   onClose,
 }) {
+  const navigate = useNavigate();
+  const buttonRef = useRef(null);
   const freeRemaining = Math.max(0, Math.round((dailyLimitHours - newDayTotalHours) * 10) / 10);
+
+  function handleAction() {
+    onClose?.();
+    navigate("/hoy");
+  }
+
+  useEffect(() => {
+    // Foco inicial en el botón principal para accesibilidad
+    buttonRef.current?.focus();
+
+    function handleKeyDown(e) {
+      if (e.key === "Enter" || e.key === "Escape") {
+        e.preventDefault();
+        handleAction();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const defaultDescription =
     description ||
@@ -80,8 +105,9 @@ export default function RescheduleSuccessModal({
 
         <div className="mt-6 pt-2">
           <button
+            ref={buttonRef}
             type="button"
-            onClick={onClose}
+            onClick={handleAction}
             className="w-full py-2.5 px-4 rounded-sharp bg-terracotta hover:bg-terracotta-dark text-[#FAF6F0] font-body text-xs md:text-sm font-semibold tracking-wide border border-terracotta-dark shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-terracotta"
           >
             Entendido, ir a la agenda de hoy
