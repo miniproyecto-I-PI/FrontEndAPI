@@ -117,7 +117,7 @@ export default function ReduceHoursModal({
               </span>
               <div>
                 <strong className="font-semibold block text-crimson-urgent">Cálculo de carga pausado</strong>
-                No se puede computar el balance diario con 0 horas. Si la tarea ya no debe realizarse, utiliza la acción
+                No se puede computar el balance diario con 0 horas. Si la gestión ya no debe realizarse, utiliza la acción
                 Descartar o Completar en el menú general de la gestión.
               </div>
             </div>

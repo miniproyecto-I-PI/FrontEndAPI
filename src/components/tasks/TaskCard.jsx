@@ -34,7 +34,7 @@ export default function TaskCard({ gestion, variant, single = false, onMarkDone,
     single && isVencida && "relative bg-crimson-paper/50 border-l-[6px] border-l-crimson-urgent p-5 md:p-6 flex flex-col justify-between",
     single && isProxima && "border-l-4 border-l-sepia-dark p-5 md:p-6 flex flex-col justify-between",
     !single && isVencida && "relative bg-crimson-paper/50 border-l-[6px] border-l-crimson-urgent p-4 md:p-5",
-    isHero && "border-l-[6px] border-l-terracotta p-4 md:p-5 flex flex-col justify-between",
+    isHero && "border-l-[6px] border-l-terracotta p-4 md:p-5 flex flex-col justify-between h-full",
     isSecondary && "border-l-4 border-l-terracotta p-4 flex flex-col justify-between h-full",
     !single && isProxima && "border-l-2 border-l-sepia-dark p-4 flex flex-col justify-between h-full",
     isEjecutada && "border-l-[6px] border-l-sage-wax p-4 md:p-5",
@@ -112,10 +112,10 @@ function EditableTitle({ gestion, onEdit }) {
   );
 }
 
-function Hours({ value, long = false }) {
+function Hours({ value }) {
   return (
     <span className="font-stamp text-[11px] text-ink-muted">
-      {value} {long ? "hrs estimadas" : "hrs"}
+      {value} hrs
     </span>
   );
 }
@@ -132,7 +132,7 @@ function VencidaBody({ gestion, today, onMarkDone, onReschedule, onEdit }) {
           {isPostponed(gestion) && <PostponedTag />}
           <span className="font-body font-medium text-ink-charcoal">{gestion.eventName}</span>
           <span className="text-sepia-dark" aria-hidden="true">•</span>
-          <Hours value={gestion.estimatedHours} long />
+          <Hours value={gestion.estimatedHours} />
         </div>
         <h3 className="font-heading text-xl text-ink-charcoal font-semibold leading-snug"><EditableTitle gestion={gestion} onEdit={onEdit} /></h3>
         {(gestion.provider || gestion.note) && (
@@ -161,7 +161,7 @@ function HeroBody({ gestion, onMarkDone, onReschedule, onEdit }) {
             </span>
             {isPostponed(gestion) ? <PostponedTag /> : <span className="font-body italic text-xs text-terracotta">Prioritaria</span>}
           </div>
-          <Hours value={gestion.estimatedHours} long />
+          <Hours value={gestion.estimatedHours} />
         </div>
         <div>
           <span className="font-body text-xs font-semibold text-ink-muted uppercase tracking-wider block">{gestion.eventName}</span>

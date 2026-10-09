@@ -262,7 +262,7 @@ export default function CrearGestionPage() {
         eyebrow={eventName}
         title="Crear"
         accent="nueva gestión"
-        description="Registra una subtarea operativa en la bitácora con proveedor asignado, fecha límite y estimación de esfuerzo."
+        description="Registra una gestión logística en la bitácora con proveedor asignado, fecha límite y estimación de esfuerzo."
       />
 
       {eventStatus === "notfound" && (
@@ -303,7 +303,7 @@ export default function CrearGestionPage() {
           <section className="space-y-5">
             <SectionHeader
               number="1"
-              title="Definición de la Gestión"
+              title="Definición de la gestión logística"
               badge="Paso Indispensable"
             />
 
@@ -313,7 +313,7 @@ export default function CrearGestionPage() {
                   htmlFor="titulo-gestion"
                   className="font-body text-xs md:text-sm font-semibold text-ink-charcoal"
                 >
-                  Título de la subtarea o gestión{" "}
+                  Título de la gestión logística{" "}
                   <span className="text-terracotta">*</span>
                 </label>
                 <span className="font-body text-[11px] text-ink-muted italic hidden sm:inline">

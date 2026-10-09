@@ -375,77 +375,92 @@ export default function RescheduleModal({
       onClick={(e) => e.target === e.currentTarget && onCancel?.()}
     >
       <div className="relative w-full max-w-md bg-paper-card border border-sepia-border rounded-sharp p-6 shadow-xl warm-card-shadow">
-        {mode === "bulk" ? (
-          <>
-            <h3 id="reschedule-title" className="font-heading text-2xl font-bold text-ink-charcoal">
-              ¿Reprogramar las {count} gestiones vencidas?
-            </h3>
-            <p className="font-body text-sm text-ink-muted mt-2 leading-relaxed">
-              Se moverán a la bandeja de pendientes para asignarles una nueva fecha desde el detalle de cada evento.
-            </p>
-          </>
-        ) : (
-          <>
-            <div className="flex items-center justify-between text-ink-muted font-stamp text-[11px] font-bold uppercase mb-1">
-              <span>Reprogramar gestión</span>
-              <span>Duración: {taskHours}h</span>
-            </div>
-            <h3 id="reschedule-title" className="font-heading text-xl md:text-2xl font-bold text-ink-charcoal leading-snug">
-              {gestion?.title || "Gestión logística"}
-            </h3>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (canConfirm && !isSubmitting) handleInitialConfirm();
+          }}
+          noValidate
+        >
+          {mode === "bulk" ? (
+            <>
+              <h3 id="reschedule-title" className="font-heading text-2xl font-bold text-ink-charcoal">
+                ¿Reprogramar las {count} gestiones vencidas?
+              </h3>
+              <p className="font-body text-sm text-ink-muted mt-2 leading-relaxed">
+                Se moverán a la bandeja de pendientes para asignarles una nueva fecha desde el detalle de cada evento.
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between text-ink-muted font-stamp text-[11px] font-bold uppercase mb-1">
+                <span>Reprogramar gestión</span>
+                <span>Duración: {taskHours}h</span>
+              </div>
+              <h3 id="reschedule-title" className="font-heading text-xl md:text-2xl font-bold text-ink-charcoal leading-snug">
+                {gestion?.title || "Gestión logística"}
+              </h3>
 
-            <label className="block mt-4">
-              <span className="font-body text-xs font-medium text-ink-muted">
-                Nueva fecha límite
-              </span>
-              <input
-                ref={dateInputRef}
-                type="date"
-                value={targetDate}
-                onChange={(e) => {
-                  setTargetDate(e.target.value);
-                  setDateError(null);
-                  if (localToast) setLocalToast(null);
-                }}
-                aria-invalid={Boolean(dateError)}
-                aria-describedby={!canConfirm || dateError ? "reschedule-hint" : undefined}
-                className={`mt-1 w-full border rounded-sharp px-3 py-2 font-body text-sm text-ink-charcoal focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-paper-card ${
-                  dateError
-                    ? "border-crimson-urgent ring-1 ring-crimson-urgent focus:border-crimson-urgent focus:ring-crimson-urgent text-crimson-urgent"
-                    : "border-sepia-border focus:border-terracotta focus:ring-terracotta"
-                }`}
-              />
-              {(!canConfirm || dateError) && (
-                <p id="reschedule-hint" role="alert" className="mt-1.5 font-body text-xs text-crimson-urgent flex items-center gap-1 font-medium">
-                  <span className="material-symbols-outlined text-[14px]">error</span>
-                  <span>{dateError || "Elige una fecha para poder confirmar."}</span>
-                </p>
-              )}
-            </label>
+              <label className="block mt-4">
+                <span className="font-body text-xs font-medium text-ink-muted">
+                  Nueva fecha límite
+                </span>
+                <input
+                  ref={dateInputRef}
+                  type="date"
+                  value={targetDate}
+                  onChange={(e) => {
+                    setTargetDate(e.target.value);
+                    setDateError(null);
+                    if (localToast) setLocalToast(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (canConfirm && !isSubmitting) {
+                        handleInitialConfirm();
+                      }
+                    }
+                  }}
+                  aria-invalid={Boolean(dateError)}
+                  aria-describedby={!canConfirm || dateError ? "reschedule-hint" : undefined}
+                  className={`mt-1 w-full border rounded-sharp px-3 py-2 font-body text-sm text-ink-charcoal focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-paper-card ${
+                    dateError
+                      ? "border-crimson-urgent ring-1 ring-crimson-urgent focus:border-crimson-urgent focus:ring-crimson-urgent text-crimson-urgent"
+                      : "border-sepia-border focus:border-terracotta focus:ring-terracotta"
+                  }`}
+                />
+                {(!canConfirm || dateError) && (
+                  <p id="reschedule-hint" role="alert" className="mt-1.5 font-body text-xs text-crimson-urgent flex items-center gap-1 font-medium">
+                    <span className="material-symbols-outlined text-[14px]">error</span>
+                    <span>{dateError || "Elige una fecha para poder confirmar."}</span>
+                  </p>
+                )}
+              </label>
 
-            <p className="font-body text-[11px] text-ink-subtle mt-3 italic">
-              💡 Verificaremos tu capacidad diaria disponible antes de confirmar.
-            </p>
-          </>
-        )}
+              <p className="font-body text-[11px] text-ink-subtle mt-3 italic">
+                💡 Verificaremos tu capacidad diaria disponible antes de confirmar.
+              </p>
+            </>
+          )}
 
-        <div className="flex items-center justify-end gap-2.5 pt-6 mt-2 border-t border-sepia-border/60">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 rounded-sharp bg-paper-base hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-terracotta focus:ring-offset-1"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={handleInitialConfirm}
-            disabled={!canConfirm || isSubmitting}
-            className="px-5 py-2 rounded-sharp bg-terracotta hover:bg-terracotta-dark text-[#FAF6F0] font-body text-xs font-semibold tracking-wide border border-terracotta-dark shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-terracotta focus:ring-offset-1 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
-          >
-            <span>{isSubmitting ? "Verificando…" : "Confirmar"}</span>
-          </button>
-        </div>
+          <div className="flex items-center justify-end gap-2.5 pt-6 mt-2 border-t border-sepia-border/60">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-2 rounded-sharp bg-paper-base hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-terracotta focus:ring-offset-1"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={!canConfirm || isSubmitting}
+              className="px-5 py-2 rounded-sharp bg-terracotta hover:bg-terracotta-dark text-[#FAF6F0] font-body text-xs font-semibold tracking-wide border border-terracotta-dark shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-terracotta focus:ring-offset-1 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+            >
+              <span>{isSubmitting ? "Verificando…" : "Confirmar"}</span>
+            </button>
+          </div>
+        </form>
       </div>
 
       {localToast && (

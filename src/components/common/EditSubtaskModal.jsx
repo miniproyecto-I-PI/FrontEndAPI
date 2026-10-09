@@ -130,7 +130,7 @@ export default function EditSubtaskModal({
               Editar gestión
             </h2>
             <p className="font-body text-xs md:text-sm text-ink-muted mt-1">
-              Modifica los parámetros operativos de la subtarea
+              Modifica los parámetros de la gestión logística
               {eventName ? (
                 <>
                   {" "}para{" "}
@@ -162,7 +162,7 @@ export default function EditSubtaskModal({
             <div className="space-y-4">
               <ModalSectionHeader
                 number="1"
-                title="Definición de la Gestión"
+                title="Definición de la gestión logística"
                 badge="Paso indispensable"
               />
 
@@ -172,7 +172,7 @@ export default function EditSubtaskModal({
                     htmlFor="edit-subtask-title-input"
                     className="block font-heading font-semibold text-xs md:text-sm text-ink-charcoal"
                   >
-                    Título de la subtarea o gestión{" "}
+                    Título de la gestión logística{" "}
                     <span className="text-crimson-urgent">*</span>
                   </label>
                   <span className="font-body text-[11px] text-ink-muted hidden sm:inline">
