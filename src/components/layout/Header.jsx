@@ -1,6 +1,7 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import DailyLimitModal from "../common/DailyLimitModal";
+import Toast from "../common/Toast";
 import UserMenu from "./UserMenu";
 import logo from "../../assets/logo.png";
 
@@ -20,6 +21,7 @@ export default function Header({ searchValue, onSearchChange }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
+  const [toast, setToast] = useState(null);
 
   const isEventsSection =
     pathname.startsWith("/eventos") || pathname.startsWith("/evento/") || pathname === "/crear";
@@ -95,7 +97,14 @@ export default function Header({ searchValue, onSearchChange }) {
         </div>
       </div>
 
-      {isLimitModalOpen && <DailyLimitModal onClose={() => setIsLimitModalOpen(false)} />}
+      {isLimitModalOpen && (
+        <DailyLimitModal
+          onClose={() => setIsLimitModalOpen(false)}
+          onSuccess={(msg) => setToast({ message: msg })}
+        />
+      )}
+
+      {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
     </header>
   );
 }

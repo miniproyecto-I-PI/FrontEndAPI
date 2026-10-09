@@ -22,7 +22,7 @@ import { formatOverdueLabel, formatShortDate, formatUpcomingLabel } from "../../
  * @param {() => void} [props.onEdit]  abre "Editar gestión" (título y botón Editar)
  * @param {Date} [props.today]
  */
-export default function TaskCard({ gestion, variant, onMarkDone, onReschedule, onEdit, today = new Date() }) {
+export default function TaskCard({ gestion, variant, single = false, onMarkDone, onReschedule, onEdit, today = new Date() }) {
   const isHero = variant === "hoy-hero";
   const isSecondary = variant === "hoy-secundaria";
   const isVencida = variant === "vencida";
@@ -31,10 +31,12 @@ export default function TaskCard({ gestion, variant, onMarkDone, onReschedule, o
 
   const containerClasses = [
     "bg-paper-card border border-sepia-border rounded-sharp warm-card-shadow warm-card-hover transition-all group",
-    isVencida && "relative bg-crimson-paper/50 border-l-[6px] border-l-crimson-urgent p-4 md:p-5",
-    isHero && "border-l-[6px] border-l-terracotta p-5 md:p-6 flex flex-col justify-between h-full",
+    single && isVencida && "relative bg-crimson-paper/50 border-l-[6px] border-l-crimson-urgent p-5 md:p-6 flex flex-col justify-between",
+    single && isProxima && "border-l-4 border-l-sepia-dark p-5 md:p-6 flex flex-col justify-between",
+    !single && isVencida && "relative bg-crimson-paper/50 border-l-[6px] border-l-crimson-urgent p-4 md:p-5",
+    isHero && "border-l-[6px] border-l-terracotta p-4 md:p-5 flex flex-col justify-between",
     isSecondary && "border-l-4 border-l-terracotta p-4 flex flex-col justify-between h-full",
-    isProxima && "border-l-2 border-l-sepia-dark p-4 flex flex-col justify-between h-full",
+    !single && isProxima && "border-l-2 border-l-sepia-dark p-4 flex flex-col justify-between h-full",
     isEjecutada && "border-l-[6px] border-l-sage-wax p-4 md:p-5",
   ]
     .filter(Boolean)
@@ -43,11 +45,17 @@ export default function TaskCard({ gestion, variant, onMarkDone, onReschedule, o
   const props = { gestion, today, onMarkDone, onReschedule, onEdit };
   return (
     <article className={containerClasses} data-gestion-id={gestion.id} aria-label={gestion.title}>
-      {isVencida && <VencidaBody {...props} />}
-      {isHero && <HeroBody {...props} />}
-      {isSecondary && <SecondaryBody {...props} />}
-      {isProxima && <ProximaBody {...props} />}
-      {isEjecutada && <EjecutadaBody gestion={gestion} onEdit={onEdit} />}
+      {single && (isVencida || isProxima) ? (
+        <SingleCardBody {...props} variant={variant} />
+      ) : (
+        <>
+          {isVencida && <VencidaBody {...props} />}
+          {isHero && <HeroBody {...props} />}
+          {isSecondary && <SecondaryBody {...props} />}
+          {isProxima && <ProximaBody {...props} />}
+          {isEjecutada && <EjecutadaBody gestion={gestion} onEdit={onEdit} />}
+        </>
+      )}
     </article>
   );
 }
@@ -145,9 +153,9 @@ function VencidaBody({ gestion, today, onMarkDone, onReschedule, onEdit }) {
 function HeroBody({ gestion, onMarkDone, onReschedule, onEdit }) {
   return (
     <>
-      <div className="space-y-3.5">
-        <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-sepia-border/70">
-          <div className="flex items-center gap-2.5">
+      <div className="space-y-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-sepia-border/70">
+          <div className="flex items-center gap-2">
             <span className="font-body text-[11px] font-bold text-terracotta-dark bg-terracotta-light/70 border border-terracotta/30 px-2.5 py-0.5 rounded-sharp uppercase tracking-wide">
               {todayLabel(gestion)}
             </span>
@@ -157,19 +165,19 @@ function HeroBody({ gestion, onMarkDone, onReschedule, onEdit }) {
         </div>
         <div>
           <span className="font-body text-xs font-semibold text-ink-muted uppercase tracking-wider block">{gestion.eventName}</span>
-          <h3 className="font-heading text-2xl md:text-3xl text-ink-charcoal font-semibold mt-1 leading-tight"><EditableTitle gestion={gestion} onEdit={onEdit} /></h3>
+          <h3 className="font-heading text-xl md:text-2xl text-ink-charcoal font-semibold mt-1 leading-snug"><EditableTitle gestion={gestion} onEdit={onEdit} /></h3>
         </div>
         {gestion.note && (
-          <div className="p-3.5 bg-paper-linen/80 rounded-sharp border border-sepia-border text-xs leading-relaxed space-y-1.5">
+          <div className="p-3 bg-paper-linen/80 rounded-sharp border border-sepia-border text-xs leading-relaxed space-y-1">
             <p className="font-body font-semibold text-ink-charcoal">Puntos clave:</p>
             <p className="text-ink-muted font-body">{gestion.note}</p>
           </div>
         )}
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-4 mt-4 border-t border-sepia-border">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 pt-3 mt-3 border-t border-sepia-border">
         <span className="font-body text-xs text-ink-muted">{gestion.provider}</span>
         <div className="flex items-center gap-2">
-          <ActionButtons onMarkDone={onMarkDone} onReschedule={onReschedule} />
+          <ActionButtons onMarkDone={onMarkDone} onReschedule={onReschedule} size="compact" />
         </div>
       </div>
     </>
@@ -195,7 +203,7 @@ function SecondaryBody({ gestion, onMarkDone, onReschedule, onEdit }) {
           <p className="text-xs font-body text-ink-muted mt-1">{[gestion.provider, gestion.note].filter(Boolean).join(" • ")}</p>
         )}
       </div>
-      <div className="flex items-center justify-end gap-2 pt-2.5 mt-2 border-t border-sepia-border/50">
+      <div className="flex flex-wrap items-center justify-end gap-2 pt-2.5 mt-2 border-t border-sepia-border/50">
         <ActionButtons onMarkDone={onMarkDone} onReschedule={onReschedule} size="compact" />
       </div>
     </>
@@ -279,5 +287,57 @@ function EjecutadaBody({ gestion, onEdit }) {
         </button>
       </div>
     </div>
+  );
+}
+
+function SingleCardBody({ gestion, variant, today, onMarkDone, onReschedule, onEdit }) {
+  const isVencida = variant === "vencida";
+  return (
+    <>
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-sepia-border/70">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {isVencida ? (
+              <span className="inline-flex items-center gap-1 font-body text-[11px] font-bold text-crimson-tag bg-[#F6DDD7] border border-crimson-urgent/30 px-2.5 py-0.5 rounded-sharp uppercase tracking-wide">
+                <span className="material-symbols-outlined text-[13px]" aria-hidden="true">warning</span>
+                {formatOverdueLabel(gestion.targetDate, today)}
+              </span>
+            ) : (
+              <span className="font-body text-[11px] font-semibold text-ink-charcoal bg-paper-linen border border-sepia-border px-2.5 py-0.5 rounded-sharp">
+                {formatUpcomingLabel(gestion.targetDate, today)}
+                {gestion.time ? ` • ${gestion.time}` : ""}
+              </span>
+            )}
+            {isPostponed(gestion) && <PostponedTag />}
+            <span className="font-body text-xs font-semibold text-ink-muted uppercase tracking-wider block">
+              {gestion.eventName}
+            </span>
+          </div>
+          <Hours value={gestion.estimatedHours} long />
+        </div>
+
+        <div>
+          <h3 className="font-heading text-xl md:text-2xl text-ink-charcoal font-semibold mt-1 leading-snug">
+            <EditableTitle gestion={gestion} onEdit={onEdit} />
+          </h3>
+        </div>
+
+        {gestion.note && (
+          <div className="p-3 bg-paper-linen/80 rounded-sharp border border-sepia-border text-xs leading-relaxed space-y-1">
+            <p className="font-body font-semibold text-ink-charcoal">Indicaciones / Observaciones:</p>
+            <p className="text-ink-muted font-body">{gestion.note}</p>
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-3.5 mt-3.5 border-t border-sepia-border/70">
+        <span className="font-body text-xs text-ink-muted font-medium">
+          {gestion.provider ? `Encargado: ${gestion.provider}` : ""}
+        </span>
+        <div className="flex items-center gap-2">
+          <ActionButtons onMarkDone={onMarkDone} onReschedule={onReschedule} size="normal" />
+        </div>
+      </div>
+    </>
   );
 }

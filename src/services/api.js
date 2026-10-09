@@ -157,10 +157,57 @@ export async function register({ username, email, password }) {
   return data.user;
 }
 
+export const userSettingsApi = {
+  async get() {
+    try {
+      const data = await request("/settings");
+      const val = Number(data?.daily_limit_hours);
+      return {
+        dailyLimitHours: Number.isFinite(val) && val >= 1 ? val : 6,
+        allowOverload: Boolean(data?.allow_overload),
+      };
+    } catch {
+      try {
+        const data = await request("/settings/daily-limit");
+        const val = Number(data?.daily_limit_hours);
+        return {
+          dailyLimitHours: Number.isFinite(val) && val >= 1 ? val : 6,
+          allowOverload: false,
+        };
+      } catch {
+        return { dailyLimitHours: 6, allowOverload: false };
+      }
+    }
+  },
+  async update({ dailyLimitHours, allowOverload } = {}) {
+    const payload = {};
+    if (dailyLimitHours !== undefined) {
+      const num = Number(dailyLimitHours);
+      if (!Number.isFinite(num) || num < 1 || num > 16) {
+        throw new Error("El límite debe estar entre 1 y 16 horas");
+      }
+      payload.daily_limit_hours = num;
+    }
+    if (allowOverload !== undefined) {
+      payload.allow_overload = Boolean(allowOverload);
+    }
+    const data = await request("/settings", json("PATCH", payload));
+    return {
+      dailyLimitHours: Number(data.daily_limit_hours),
+      allowOverload: Boolean(data.allow_overload),
+    };
+  },
+};
+
 export const dailyLimitApi = {
-  async get() { const data = await request("/settings/daily-limit"); return { dailyLimitHours: Number(data.daily_limit_hours) }; },
-  async update(hours) {
-    const data = await request("/settings/daily-limit", json("PATCH", { daily_limit_hours: hours }));
-    return { dailyLimitHours: Number(data.daily_limit_hours) };
+  async get() {
+    const settings = await userSettingsApi.get();
+    return { dailyLimitHours: settings.dailyLimitHours, allowOverload: settings.allowOverload };
+  },
+  async update(hoursOrObj) {
+    if (typeof hoursOrObj === "object" && hoursOrObj !== null) {
+      return userSettingsApi.update(hoursOrObj);
+    }
+    return userSettingsApi.update({ dailyLimitHours: hoursOrObj });
   },
 };

@@ -1,12 +1,22 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import CreateSubtaskSuccessModal from "../components/common/CreateSubtaskSuccessModal";
 import { useEventSubtasks } from "../hooks/useEventSubtasks";
+import { useDailyLimit } from "../hooks/useDailyLimit";
+import { getToday } from "../services/api";
+import {
+  evaluateConflict,
+  findSuggestedAvailableDays,
+  findNextAvailableDay,
+} from "../services/workloadService";
+import ConflictOverloadModal from "../components/reschedule/ConflictOverloadModal";
+import SuggestedDaysSelector from "../components/reschedule/SuggestedDaysSelector";
+import ReduceHoursModal from "../components/reschedule/ReduceHoursModal";
 import Toast from "../components/common/Toast";
 import StateCard from "../components/common/StateCard";
 import PageContainer from "../components/layout/PageContainer";
 import PageHeader, { Breadcrumb } from "../components/layout/PageHeader";
-import { formatShortDate, validateTargetDateAgainstEvent } from "../utils/dateUtils";
+import { formatShortDate, toDateInputValue, validateTargetDateAgainstEvent } from "../utils/dateUtils";
 
 const emptyForm = {
   title: "",
@@ -24,7 +34,8 @@ const emptyForm = {
 export default function CrearGestionPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { event, addSubtask, status: eventStatus, isRefreshing, reload } = useEventSubtasks(id);
+  const { event, subtasks, addSubtask, status: eventStatus, isRefreshing, reload } = useEventSubtasks(id);
+  const { hours: dailyLimitHours } = useDailyLimit();
 
   const [form, setForm] = useState(emptyForm);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -32,6 +43,48 @@ export default function CrearGestionPage() {
   const [generalError, setGeneralError] = useState(null);
   const [status, setStatus] = useState("idle");
   const [toast, setToast] = useState(null);
+
+  const [allUserGestiones, setAllUserGestiones] = useState([]);
+  const [conflictStep, setConflictStep] = useState(null); // null | 'CONFLICT_ALERT' | 'SUGGESTED_DAYS' | 'REDUCE_HOURS'
+  const [conflictData, setConflictData] = useState(null);
+
+  useEffect(() => {
+    getToday().then(setAllUserGestiones).catch(() => {});
+  }, []);
+
+  const mergedGestiones = useMemo(() => {
+    const map = new Map();
+    (allUserGestiones || []).forEach((g) => map.set(String(g.id), g));
+    (subtasks || []).forEach((g) => map.set(String(g.id), g));
+    return Array.from(map.values());
+  }, [allUserGestiones, subtasks]);
+
+  const liveConflict = useMemo(() => {
+    const hours = Number(form.estimatedHours);
+    if (!form.targetDate || !Number.isFinite(hours) || hours <= 0) return null;
+    return evaluateConflict({
+      gestiones: mergedGestiones,
+      targetDate: form.targetDate,
+      taskHours: hours,
+      dailyLimitHours,
+    });
+  }, [form.targetDate, form.estimatedHours, mergedGestiones, dailyLimitHours]);
+
+  const nextAvailableDay = useMemo(() => {
+    if (!conflictData) return null;
+    return findNextAvailableDay({
+      gestiones: mergedGestiones,
+      taskHours: Number(form.estimatedHours) || 2,
+      fromDate: conflictData.targetDateISO,
+      dailyLimitHours,
+      eventDate: event?.dateTime,
+    });
+  }, [conflictData, mergedGestiones, form.estimatedHours, dailyLimitHours, event?.dateTime]);
+
+  const eventDateISO = event?.dateTime ? toDateInputValue(event.dateTime) : null;
+  const isAtOrAfterEventEnd = Boolean(
+    eventDateISO && form.targetDate && toDateInputValue(form.targetDate) >= eventDateISO
+  );
 
   function handleChange(field) {
     return (e) => {
@@ -64,42 +117,129 @@ export default function CrearGestionPage() {
     return errors;
   }
 
-  async function handleSubmit(e) {
-  e.preventDefault();
-  setGeneralError(null);
-  const errors = validate();
-  if (Object.keys(errors).length > 0) {
-    setFieldErrors(errors);
-    const onlyDateRule = Object.keys(errors).length === 1 && errors.targetDate && form.targetDate;
-    setToast({ message: onlyDateRule ? "Revisa la fecha límite" : "Faltan campos obligatorios", intent: "error" })
-    return;
+  async function performCreation(payload) {
+    setStatus("loading");
+    setConflictStep(null);
+    try {
+      const created = await addSubtask({
+        title: payload.title.trim(),
+        provider: payload.provider.trim(),
+        targetDate: payload.targetDate,
+        estimatedHours: Number(payload.estimatedHours),
+        time: payload.time || null,
+      });
+      setCreatedSubtaskTitle(created?.title || payload.title.trim());
+      setStatus("idle");
+    } catch (err) {
+      setStatus("idle");
+      if (err.code === "target_date_after_event") {
+        setFieldErrors((p) => ({ ...p, targetDate: err.details?.target_date?.[0] || err.message }));
+        setToast({ message: "La fecha límite no puede ser posterior al evento", intent: "error" });
+        return;
+      }
+      setGeneralError(
+        err.message || "No pudimos crear la gestión. Intenta de nuevo."
+      );
+      setToast({ message: "No pudimos crear la gestión", intent: "error" });
+    }
   }
-  setStatus("loading");
-  try {
-    // target_date es una fecha local sin hora (AAAA-MM-DD); la hora
-    // opcional viaja aparte en `time` (comentario del backend).
-    const created = await addSubtask({
-      title: form.title.trim(),
-      provider: form.provider.trim(),
-      targetDate: form.targetDate,
-      estimatedHours: Number(form.estimatedHours),
-      time: form.time || null,
-    });
-    setCreatedSubtaskTitle(created?.title || form.title.trim());
-    setStatus("idle");
-  } catch (err) {
-    setStatus("idle");
-    if (err.code === "target_date_after_event") {
-      setFieldErrors((p) => ({ ...p, targetDate: err.details?.target_date?.[0] || err.message }));
+
+  async function handleSubmit(e, forceOverride = false) {
+    if (e?.preventDefault) e.preventDefault();
+    setGeneralError(null);
+    const errors = validate();
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      const onlyDateRule = Object.keys(errors).length === 1 && errors.targetDate && form.targetDate;
+      setToast({ message: onlyDateRule ? errors.targetDate : "Faltan campos obligatorios", intent: "error" });
       return;
     }
-    setGeneralError(
-      err.message || "No pudimos crear la gestión. Intenta de nuevo."
-    );
-  }
-}
 
-  
+    const payload = {
+      title: form.title,
+      provider: form.provider,
+      targetDate: form.targetDate,
+      estimatedHours: Number(form.estimatedHours),
+      time: form.time,
+    };
+
+    if (!forceOverride) {
+      const conflict = evaluateConflict({
+        gestiones: mergedGestiones,
+        targetDate: payload.targetDate,
+        taskHours: payload.estimatedHours,
+        dailyLimitHours,
+      });
+
+      if (conflict.hasConflict) {
+        setConflictData(conflict);
+        setConflictStep("CONFLICT_ALERT");
+        return;
+      }
+    }
+
+    await performCreation(payload);
+  }
+
+  function handleConflictMoveConfirm(newDate) {
+    setForm((p) => ({ ...p, targetDate: newDate }));
+    const taskH = Number(form.estimatedHours);
+    const rechecked = evaluateConflict({
+      gestiones: mergedGestiones,
+      targetDate: newDate,
+      taskHours: taskH,
+      dailyLimitHours,
+    });
+    if (rechecked.hasConflict) {
+      setConflictData(rechecked);
+      setConflictStep("CONFLICT_ALERT");
+    } else {
+      performCreation({
+        ...form,
+        targetDate: newDate,
+        estimatedHours: taskH,
+      });
+    }
+  }
+
+  function handleConflictReduceConfirm(newHours) {
+    setForm((p) => ({ ...p, estimatedHours: String(newHours) }));
+    const rechecked = evaluateConflict({
+      gestiones: mergedGestiones,
+      targetDate: form.targetDate,
+      taskHours: newHours,
+      dailyLimitHours,
+    });
+    if (rechecked.hasConflict) {
+      setConflictData(rechecked);
+      setConflictStep("CONFLICT_ALERT");
+    } else {
+      performCreation({
+        ...form,
+        estimatedHours: newHours,
+      });
+    }
+  }
+
+  function handleConflictPostpone() {
+    const nextDay = findNextAvailableDay({
+      gestiones: mergedGestiones,
+      taskHours: Number(form.estimatedHours),
+      fromDate: form.targetDate || new Date(),
+      dailyLimitHours,
+      eventDate: event?.dateTime,
+    });
+    if (nextDay) {
+      setForm((p) => ({ ...p, targetDate: nextDay.dateISO }));
+      performCreation({
+        ...form,
+        targetDate: nextDay.dateISO,
+        estimatedHours: Number(form.estimatedHours),
+      });
+    } else {
+      setConflictStep("SUGGESTED_DAYS");
+    }
+  }
 
   const isLoading = status === "loading";
   const eventName = event?.name ?? "…";
@@ -122,12 +262,7 @@ export default function CrearGestionPage() {
         eyebrow={eventName}
         title="Crear"
         accent="nueva gestión"
-        aside={
-          <p className="font-body text-xs md:text-sm text-ink-muted max-w-sm lg:text-right leading-relaxed">
-            Registra una subtarea operativa en la bitácora con proveedor asignado,
-            fecha límite y estimación de esfuerzo.
-          </p>
-        }
+        description="Registra una subtarea operativa en la bitácora con proveedor asignado, fecha límite y estimación de esfuerzo."
       />
 
       {eventStatus === "notfound" && (
@@ -341,6 +476,15 @@ export default function CrearGestionPage() {
                   Permite ordenar la gestión en el bloque horario de la jornada.
                 </p>
               </div>
+
+              {liveConflict?.hasConflict && (
+                <div className="sm:col-span-2 mt-2 p-3 rounded-sharp bg-crimson-paper/50 border border-crimson-urgent/30 flex items-center gap-2 text-xs font-body text-crimson-urgent font-medium">
+                  <span className="material-symbols-outlined text-[16px] shrink-0">warning</span>
+                  <span>
+                    Superaría tu límite diario: quedarías con {liveConflict.totalHours}h planificadas (límite {liveConflict.limitHours}h).
+                  </span>
+                </div>
+              )}
             </div>
           </section>
         </div>
@@ -390,13 +534,67 @@ export default function CrearGestionPage() {
       </form>
       )}
 
-              {createdSubtaskTitle && (
-  <CreateSubtaskSuccessModal
-    subtaskTitle={createdSubtaskTitle}
-    eventId={id}
-    onClose={() => setCreatedSubtaskTitle(null)}
-  />
-)}
+      {createdSubtaskTitle && (
+        <CreateSubtaskSuccessModal
+          subtaskTitle={createdSubtaskTitle}
+          eventId={id}
+          onClose={() => setCreatedSubtaskTitle(null)}
+        />
+      )}
+
+      {conflictStep === "CONFLICT_ALERT" && conflictData && (
+        <ConflictOverloadModal
+          conflict={conflictData}
+          gestion={{ title: form.title.trim() }}
+          isEventEnd={isAtOrAfterEventEnd}
+          nextAvailableDayLabel={
+            nextAvailableDay?.shortLabel || (isAtOrAfterEventEnd ? "Evento finaliza este día" : "Ver sugerencias")
+          }
+          onChooseMove={() => setConflictStep("SUGGESTED_DAYS")}
+          onChooseReduce={() => setConflictStep("REDUCE_HOURS")}
+          onChoosePostpone={handleConflictPostpone}
+          onKeepAnyway={() => performCreation({
+            title: form.title,
+            provider: form.provider,
+            targetDate: form.targetDate,
+            estimatedHours: Number(form.estimatedHours),
+            time: form.time,
+          })}
+          onCancel={() => setConflictStep(null)}
+        />
+      )}
+
+      {conflictStep === "SUGGESTED_DAYS" && (
+        <SuggestedDaysSelector
+          suggestedDays={findSuggestedAvailableDays({
+            gestiones: mergedGestiones,
+            taskHours: Number(form.estimatedHours) || 2,
+            fromDate: form.targetDate || new Date(),
+            dailyLimitHours,
+            eventDate: event?.dateTime,
+          })}
+          currentDateISO={form.targetDate}
+          eventDateTime={event?.dateTime}
+          taskHours={Number(form.estimatedHours) || 2}
+          dailyLimitHours={dailyLimitHours}
+          isSubmitting={isLoading}
+          onConfirmDate={handleConflictMoveConfirm}
+          onBack={() => setConflictStep("CONFLICT_ALERT")}
+        />
+      )}
+
+      {conflictStep === "REDUCE_HOURS" && (
+        <ReduceHoursModal
+          gestion={{ title: form.title.trim(), estimatedHours: Number(form.estimatedHours) || 2 }}
+          targetDateISO={form.targetDate}
+          currentHoursOnDay={conflictData?.currentHours || 0}
+          dailyLimitHours={dailyLimitHours}
+          isSubmitting={isLoading}
+          onConfirmHours={handleConflictReduceConfirm}
+          onBack={() => setConflictStep("CONFLICT_ALERT")}
+        />
+      )}
+
       <Toast toast={toast} onClose={() => setToast(null)} />
     </PageContainer>
   );

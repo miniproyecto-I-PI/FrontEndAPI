@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { useEventSubtasks } from "../hooks/useEventSubtasks";
-import { deleteEvent } from "../services/api";
+import { deleteEvent, getToday } from "../services/api";
 import { classifyByDate } from "../utils/dateUtils";
 
 import UpdateEventSuccessModal from "../components/common/UpdateEventSuccessModal";
@@ -57,6 +57,18 @@ export default function EventoDetallePage() {
   const [updatedEventName, setUpdatedEventName] = useState(null);
   const [updatedSubtaskTitle, setUpdatedSubtaskTitle] = useState(null);
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
+  const [allUserGestiones, setAllUserGestiones] = useState([]);
+
+  useEffect(() => {
+    getToday().then(setAllUserGestiones).catch(() => {});
+  }, []);
+
+  const mergedGestiones = useMemo(() => {
+    const map = new Map();
+    (allUserGestiones || []).forEach((g) => map.set(String(g.id), g));
+    (subtasks || []).forEach((g) => map.set(String(g.id), g));
+    return Array.from(map.values());
+  }, [allUserGestiones, subtasks]);
 
   useEffect(() => {
     if (location.state?.toast) {
@@ -140,15 +152,13 @@ async function handleEditEvent(payload) {
     }
   }
 
-  async function handleConfirmReschedule(newDateISO) {
-    if (!rescheduleTarget) return;
-    try {
-      await updateSubtask(rescheduleTarget.id, { targetDate: newDateISO });
-      setRescheduleTarget(null);
-      setToast({ message: "Gestión reprogramada" });
-    } catch (err) {
-      setToast({ message: err.message || "No se pudo reprogramar" , intent: "error" })
-    }
+  async function handleConfirmReschedule() {
+    setRescheduleTarget(null);
+    await Promise.all([
+      reload(),
+      getToday().then(setAllUserGestiones).catch(() => {}),
+    ]);
+    setToast({ message: "Gestión reprogramada" });
   }
 
   return (
@@ -344,8 +354,10 @@ async function handleEditEvent(payload) {
       {rescheduleTarget && (
         <RescheduleModal
           mode="single"
+          gestion={rescheduleTarget}
           currentDateISO={rescheduleTarget.targetDate}
           eventDateTime={event?.dateTime}
+          allGestiones={mergedGestiones}
           onCancel={() => setRescheduleTarget(null)}
           onConfirm={handleConfirmReschedule}
         />

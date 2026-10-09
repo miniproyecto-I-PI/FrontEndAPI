@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { useTodayGestiones } from "../hooks/useTodayGestiones";
 import { formatFullDate } from "../utils/dateUtils";
@@ -13,8 +13,11 @@ import LoadingSkeleton, { StatsSkeleton } from "../components/common/LoadingSkel
 import Toast from "../components/common/Toast";
 import RescheduleModal from "../components/common/RescheduleModal";
 import EditSubtaskModal from "../components/common/EditSubtaskModal";
+import GestionesGalleryModal from "../components/common/GestionesGalleryModal";
 import TaskCard from "../components/tasks/TaskCard";
+import TaskCardGalleryOverlay from "../components/tasks/TaskCardGalleryOverlay";
 import HoyFilters from "../components/tasks/HoyFilters";
+import HoyKanbanView from "../components/tasks/HoyKanbanView";
 import SimulationToolbar from "../components/dev/SimulationToolbar";
 
 /**
@@ -34,17 +37,36 @@ export default function HoyPage() {
   const { search, setSearch } = useOutletContext();
   const location = useLocation();
   const navigate = useNavigate();
+  const [viewMode, setViewMode] = useState("agenda"); // 'agenda' | 'kanban'
   const [simMode, setSimMode] = useState("normal"); // 'normal' | 'empty' | 'error' (solo desarrollo)
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
   const [editTarget, setEditTarget] = useState(null); // gestión en edición (título de la tarjeta o botón Editar)
   const [toast, setToast] = useState(() => (location.state?.toast ? { message: location.state.toast } : null));
   const closeToast = useCallback(() => setToast(null), []);
 
+  const [galleryModal, setGalleryModal] = useState({
+    isOpen: false,
+    group: null, // 'hoy' | 'vencidas' | 'proximas'
+    initialIndex: 0,
+  });
+
+  function openGallery(group, initialIndex = 0) {
+    setGalleryModal({
+      isOpen: true,
+      group,
+      initialIndex,
+    });
+  }
+
+  function closeGallery() {
+    setGalleryModal((p) => ({ ...p, isOpen: false }));
+  }
+
   useEffect(() => {
     if (location.state?.toast) navigate(location.pathname, { replace: true, state: {} });
   }, [location, navigate]);
 
-  const { status, isRefreshing, errorKind, grouped, stats, filters, eventOptions, actions, reload } = useTodayGestiones({
+  const { status, isRefreshing, errorKind, grouped, stats, filters, eventOptions, actions, reload, allGestiones } = useTodayGestiones({
     query: search,
     simulateError: simMode === "error",
     simulateEmpty: simMode === "empty",
@@ -73,12 +95,10 @@ export default function HoyPage() {
     });
   }
 
-  async function handleConfirmReschedule(newDateISO) {
-    if (!rescheduleTarget) return;
-    const target = rescheduleTarget;
+  async function handleConfirmReschedule() {
     setRescheduleTarget(null);
-    const ok = await actions.reschedule(target.id, newDateISO);
-    setToast(ok ? { message: "Gestión reprogramada" } : { message: "No se pudo reprogramar la gestión.", intent: "error" });
+    await reload();
+    setToast({ message: "Gestión reprogramada" });
   }
 
   async function handleEditSubmit(payload) {
@@ -89,6 +109,26 @@ export default function HoyPage() {
 
   // /today no trae la fecha del evento; se toma de la lista de eventos.
   const eventDateOf = (gestion) => eventOptions.find((o) => o.value === gestion.eventId)?.dateTime;
+
+  const galleryGestiones = useMemo(() => {
+    if (galleryModal.group === "hoy") return grouped.hoy;
+    if (galleryModal.group === "vencidas") return grouped.vencidas;
+    if (galleryModal.group === "proximas") return grouped.proximas;
+    return [];
+  }, [galleryModal.group, grouped]);
+
+  const galleryMeta = useMemo(() => {
+    if (galleryModal.group === "hoy") {
+      return { title: "Agenda de Hoy", numeral: "II.", tone: "terracotta" };
+    }
+    if (galleryModal.group === "vencidas") {
+      return { title: "Gestiones Vencidas", numeral: "I.", tone: "crimson" };
+    }
+    if (galleryModal.group === "proximas") {
+      return { title: "Próximas Jornadas", numeral: "III.", tone: "sepia" };
+    }
+    return { title: "Gestiones", numeral: "", tone: "terracotta" };
+  }, [galleryModal.group]);
 
   const totalForBars = Math.max(1, totalVisible);
   const showStats = status !== "error";
@@ -110,6 +150,8 @@ export default function HoyPage() {
               onClear={filters.clearFilters}
               showExecuted={filters.showExecuted}
               onShowExecutedChange={filters.setShowExecuted}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
               disabled={status === "loading"}
             />
           }
@@ -183,82 +225,231 @@ export default function HoyPage() {
         )}
 
         {status === "success" && totalVisible > 0 && (
-          <div className={`space-y-9 transition-opacity ${isRefreshing ? "opacity-60" : ""}`} aria-busy={isRefreshing}>
-            {grouped.ejecutadas.length > 0 && (
-              <section className="space-y-3.5" aria-labelledby="hoy-ejecutadas">
-                <SectionHeading id="hoy-ejecutadas" numeral="0." title="Ejecutadas" rule={PRIORITY_RULE_BY_GROUP.ejecutadas} tone="sage" />
-                <div className="grid grid-cols-1 gap-3">
-                  {grouped.ejecutadas.map((g) => (
-                    <TaskCard key={g.id} gestion={g} variant="ejecutada" onEdit={() => setEditTarget(g)} />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {grouped.vencidas.length > 0 && (
-              <section className="space-y-3.5" aria-labelledby="hoy-vencidas">
-                <SectionHeading
-                  id="hoy-vencidas"
-                  numeral="I."
-                  title="Vencidas"
-                  rule={PRIORITY_RULE_BY_GROUP.vencidas}
-                  tone="crimson"
-                  aside={
-                    <span className="inline-flex items-center gap-1 font-body text-xs font-semibold text-crimson-tag">
-                      <span className="material-symbols-outlined text-[16px]" aria-hidden="true">warning</span>
-                      Requieren atención inmediata
-                    </span>
-                  }
-                />
-                <div className="grid grid-cols-1 gap-3">
-                  {grouped.vencidas.map((g) => (
-                    <TaskCard key={g.id} gestion={g} variant="vencida" onMarkDone={() => handleMarkDone(g)} onReschedule={() => setRescheduleTarget(g)} onEdit={() => setEditTarget(g)} />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {grouped.hoy.length > 0 && (
-              <section className="space-y-3.5" aria-labelledby="hoy-hoy">
-                <SectionHeading
-                  id="hoy-hoy"
-                  numeral="II."
-                  title="Agenda de Hoy"
-                  rule={PRIORITY_RULE_BY_GROUP.hoy}
-                  tone="terracotta"
-                  aside={
-                    <span className="font-stamp text-xs text-terracotta-dark flex items-center gap-1.5 font-bold">
-                      <span className="material-symbols-outlined text-[15px] text-terracotta" aria-hidden="true">hourglass_top</span>
-                      {stats.todayLoadHours} hrs dedicación programada
-                    </span>
-                  }
-                />
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-                  <div className={grouped.hoy.length > 1 ? "lg:col-span-7" : "lg:col-span-12"}>
-                    <TaskCard gestion={grouped.hoy[0]} variant="hoy-hero" onMarkDone={() => handleMarkDone(grouped.hoy[0])} onReschedule={() => setRescheduleTarget(grouped.hoy[0])} onEdit={() => setEditTarget(grouped.hoy[0])} />
+          viewMode === "kanban" ? (
+            <div className={`transition-opacity ${isRefreshing ? "opacity-60" : ""}`} aria-busy={isRefreshing}>
+              <HoyKanbanView
+                grouped={grouped}
+                onMarkDone={handleMarkDone}
+                onReschedule={(g) => setRescheduleTarget(g)}
+                onEdit={(g) => setEditTarget(g)}
+                showExecuted={filters.showExecuted}
+              />
+            </div>
+          ) : (
+            <div className={`space-y-9 transition-opacity ${isRefreshing ? "opacity-60" : ""}`} aria-busy={isRefreshing}>
+              {grouped.ejecutadas.length > 0 && (
+                <section className="space-y-3.5" aria-labelledby="hoy-ejecutadas">
+                  <SectionHeading id="hoy-ejecutadas" numeral="0." title="Ejecutadas" rule={PRIORITY_RULE_BY_GROUP.ejecutadas} tone="sage" />
+                  <div className="grid grid-cols-1 gap-3">
+                    {grouped.ejecutadas.map((g) => (
+                      <TaskCard key={g.id} gestion={g} variant="ejecutada" onEdit={() => setEditTarget(g)} />
+                    ))}
                   </div>
-                  {grouped.hoy.length > 1 && (
-                    <div className="lg:col-span-5 flex flex-col gap-3.5">
-                      {grouped.hoy.slice(1).map((g) => (
-                        <TaskCard key={g.id} gestion={g} variant="hoy-secundaria" onMarkDone={() => handleMarkDone(g)} onReschedule={() => setRescheduleTarget(g)} onEdit={() => setEditTarget(g)} />
+                </section>
+              )}
+
+              {grouped.vencidas.length > 0 && (
+                <section className="space-y-3.5" aria-labelledby="hoy-vencidas">
+                  <SectionHeading
+                    id="hoy-vencidas"
+                    numeral="I."
+                    title="Vencidas"
+                    rule={PRIORITY_RULE_BY_GROUP.vencidas}
+                    tone="crimson"
+                    aside={
+                      <span className="inline-flex items-center gap-1 font-body text-xs font-semibold text-crimson-tag">
+                        <span className="material-symbols-outlined text-[16px]" aria-hidden="true">warning</span>
+                        Requieren atención inmediata
+                      </span>
+                    }
+                  />
+                  {grouped.vencidas.length === 1 ? (
+                    <TaskCard
+                      gestion={grouped.vencidas[0]}
+                      variant="vencida"
+                      single={true}
+                      onMarkDone={() => handleMarkDone(grouped.vencidas[0])}
+                      onReschedule={() => setRescheduleTarget(grouped.vencidas[0])}
+                      onEdit={() => setEditTarget(grouped.vencidas[0])}
+                    />
+                  ) : (
+                    <div className="grid grid-cols-1 gap-3">
+                      {grouped.vencidas.slice(0, 2).map((g) => (
+                        <TaskCard
+                          key={g.id}
+                          gestion={g}
+                          variant="vencida"
+                          onMarkDone={() => handleMarkDone(g)}
+                          onReschedule={() => setRescheduleTarget(g)}
+                          onEdit={() => setEditTarget(g)}
+                        />
                       ))}
+                      {grouped.vencidas.length === 3 && (
+                        <TaskCard
+                          key={grouped.vencidas[2].id}
+                          gestion={grouped.vencidas[2]}
+                          variant="vencida"
+                          onMarkDone={() => handleMarkDone(grouped.vencidas[2])}
+                          onReschedule={() => setRescheduleTarget(grouped.vencidas[2])}
+                          onEdit={() => setEditTarget(grouped.vencidas[2])}
+                        />
+                      )}
+                      {grouped.vencidas.length > 3 && (
+                        <TaskCardGalleryOverlay
+                          gestion={grouped.vencidas[2]}
+                          variant="vencida"
+                          remainingCount={grouped.vencidas.length - 2}
+                          totalCount={grouped.vencidas.length}
+                          onClickMore={() => openGallery("vencidas", 2)}
+                          onMarkDone={() => handleMarkDone(grouped.vencidas[2])}
+                          onReschedule={() => setRescheduleTarget(grouped.vencidas[2])}
+                          onEdit={() => setEditTarget(grouped.vencidas[2])}
+                        />
+                      )}
                     </div>
                   )}
-                </div>
-              </section>
-            )}
+                </section>
+              )}
 
-            {grouped.proximas.length > 0 && (
-              <section className="space-y-3.5" aria-labelledby="hoy-proximas">
-                <SectionHeading id="hoy-proximas" numeral="III." title="Próximas Jornadas" rule={PRIORITY_RULE_BY_GROUP.proximas} />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {grouped.proximas.map((g) => (
-                    <TaskCard key={g.id} gestion={g} variant="proxima" onMarkDone={() => handleMarkDone(g)} onReschedule={() => setRescheduleTarget(g)} onEdit={() => setEditTarget(g)} />
-                  ))}
-                </div>
-              </section>
-            )}
-          </div>
+              {grouped.hoy.length > 0 && (
+                <section className="space-y-3.5" aria-labelledby="hoy-hoy">
+                  <SectionHeading
+                    id="hoy-hoy"
+                    numeral="II."
+                    title="Agenda de Hoy"
+                    rule={PRIORITY_RULE_BY_GROUP.hoy}
+                    tone="terracotta"
+                    aside={
+                      <span className="font-stamp text-xs text-terracotta-dark flex items-center gap-1.5 font-bold">
+                        <span className="material-symbols-outlined text-[15px] text-terracotta" aria-hidden="true">hourglass_top</span>
+                        {stats.todayLoadHours} hrs dedicación programada
+                      </span>
+                    }
+                  />
+                  {/* Grid alineada a Resumen de Actividad (3 de 4 cols a la izquierda, 1 de 4 a la derecha con gap-3.5) */}
+                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-3.5 items-stretch">
+                    {/* Columna izquierda: tarjeta principal + segunda tarjeta debajo */}
+                    <div className={grouped.hoy.length > 2 ? "lg:col-span-3 flex flex-col gap-3.5" : "lg:col-span-4 flex flex-col gap-3.5"}>
+                      <TaskCard
+                        gestion={grouped.hoy[0]}
+                        variant="hoy-hero"
+                        onMarkDone={() => handleMarkDone(grouped.hoy[0])}
+                        onReschedule={() => setRescheduleTarget(grouped.hoy[0])}
+                        onEdit={() => setEditTarget(grouped.hoy[0])}
+                      />
+                      {grouped.hoy.length > 1 && (
+                        <TaskCard
+                          gestion={grouped.hoy[1]}
+                          variant="hoy-secundaria"
+                          onMarkDone={() => handleMarkDone(grouped.hoy[1])}
+                          onReschedule={() => setRescheduleTarget(grouped.hoy[1])}
+                          onEdit={() => setEditTarget(grouped.hoy[1])}
+                        />
+                      )}
+                    </div>
+
+                    {/* Columna derecha: tarjetas restantes */}
+                    {grouped.hoy.length > 2 && (
+                      <div className="lg:col-span-1 flex flex-col gap-3.5 h-full">
+                        <div className="flex-1">
+                          <TaskCard
+                            gestion={grouped.hoy[2]}
+                            variant="hoy-secundaria"
+                            onMarkDone={() => handleMarkDone(grouped.hoy[2])}
+                            onReschedule={() => setRescheduleTarget(grouped.hoy[2])}
+                            onEdit={() => setEditTarget(grouped.hoy[2])}
+                          />
+                        </div>
+
+                        {grouped.hoy.length === 4 && (
+                          <div className="flex-1">
+                            <TaskCard
+                              key={grouped.hoy[3].id}
+                              gestion={grouped.hoy[3]}
+                              variant="hoy-secundaria"
+                              onMarkDone={() => handleMarkDone(grouped.hoy[3])}
+                              onReschedule={() => setRescheduleTarget(grouped.hoy[3])}
+                              onEdit={() => setEditTarget(grouped.hoy[3])}
+                            />
+                          </div>
+                        )}
+
+                        {grouped.hoy.length > 4 && (
+                          <div className="flex-1 min-h-[140px]">
+                            <TaskCardGalleryOverlay
+                              gestion={grouped.hoy[3]}
+                              variant="hoy-secundaria"
+                              remainingCount={grouped.hoy.length - 3}
+                              totalCount={grouped.hoy.length}
+                              onClickMore={() => openGallery("hoy", 3)}
+                              onMarkDone={() => handleMarkDone(grouped.hoy[3])}
+                              onReschedule={() => setRescheduleTarget(grouped.hoy[3])}
+                              onEdit={() => setEditTarget(grouped.hoy[3])}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {grouped.proximas.length > 0 && (
+                <section className="space-y-3.5" aria-labelledby="hoy-proximas">
+                  <SectionHeading id="hoy-proximas" numeral="III." title="Próximas Jornadas" rule={PRIORITY_RULE_BY_GROUP.proximas} />
+                  {grouped.proximas.length === 1 ? (
+                    <TaskCard
+                      gestion={grouped.proximas[0]}
+                      variant="proxima"
+                      single={true}
+                      onMarkDone={() => handleMarkDone(grouped.proximas[0])}
+                      onReschedule={() => setRescheduleTarget(grouped.proximas[0])}
+                      onEdit={() => setEditTarget(grouped.proximas[0])}
+                    />
+                  ) : (
+                    <div
+                      className={`grid grid-cols-1 ${
+                        grouped.proximas.length === 2 ? "md:grid-cols-2" : "md:grid-cols-3"
+                      } gap-4 items-stretch`}
+                    >
+                      {grouped.proximas.slice(0, 2).map((g) => (
+                        <TaskCard
+                          key={g.id}
+                          gestion={g}
+                          variant="proxima"
+                          onMarkDone={() => handleMarkDone(g)}
+                          onReschedule={() => setRescheduleTarget(g)}
+                          onEdit={() => setEditTarget(g)}
+                        />
+                      ))}
+                      {grouped.proximas.length === 3 && (
+                        <TaskCard
+                          key={grouped.proximas[2].id}
+                          gestion={grouped.proximas[2]}
+                          variant="proxima"
+                          onMarkDone={() => handleMarkDone(grouped.proximas[2])}
+                          onReschedule={() => setRescheduleTarget(grouped.proximas[2])}
+                          onEdit={() => setEditTarget(grouped.proximas[2])}
+                        />
+                      )}
+                      {grouped.proximas.length > 3 && (
+                        <TaskCardGalleryOverlay
+                          gestion={grouped.proximas[2]}
+                          variant="proxima"
+                          remainingCount={grouped.proximas.length - 2}
+                          totalCount={grouped.proximas.length}
+                          onClickMore={() => openGallery("proximas", 2)}
+                          onMarkDone={() => handleMarkDone(grouped.proximas[2])}
+                          onReschedule={() => setRescheduleTarget(grouped.proximas[2])}
+                          onEdit={() => setEditTarget(grouped.proximas[2])}
+                        />
+                      )}
+                    </div>
+                  )}
+                </section>
+              )}
+            </div>
+          )
         )}
       </PageContainer>
 
@@ -277,10 +468,32 @@ export default function HoyPage() {
       {rescheduleTarget && (
         <RescheduleModal
           mode="single"
+          gestion={rescheduleTarget}
           currentDateISO={rescheduleTarget.targetDate}
           eventDateTime={eventDateOf(rescheduleTarget)}
+          allGestiones={allGestiones || []}
           onCancel={() => setRescheduleTarget(null)}
           onConfirm={handleConfirmReschedule}
+        />
+      )}
+
+      {galleryModal.isOpen && (
+        <GestionesGalleryModal
+          key={`${galleryModal.group}-${galleryModal.initialIndex}`}
+          isOpen={galleryModal.isOpen}
+          title={galleryMeta.title}
+          numeral={galleryMeta.numeral}
+          tone={galleryMeta.tone}
+          gestiones={galleryGestiones}
+          initialIndex={galleryModal.initialIndex}
+          onClose={closeGallery}
+          onMarkDone={handleMarkDone}
+          onReschedule={(g) => {
+            setRescheduleTarget(g);
+          }}
+          onEdit={(g) => {
+            setEditTarget(g);
+          }}
         />
       )}
 
