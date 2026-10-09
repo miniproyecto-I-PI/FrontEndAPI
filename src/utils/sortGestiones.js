@@ -87,7 +87,7 @@ export function groupAndSortGestiones(gestiones, options = {}) {
   }
 
   const getTimeValue = (g) => {
-    if (!g.time) return "23:59";
+    if (!g.time) return "00:00"; // backend: sin hora = 00:00, va primero
     const parts = String(g.time).trim().split(":");
     if (parts.length >= 2) {
       const h = parts[0].padStart(2, "0");
@@ -104,19 +104,23 @@ export function groupAndSortGestiones(gestiones, options = {}) {
     const dateDiff = new Date(dateA).getTime() - new Date(dateB).getTime();
     if (dateDiff !== 0) return dateDiff;
 
-    // 2. Hora y minutos (HH:MM)
+    // 2. Hora y minutos (sin hora = 00:00, va primero)
     const timeA = getTimeValue(a);
     const timeB = getTimeValue(b);
     const timeDiff = timeA.localeCompare(timeB);
     if (timeDiff !== 0) return timeDiff;
 
     // 3. Menor esfuerzo estimado
-    return (Number(a.estimatedHours) || 0) - (Number(b.estimatedHours) || 0);
+    const effortDiff = (Number(a.estimatedHours) || 0) - (Number(b.estimatedHours) || 0);
+    if (effortDiff !== 0) return effortDiff;
+
+    // 4. ID estable
+    return String(a.id ?? "").localeCompare(String(b.id ?? ""));
   };
 
-  vencidas.sort(byDateThenTimeThenEffort); // más antigua primero
-  hoy.sort(byDateThenTimeThenEffort); // hoy: hora más temprana primero, empate: menor esfuerzo
-  proximas.sort(byDateThenTimeThenEffort); // fecha más cercana primero
+  vencidas.sort(byDateThenTimeThenEffort);
+  hoy.sort(byDateThenTimeThenEffort);
+  proximas.sort(byDateThenTimeThenEffort);
   ejecutadas.sort(byDateThenTimeThenEffort);
 
   return { vencidas, hoy, proximas, ejecutadas };

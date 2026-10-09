@@ -20,14 +20,18 @@ export const DAILY_LIMIT_UPDATED_EVENT = "convoka:daily-limit-updated";
 export function useDailyLimit() {
   const [hours, setHours] = useState(DEFAULT_LIMIT_HOURS);
   const [allowOverload, setAllowOverload] = useState(false);
+  const [allowSubtasksAfterEvent, setAllowSubtasksAfterEvent] = useState(false);
+  const [allowOverdueSubtasks, setAllowOverdueSubtasks] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     let active = true;
-    dailyLimitApi.get().then(({ dailyLimitHours, allowOverload: ao }) => {
+    dailyLimitApi.get().then((data) => {
       if (active) {
-        setHours(dailyLimitHours);
-        setAllowOverload(Boolean(ao));
+        setHours(data.dailyLimitHours);
+        setAllowOverload(Boolean(data.allowOverload));
+        setAllowSubtasksAfterEvent(Boolean(data.allowSubtasksAfterEvent));
+        setAllowOverdueSubtasks(Boolean(data.allowOverdueSubtasks));
         setIsLoaded(true);
       }
     });
@@ -40,6 +44,12 @@ export function useDailyLimit() {
       if (e.detail?.allowOverload !== undefined) {
         setAllowOverload(Boolean(e.detail.allowOverload));
       }
+      if (e.detail?.allowSubtasksAfterEvent !== undefined) {
+        setAllowSubtasksAfterEvent(Boolean(e.detail.allowSubtasksAfterEvent));
+      }
+      if (e.detail?.allowOverdueSubtasks !== undefined) {
+        setAllowOverdueSubtasks(Boolean(e.detail.allowOverdueSubtasks));
+      }
     };
 
     window.addEventListener(DAILY_LIMIT_UPDATED_EVENT, handleUpdate);
@@ -50,37 +60,52 @@ export function useDailyLimit() {
   }, []);
 
   const update = useCallback(async (params) => {
-    let newHours;
-    let newAllow;
+    let payload = {};
     if (typeof params === "object" && params !== null) {
-      newHours = params.hours ?? params.dailyLimitHours;
-      newAllow = params.allowOverload;
-    } else {
-      newHours = params;
+      if (params.hours !== undefined || params.dailyLimitHours !== undefined) {
+        payload.dailyLimitHours = params.hours ?? params.dailyLimitHours;
+      }
+      if (params.allowOverload !== undefined) {
+        payload.allowOverload = params.allowOverload;
+      }
+      if (params.allowSubtasksAfterEvent !== undefined) {
+        payload.allowSubtasksAfterEvent = params.allowSubtasksAfterEvent;
+      }
+      if (params.allowOverdueSubtasks !== undefined) {
+        payload.allowOverdueSubtasks = params.allowOverdueSubtasks;
+      }
+    } else if (params !== undefined) {
+      payload.dailyLimitHours = params;
     }
 
-    if (newHours !== undefined) {
-      if (newHours < MIN_HOURS || newHours > MAX_HOURS) {
+    if (payload.dailyLimitHours !== undefined) {
+      if (payload.dailyLimitHours < MIN_HOURS || payload.dailyLimitHours > MAX_HOURS) {
         throw new Error(`El límite debe estar entre ${MIN_HOURS} y ${MAX_HOURS} horas`);
       }
     }
 
-    const result = await dailyLimitApi.update({
-      dailyLimitHours: newHours,
-      allowOverload: newAllow,
-    });
+    const result = await dailyLimitApi.update(payload);
     setHours(result.dailyLimitHours);
     setAllowOverload(result.allowOverload);
+    setAllowSubtasksAfterEvent(result.allowSubtasksAfterEvent);
+    setAllowOverdueSubtasks(result.allowOverdueSubtasks);
+
     window.dispatchEvent(
       new CustomEvent(DAILY_LIMIT_UPDATED_EVENT, {
-        detail: {
-          dailyLimitHours: result.dailyLimitHours,
-          allowOverload: result.allowOverload,
-        },
+        detail: result,
       })
     );
     return result;
   }, []);
 
-  return { hours, allowOverload, isLoaded, update, MIN_HOURS, MAX_HOURS };
+  return {
+    hours,
+    allowOverload,
+    allowSubtasksAfterEvent,
+    allowOverdueSubtasks,
+    isLoaded,
+    update,
+    MIN_HOURS,
+    MAX_HOURS,
+  };
 }

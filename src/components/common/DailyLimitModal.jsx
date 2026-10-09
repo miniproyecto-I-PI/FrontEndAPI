@@ -16,9 +16,20 @@ import Toast from "./Toast";
  * - Toast / letrero de error en la esquina inferior izquierda
  */
 export default function DailyLimitModal({ onClose, onSuccess }) {
-  const { hours, allowOverload, isLoaded, update, MIN_HOURS, MAX_HOURS } = useDailyLimit();
+  const {
+    hours,
+    allowOverload,
+    allowSubtasksAfterEvent,
+    allowOverdueSubtasks,
+    isLoaded,
+    update,
+    MIN_HOURS,
+    MAX_HOURS,
+  } = useDailyLimit();
   const [inputValue, setInputValue] = useState(null);
   const [allowOverloadState, setAllowOverloadState] = useState(null);
+  const [allowAfterEventState, setAllowAfterEventState] = useState(null);
+  const [allowOverdueState, setAllowOverdueState] = useState(null);
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [localToast, setLocalToast] = useState(null);
@@ -26,6 +37,8 @@ export default function DailyLimitModal({ onClose, onSuccess }) {
   const inputRef = useRef(null);
   const displayedValue = inputValue ?? (isLoaded ? String(hours) : "6");
   const currentAllowOverload = allowOverloadState ?? (isLoaded ? allowOverload : false);
+  const currentAllowAfterEvent = allowAfterEventState ?? (isLoaded ? allowSubtasksAfterEvent : false);
+  const currentAllowOverdue = allowOverdueState ?? (isLoaded ? allowOverdueSubtasks : false);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -58,6 +71,8 @@ export default function DailyLimitModal({ onClose, onSuccess }) {
       await update({
         dailyLimitHours: numericValue,
         allowOverload: currentAllowOverload,
+        allowSubtasksAfterEvent: currentAllowAfterEvent,
+        allowOverdueSubtasks: currentAllowOverdue,
       });
       onSuccess?.("Preferencias actualizadas");
       onClose();
@@ -128,10 +143,10 @@ export default function DailyLimitModal({ onClose, onSuccess }) {
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1">
                 <span className="font-body text-xs font-semibold text-ink-charcoal block">
-                  Permitir cargas de trabajo por encima del límite diario
+                  Permitir sobrecarga de horas diaria
                 </span>
                 <p className="font-body text-[11px] text-ink-muted leading-relaxed">
-                  Por defecto en <strong>No</strong>. Si se desactiva, deberás resolver el conflicto (mover de fecha o reducir horas) antes de poder guardar una gestión sobrecargada.
+                  Si se desactiva, deberás resolver el conflicto (mover de fecha o reducir horas) antes de poder guardar.
                 </p>
               </div>
 
@@ -153,6 +168,84 @@ export default function DailyLimitModal({ onClose, onSuccess }) {
                   onClick={() => setAllowOverloadState(true)}
                   className={`px-3 py-1 text-xs font-body font-semibold rounded-sharp transition-colors ${
                     currentAllowOverload
+                      ? "bg-terracotta text-[#FAF6F0] shadow-xs"
+                      : "text-ink-muted hover:text-ink-charcoal"
+                  }`}
+                >
+                  Sí
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Opción nueva: Permitir gestiones después de la fecha del evento */}
+          <div className="pt-3.5 border-t border-sepia-border/70">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <span className="font-body text-xs font-semibold text-ink-charcoal block">
+                  Permitir gestiones después de la fecha del evento
+                </span>
+                <p className="font-body text-[11px] text-ink-muted leading-relaxed">
+                  Por defecto en <strong>No</strong>. Evita programar gestiones logísticas para fechas posteriores al evento.
+                </p>
+              </div>
+
+              <div className="inline-flex rounded-sharp border border-sepia-border bg-paper-linen p-0.5 shrink-0" role="group" aria-label="Permitir gestiones después del evento">
+                <button
+                  type="button"
+                  onClick={() => setAllowAfterEventState(false)}
+                  className={`px-3 py-1 text-xs font-body font-semibold rounded-sharp transition-colors ${
+                    !currentAllowAfterEvent
+                      ? "bg-terracotta text-[#FAF6F0] shadow-xs"
+                      : "text-ink-muted hover:text-ink-charcoal"
+                  }`}
+                >
+                  No
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAllowAfterEventState(true)}
+                  className={`px-3 py-1 text-xs font-body font-semibold rounded-sharp transition-colors ${
+                    currentAllowAfterEvent
+                      ? "bg-terracotta text-[#FAF6F0] shadow-xs"
+                      : "text-ink-muted hover:text-ink-charcoal"
+                  }`}
+                >
+                  Sí
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Opción nueva: Permitir crear gestiones vencidas (para pruebas) */}
+          <div className="pt-3.5 border-t border-sepia-border/70">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <span className="font-body text-xs font-semibold text-ink-charcoal block">
+                  Permitir crear gestiones vencidas
+                </span>
+                <p className="font-body text-[11px] text-ink-muted leading-relaxed">
+                  Habilita la asignación o reprogramación de gestiones en fechas pasadas para pruebas y simulaciones.
+                </p>
+              </div>
+
+              <div className="inline-flex rounded-sharp border border-sepia-border bg-paper-linen p-0.5 shrink-0" role="group" aria-label="Permitir gestiones vencidas">
+                <button
+                  type="button"
+                  onClick={() => setAllowOverdueState(false)}
+                  className={`px-3 py-1 text-xs font-body font-semibold rounded-sharp transition-colors ${
+                    !currentAllowOverdue
+                      ? "bg-terracotta text-[#FAF6F0] shadow-xs"
+                      : "text-ink-muted hover:text-ink-charcoal"
+                  }`}
+                >
+                  No
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAllowOverdueState(true)}
+                  className={`px-3 py-1 text-xs font-body font-semibold rounded-sharp transition-colors ${
+                    currentAllowOverdue
                       ? "bg-terracotta text-[#FAF6F0] shadow-xs"
                       : "text-ink-muted hover:text-ink-charcoal"
                   }`}

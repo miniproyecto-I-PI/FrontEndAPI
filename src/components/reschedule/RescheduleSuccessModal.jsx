@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 /**
@@ -22,10 +22,10 @@ export default function RescheduleSuccessModal({
   const buttonRef = useRef(null);
   const freeRemaining = Math.max(0, Math.round((dailyLimitHours - newDayTotalHours) * 10) / 10);
 
-  function handleAction() {
+  const handleAction = useCallback(() => {
     onClose?.();
     navigate("/hoy");
-  }
+  }, [navigate, onClose]);
 
   useEffect(() => {
     // Foco inicial en el botón principal para accesibilidad
@@ -40,7 +40,7 @@ export default function RescheduleSuccessModal({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [handleAction]);
 
   const defaultDescription =
     description ||

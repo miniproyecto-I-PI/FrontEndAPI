@@ -8,7 +8,8 @@ import PageHeader, { Breadcrumb } from "../components/layout/PageHeader";
 import EventTypeSelector from "../components/eventos/EventTypeSelector";
 import InitialSubtasks from "../components/eventos/InitialSubtasks";
 import { createEvent } from "../services/api";
-import { validateTargetDateAgainstEvent } from "../utils/dateUtils";
+import { toDateInputValue, validateTargetDateAgainstEvent } from "../utils/dateUtils";
+import { useDailyLimit } from "../hooks/useDailyLimit";
 
 const emptyForm = {
   title: "",
@@ -27,6 +28,7 @@ const emptyForm = {
  */
 export default function CrearPage() {
   const navigate = useNavigate();
+  const { allowSubtasksAfterEvent } = useDailyLimit();
 
   const [form, setForm] = useState(emptyForm);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -58,10 +60,14 @@ export default function CrearPage() {
     const errors = {};
     if (!form.title.trim())
       errors.title = "Ingresa un nombre para poder identificar la bitácora.";
-    if (!form.date)
+    const todayISO = toDateInputValue(new Date());
+    if (!form.date) {
       errors.date = "Elige una fecha para programar las alertas.";
-    else if (initialSubtasks.some((s) => validateTargetDateAgainstEvent(s.targetDate, form.date)))
+    } else if (form.date < todayISO) {
+      errors.date = "La fecha del evento no puede ser anterior a hoy.";
+    } else if (!allowSubtasksAfterEvent && initialSubtasks.some((s) => validateTargetDateAgainstEvent(s.targetDate, form.date))) {
       errors.date = "Hay gestiones iniciales con fecha posterior al evento. Cambia la fecha o quítalas.";
+    }
     return errors;
   }
 
@@ -72,7 +78,7 @@ export default function CrearPage() {
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       const onlyDateRule = Object.keys(errors).length === 1 && errors.date && form.date;
-      setToast({ message: onlyDateRule ? "Revisa la fecha del evento" : "Faltan campos obligatorios", intent: "error" })
+      setToast({ message: onlyDateRule ? errors.date : "Faltan campos obligatorios", intent: "error" });
       window.scrollTo({ top: 120, behavior: "smooth" });
       return;
     }
@@ -92,6 +98,9 @@ export default function CrearPage() {
 
     } catch (err) {
       setStatus("idle");
+      if (err.code === "event_date_in_past") {
+        setFieldErrors((p) => ({ ...p, date: err.details?.event_datetime?.[0] || err.message }));
+      }
       const errorMsg = err.message || "No pudimos crear el evento. Intenta de nuevo.";
       setGeneralError(errorMsg);
       setToast({ message: errorMsg, intent: "error" });
@@ -228,6 +237,7 @@ function handleSuccessGoToEvents() {
                 <input
                   id="event-date"
                   type="date"
+                  min={toDateInputValue(new Date())}
                   value={form.date}
                   onChange={handleChange("date")}
                   aria-invalid={Boolean(fieldErrors.date)}

@@ -21,6 +21,7 @@ export default function EditEventModal({ initialEvent, onCancel, onSubmit }) {
   }));
   const [fieldErrors, setFieldErrors] = useState({});
   const [generalError, setGeneralError] = useState(null);
+  const [conflictingSubtasks, setConflictingSubtasks] = useState([]);
   const [status, setStatus] = useState("idle");
 
   const firstInputRef = useRef(null);
@@ -53,13 +54,20 @@ export default function EditEventModal({ initialEvent, onCancel, onSubmit }) {
   function validate() {
     const errors = {};
     if (!form.name.trim()) errors.name = "El nombre del evento es obligatorio.";
-    if (!form.date) errors.date = "La fecha del evento es obligatoria.";
+    const todayISO = toDateInputValue(new Date());
+    const initialDate = toDateInputValue(initialEvent.dateTime);
+    if (!form.date) {
+      errors.date = "La fecha del evento es obligatoria.";
+    } else if (form.date !== initialDate && form.date < todayISO) {
+      errors.date = "La fecha del evento no puede ser anterior a hoy.";
+    }
     return errors;
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setGeneralError(null);
+    setConflictingSubtasks([]);
     const errors = validate();
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
@@ -77,6 +85,14 @@ export default function EditEventModal({ initialEvent, onCancel, onSubmit }) {
       });
     } catch (err) {
       setStatus("idle");
+      if (err.code === "subtasks_after_event" && Array.isArray(err.details?.subtasks)) {
+        setConflictingSubtasks(err.details.subtasks);
+      } else {
+        setConflictingSubtasks([]);
+      }
+      if (err.code === "event_date_in_past") {
+        setFieldErrors((p) => ({ ...p, date: err.details?.event_datetime?.[0] || err.message }));
+      }
       setGeneralError(
         err.message || "No se pudo actualizar el evento. Intenta de nuevo."
       );
@@ -246,9 +262,29 @@ export default function EditEventModal({ initialEvent, onCancel, onSubmit }) {
           {generalError && (
             <div
               role="alert"
-              className="rounded-sharp bg-crimson-paper border border-crimson-urgent/30 px-3 py-2 font-body text-xs text-crimson-urgent"
+              className="rounded-sharp bg-crimson-paper border border-crimson-urgent/30 p-3.5 font-body text-xs text-crimson-urgent space-y-2"
             >
-              {generalError}
+              <div className="flex items-center gap-1.5 font-semibold">
+                <span className="material-symbols-outlined text-[16px]">error</span>
+                <span>{generalError}</span>
+              </div>
+              {conflictingSubtasks.length > 0 && (
+                <div className="pt-2 border-t border-crimson-urgent/20 text-ink-charcoal space-y-1">
+                  <p className="font-semibold text-xs">
+                    Gestiones que quedarían después del evento ({conflictingSubtasks.length}):
+                  </p>
+                  <ul className="list-disc list-inside space-y-0.5 text-ink-muted text-xs">
+                    {conflictingSubtasks.map((st) => (
+                      <li key={st.id || st.name}>
+                        <span className="font-medium text-ink-charcoal">{st.name || st.title}</span> — Fecha límite: {st.target_date}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-[11px] text-ink-muted italic pt-1">
+                    💡 Modifica la fecha de estas gestiones o habilita "Permitir gestiones después de la fecha del evento" en la configuración.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { toDateInputValue, validateTargetDateAgainstEvent } from "../../utils/dateUtils";
+import { useDailyLimit } from "../../hooks/useDailyLimit";
 
 // "Pospuesta" no está en el diseño, pero es un estado real del backend: sin
 // esta opción, editar una gestión pospuesta la devolvía a PENDIENTE.
@@ -22,6 +23,7 @@ export default function EditSubtaskModal({
   onCancel,
   onSubmit,
 }) {
+  const { allowSubtasksAfterEvent, allowOverdueSubtasks } = useDailyLimit();
   const [form, setForm] = useState(() => ({
   title: initialSubtask.title ?? "",
   provider: initialSubtask.provider ?? "",
@@ -70,10 +72,17 @@ export default function EditSubtaskModal({
     } else if (hours <= 0) {
       errors.estimatedHours = "Debe ser mayor a 0.";
     }
-    if (!form.date) errors.date = "Elige una fecha límite.";
-    else {
-      const afterEvent = validateTargetDateAgainstEvent(form.date, eventDateTime);
-      if (afterEvent) errors.date = afterEvent;
+    if (!form.date) {
+      errors.date = "Elige una fecha límite.";
+    } else {
+      const todayISO = toDateInputValue(new Date());
+      const originalDate = toDateInputValue(initialSubtask.targetDate);
+      if (!allowOverdueSubtasks && form.date !== originalDate && form.date < todayISO) {
+        errors.date = "La fecha objetivo no puede ser anterior a hoy.";
+      } else if (!allowSubtasksAfterEvent) {
+        const afterEvent = validateTargetDateAgainstEvent(form.date, eventDateTime);
+        if (afterEvent) errors.date = afterEvent;
+      }
     }
     return errors;
   }
@@ -100,6 +109,9 @@ export default function EditSubtaskModal({
       });
     } catch (err) {
       setStatus("idle");
+      if (err.code === "target_date_after_event" || err.code === "target_date_in_past") {
+        setFieldErrors((p) => ({ ...p, date: err.details?.target_date?.[0] || err.message }));
+      }
       setGeneralError(
         err.message || "No se pudo actualizar la gestión. Intenta de nuevo."
       );

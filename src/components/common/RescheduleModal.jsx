@@ -45,7 +45,12 @@ export default function RescheduleModal({
   onCancel,
   onConfirm,
 }) {
-  const { hours: dailyLimitHours, allowOverload } = useDailyLimit();
+  const {
+    hours: dailyLimitHours,
+    allowOverload,
+    allowSubtasksAfterEvent,
+    allowOverdueSubtasks,
+  } = useDailyLimit();
 
   // Estados del flujo:
   // 'PICK_DATE' | 'CONFLICT_ALERT' | 'SUGGESTED_DAYS' | 'REDUCE_HOURS' | 'API_ERROR' | 'SUCCESS'
@@ -89,7 +94,7 @@ export default function RescheduleModal({
   }, [onCancel]);
 
   // Ejecución real de reprogramación de fecha
-  async function executeDateReschedule(dateToSet, isOverride = false, fromConflict = false) {
+  async function executeDateReschedule(dateToSet, isOverride = false) {
     setIsSubmitting(true);
     setLastAttempt({
       type: "date",
@@ -98,8 +103,9 @@ export default function RescheduleModal({
     });
 
     try {
+      let res = null;
       if (gestionId) {
-        await rescheduleGestion(gestionId, dateToSet);
+        res = await rescheduleGestion(gestionId, dateToSet);
       }
 
       // Preparar resumen para modal de éxito
@@ -107,12 +113,14 @@ export default function RescheduleModal({
       const newDayHours = computeDayWorkload(allGestiones, dateToSet, gestionId);
       const totalInNewDay = Math.round((newDayHours + taskHours) * 10) / 10;
 
+      const isConflictResolved = Boolean(res?.conflictResolved ?? res?.conflict_resolved);
+
       setSuccessData({
         title: isOverride
           ? "Fecha actualizada (Con sobrecarga)"
-          : fromConflict
+          : isConflictResolved
             ? "Conflicto resuelto"
-            : "Gestión reprogramada",
+            : "Fecha actualizada",
         description: `La gestión se ha movido al ${formatShortDate(dateToSet)}.`,
         previousDayLabel: formatShortDate(originalDateISO),
         previousDayHours: prevHours,
@@ -122,12 +130,19 @@ export default function RescheduleModal({
       });
 
       setStep("SUCCESS");
-    } catch {
-      setApiErrorData({
-        title: "No se pudo aplicar el cambio",
-        description: "Ocurrió un problema de conexión al intentar actualizar la fecha de esta gestión en el servidor.",
-      });
-      setStep("API_ERROR");
+    } catch (err) {
+      if (err?.code === "target_date_in_past" || err?.code === "target_date_after_event") {
+        const msg = err.message || "La fecha seleccionada no es válida.";
+        setDateError(msg);
+        setLocalToast({ message: msg, intent: "error" });
+        setStep("PICK_DATE");
+      } else {
+        setApiErrorData({
+          title: "No se pudo aplicar el cambio",
+          description: err?.message || "Ocurrió un problema de conexión al intentar actualizar la fecha de esta gestión en el servidor.",
+        });
+        setStep("API_ERROR");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -148,21 +163,24 @@ export default function RescheduleModal({
     const activeDateISO = targetDate || originalDateISO;
 
     try {
+      let res = null;
       if (gestionId) {
         // Primero actualizar horas estimadas
-        await updateSubtask(gestionId, { estimatedHours: newHours });
+        res = await updateSubtask(gestionId, { estimatedHours: newHours });
 
         // Luego mover a la fecha destino si es distinta a la original
         if (activeDateISO && activeDateISO !== originalDateISO) {
-          await rescheduleGestion(gestionId, activeDateISO);
+          res = await rescheduleGestion(gestionId, activeDateISO);
         }
       }
 
       const otherHours = computeDayWorkload(allGestiones, activeDateISO, gestionId);
       const newTotal = Math.round((otherHours + newHours) * 10) / 10;
 
+      const isConflictResolved = Boolean(res?.conflictResolved ?? res?.conflict_resolved);
+
       setSuccessData({
-        title: "Conflicto resuelto",
+        title: isConflictResolved ? "Conflicto resuelto" : "Horas actualizadas",
         description: `La gestión se ha movido al ${formatShortDate(activeDateISO)} con ${newHours}h estimadas.`,
         previousDayLabel: formatShortDate(originalDateISO),
         previousDayHours: computeDayWorkload(allGestiones, originalDateISO, gestionId),
@@ -172,10 +190,10 @@ export default function RescheduleModal({
       });
 
       setStep("SUCCESS");
-    } catch {
+    } catch (err) {
       setApiErrorData({
         title: "No se pudo aplicar el cambio",
-        description: "Ocurrió un problema de conexión al intentar actualizar la gestión en el servidor.",
+        description: err?.message || "Ocurrió un problema de conexión al intentar actualizar la gestión en el servidor.",
       });
       setStep("API_ERROR");
     } finally {
@@ -192,12 +210,22 @@ export default function RescheduleModal({
       return;
     }
 
+    const todayISO = toDateInputValue(new Date());
+    if (!allowOverdueSubtasks && targetDate < todayISO) {
+      const msg = "La fecha objetivo no puede ser anterior a hoy.";
+      setDateError(msg);
+      setLocalToast({ message: msg, intent: "error" });
+      return;
+    }
+
     if (mode === "single") {
-      const afterEvent = validateTargetDateAgainstEvent(targetDate, eventDateTime);
-      if (afterEvent) {
-        setDateError(afterEvent);
-        setLocalToast({ message: afterEvent, intent: "error" });
-        return;
+      if (!allowSubtasksAfterEvent) {
+        const afterEvent = validateTargetDateAgainstEvent(targetDate, eventDateTime);
+        if (afterEvent) {
+          setDateError(afterEvent);
+          setLocalToast({ message: afterEvent, intent: "error" });
+          return;
+        }
       }
 
       // Evaluar conflicto US-07
@@ -216,7 +244,7 @@ export default function RescheduleModal({
       }
 
       // Sin conflicto: guardar directamente
-      executeDateReschedule(targetDate, false, false);
+      executeDateReschedule(targetDate, false);
     } else {
       // Modo bulk
       onConfirm?.();
@@ -235,7 +263,7 @@ export default function RescheduleModal({
     });
 
     if (nextDay) {
-      executeDateReschedule(nextDay.dateISO, false, true);
+      executeDateReschedule(nextDay.dateISO, false);
     } else {
       // Si no encuentra en el escaneo rápido, abrir selector de sugerencias/manual
       setStep("SUGGESTED_DAYS");
@@ -274,7 +302,7 @@ export default function RescheduleModal({
         onChooseMove={() => setStep("SUGGESTED_DAYS")}
         onChooseReduce={() => setStep("REDUCE_HOURS")}
         onChoosePostpone={handlePostpone}
-        onKeepAnyway={() => executeDateReschedule(conflictData.targetDateISO, true, true)}
+        onKeepAnyway={() => executeDateReschedule(conflictData.targetDateISO, true)}
         onCancel={() => setStep("PICK_DATE")}
       />
     );
@@ -299,7 +327,7 @@ export default function RescheduleModal({
         taskHours={taskHours}
         dailyLimitHours={dailyLimitHours}
         isSubmitting={isSubmitting}
-        onConfirmDate={(newDate) => executeDateReschedule(newDate, false, Boolean(conflictData))}
+        onConfirmDate={(newDate) => executeDateReschedule(newDate, false)}
         onBack={() => setStep(conflictData ? "CONFLICT_ALERT" : "PICK_DATE")}
       />
     );
@@ -412,6 +440,7 @@ export default function RescheduleModal({
                 <input
                   ref={dateInputRef}
                   type="date"
+                  min={allowOverdueSubtasks ? undefined : toDateInputValue(new Date())}
                   value={targetDate}
                   onChange={(e) => {
                     setTargetDate(e.target.value);

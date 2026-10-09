@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { formatFullDate, formatShortDate, toDateInputValue, validateTargetDateAgainstEvent } from "../../utils/dateUtils";
+import { useDailyLimit } from "../../hooks/useDailyLimit";
 
 /**
  * SuggestedDaysSelector.jsx
@@ -18,6 +19,7 @@ export default function SuggestedDaysSelector({
   onBack,
   isSubmitting = false,
 }) {
+  const { allowSubtasksAfterEvent, allowOverdueSubtasks } = useDailyLimit();
   const [selectedDate, setSelectedDate] = useState(() => {
     if (suggestedDays.length > 0) return suggestedDays[0].dateISO;
     return toDateInputValue(currentDateISO) || toDateInputValue(new Date());
@@ -47,10 +49,18 @@ export default function SuggestedDaysSelector({
       return;
     }
 
-    const eventError = validateTargetDateAgainstEvent(activeDate, eventDateTime);
-    if (eventError) {
-      setValidationError(eventError);
+    const todayISO = toDateInputValue(new Date());
+    if (!allowOverdueSubtasks && activeDate < todayISO) {
+      setValidationError("La fecha objetivo no puede ser anterior a hoy.");
       return;
+    }
+
+    if (!allowSubtasksAfterEvent) {
+      const eventError = validateTargetDateAgainstEvent(activeDate, eventDateTime);
+      if (eventError) {
+        setValidationError(eventError);
+        return;
+      }
     }
 
     onConfirmDate(activeDate);
@@ -222,6 +232,7 @@ export default function SuggestedDaysSelector({
               </span>
               <input
                 type="date"
+                min={allowOverdueSubtasks ? undefined : toDateInputValue(new Date())}
                 value={manualDate}
                 onChange={(e) => handleSelectManual(e.target.value)}
                 className="w-full border border-sepia-border rounded-sharp px-3 py-2 font-body text-sm text-ink-charcoal bg-paper-card focus:outline-none focus:border-terracotta focus:ring-2 focus:ring-terracotta"
