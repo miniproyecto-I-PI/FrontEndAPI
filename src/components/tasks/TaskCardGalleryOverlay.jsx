@@ -50,7 +50,7 @@ export default function TaskCardGalleryOverlay({
             arrow_forward
           </span>
         </span>
-        <span className="font-stamp text-[10px] text-ink-muted mt-1 uppercase tracking-wider">
+        <span className="font-stamp text-[10px] font-bold text-sepia-dark bg-sepia-border/60 px-2 py-0.5 rounded-sharp mt-1.5 uppercase tracking-wider border border-sepia-dark/20">
           Deslizar en galería
         </span>
       </button>

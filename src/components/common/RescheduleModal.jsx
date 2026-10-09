@@ -129,7 +129,7 @@ export default function RescheduleModal({
     }
   }
 
-  // Ejecución de ajuste de horas
+  // Ejecución de ajuste de horas + reprogramación a la fecha destino
   async function executeHoursReduction(newHours) {
     setIsSubmitting(true);
     setLastAttempt({
@@ -138,20 +138,30 @@ export default function RescheduleModal({
       label: `${newHours} h`,
     });
 
+    // La fecha destino es la que el usuario eligió en el selector de fecha
+    // (o la fecha original si no se cambió). Se necesita mover la gestión
+    // a esa fecha además de actualizar las horas estimadas.
+    const activeDateISO = targetDate || originalDateISO;
+
     try {
       if (gestionId) {
+        // Primero actualizar horas estimadas
         await updateSubtask(gestionId, { estimatedHours: newHours });
+
+        // Luego mover a la fecha destino si es distinta a la original
+        if (activeDateISO && activeDateISO !== originalDateISO) {
+          await rescheduleGestion(gestionId, activeDateISO);
+        }
       }
 
-      const activeDateISO = targetDate || originalDateISO;
       const otherHours = computeDayWorkload(allGestiones, activeDateISO, gestionId);
       const newTotal = Math.round((otherHours + newHours) * 10) / 10;
 
       setSuccessData({
-        title: "Horas actualizadas",
-        description: `La estimación de la gestión ha cambiado a ${newHours}h.`,
-        previousDayLabel: formatShortDate(activeDateISO),
-        previousDayHours: Math.round((otherHours + taskHours) * 10) / 10,
+        title: "Conflicto resuelto",
+        description: `La gestión se ha movido al ${formatShortDate(activeDateISO)} con ${newHours}h estimadas.`,
+        previousDayLabel: formatShortDate(originalDateISO),
+        previousDayHours: computeDayWorkload(allGestiones, originalDateISO, gestionId),
         newDayLabel: formatShortDate(activeDateISO),
         newDayTotalHours: newTotal,
         taskHours: newHours,
@@ -161,7 +171,7 @@ export default function RescheduleModal({
     } catch {
       setApiErrorData({
         title: "No se pudo aplicar el cambio",
-        description: "Ocurrió un problema de conexión al intentar actualizar la estimación en el servidor.",
+        description: "Ocurrió un problema de conexión al intentar actualizar la gestión en el servidor.",
       });
       setStep("API_ERROR");
     } finally {
