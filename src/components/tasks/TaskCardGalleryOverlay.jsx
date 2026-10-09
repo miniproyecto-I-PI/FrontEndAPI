@@ -1,105 +1,58 @@
+import TaskCard from "./TaskCard";
+
 /**
  * TaskCardGalleryOverlay.jsx
  * ---------------------------------------------------------------------------
- * Tarjeta de acceso a la galería interactiva cuando un grupo tiene más tareas
- * de las que caben en la vista principal.
- * Diseñada con estética de mazo de papel editorial (stacked card), evitando
- * transparencias que provoquen colisiones de texto o botones borrosos de fondo.
+ * Tarjeta con capa de galería estilo WhatsApp.
+ * Representa la tercera tarjeta cuando hay más tareas en el grupo; muestra
+ * la tarjeta en segundo plano con un overlay translúcido indicando
+ * `+{remainingCount}` y permitiendo hacer clic para abrir el modal carrusel.
  */
 export default function TaskCardGalleryOverlay({
   gestion,
-  variant = "hoy-secundaria",
+  variant,
   remainingCount,
   totalCount,
   onClickMore,
+  onMarkDone,
+  onReschedule,
+  onEdit,
 }) {
-  const isVencida = variant === "vencida";
-  const isProxima = variant === "proxima";
-
-  const groupLabel = isVencida
-    ? "Vencidas"
-    : isProxima
-      ? "Próximas"
-      : "Agenda de Hoy";
-
-  const borderLeftClass = isVencida
-    ? "border-l-[6px] border-l-crimson-urgent bg-crimson-paper/20"
-    : isProxima
-      ? "border-l-4 border-l-sepia-dark bg-paper-card"
-      : "border-l-4 border-l-terracotta bg-paper-card";
-
   return (
-    <div className="relative h-full flex flex-col group/gallery-card min-h-[160px]">
-      {/* Efecto de hoja apilada detrás (mazo de cartas editorial) */}
-      <div
-        className="absolute inset-0 translate-x-1.5 translate-y-1.5 bg-paper-linen border border-sepia-border rounded-sharp -z-10 shadow-xs transition-transform group-hover/gallery-card:translate-x-2 group-hover/gallery-card:translate-y-2"
-        aria-hidden="true"
-      />
+    <div className="relative group/gallery-item h-full overflow-hidden rounded-sharp">
+      {/* Tarjeta de fondo */}
+      <div className="pointer-events-none select-none opacity-85 filter contrast-95">
+        <TaskCard
+          gestion={gestion}
+          variant={variant}
+          onMarkDone={onMarkDone}
+          onReschedule={onReschedule}
+          onEdit={onEdit}
+        />
+      </div>
 
-      {/* Tarjeta principal interactiva */}
+      {/* Capa de overlay estilo galería interactiva con tono claro */}
       <button
         type="button"
         onClick={onClickMore}
-        aria-label={`Ver las ${remainingCount} gestiones adicionales de ${groupLabel} en la galería interactiva`}
-        className={`w-full h-full text-left border border-sepia-border rounded-sharp warm-card-shadow p-4 md:p-4.5 flex flex-col justify-between transition-all group-hover/gallery-card:border-terracotta/70 group-hover/gallery-card:shadow-md cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-2 focus-visible:ring-offset-paper-base ${borderLeftClass}`}
+        aria-label={`Ver ${remainingCount} gestiones más en galería interactiva`}
+        className="absolute inset-0 z-20 rounded-sharp bg-[#FAF6F0]/94 hover:bg-[#FAF6F0]/98 backdrop-blur-[3px] border-2 border-dashed border-sepia-dark/40 hover:border-terracotta/70 transition-all flex flex-col items-center justify-center p-4 text-ink-charcoal cursor-pointer text-center select-none shadow-sm focus:outline-none focus:ring-2 focus:ring-terracotta focus:ring-offset-2 focus:ring-offset-paper-card"
       >
-        {/* Cabecera de la tarjeta */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 text-ink-muted">
-            <span
-              className={`material-symbols-outlined text-[17px] ${
-                isVencida ? "text-crimson-urgent" : "text-terracotta"
-              }`}
-              aria-hidden="true"
-            >
-              auto_awesome_motion
-            </span>
-            <span className="font-stamp text-[10px] uppercase font-bold tracking-wider">
-              {groupLabel}
-            </span>
-          </div>
-          <span
-            className={`font-stamp text-[11px] font-bold px-2 py-0.5 rounded-sharp border ${
-              isVencida
-                ? "bg-crimson-paper text-crimson-urgent border-crimson-urgent/30"
-                : "bg-terracotta/10 text-terracotta border-terracotta/25"
-            }`}
-          >
-            +{remainingCount} más
+        <span className="material-symbols-outlined text-[30px] text-terracotta mb-1 group-hover/gallery-item:scale-110 transition-transform">
+          collections
+        </span>
+        <span className="font-heading text-3xl sm:text-4xl font-extrabold tracking-tight text-terracotta group-hover/gallery-item:text-terracotta-dark group-hover/gallery-item:scale-105 transition-all">
+          +{remainingCount}
+        </span>
+        <span className="font-body text-xs sm:text-sm font-bold text-ink-charcoal mt-1 inline-flex items-center gap-1 group-hover/gallery-item:text-terracotta group-hover/gallery-item:underline decoration-1 underline-offset-2 transition-colors">
+          <span>Ver todas ({totalCount})</span>
+          <span className="material-symbols-outlined text-[15px] text-terracotta group-hover/gallery-item:translate-x-0.5 transition-transform" aria-hidden="true">
+            arrow_forward
           </span>
-        </div>
-
-        {/* Cuerpo central */}
-        <div className="my-auto py-2.5">
-          <div className="font-heading text-2xl md:text-3xl font-bold text-ink-charcoal group-hover/gallery-card:text-terracotta transition-colors flex items-baseline gap-2">
-            <span>+{remainingCount}</span>
-            <span className="text-xs md:text-sm font-body font-normal text-ink-muted">
-              {remainingCount === 1 ? "gestión restante" : "gestiones restantes"}
-            </span>
-          </div>
-
-          {gestion?.title && (
-            <p className="font-body text-xs text-ink-muted mt-1.5 line-clamp-2 leading-relaxed">
-              Siguiente: <span className="font-medium text-ink-charcoal">“{gestion.title}”</span>
-            </p>
-          )}
-        </div>
-
-        {/* Pie de acción */}
-        <div className="pt-2.5 border-t border-sepia-border/70 flex items-center justify-between text-ink-charcoal mt-1">
-          <span className="font-body text-xs font-semibold text-terracotta group-hover/gallery-card:text-terracotta-dark inline-flex items-center gap-1.5 transition-colors">
-            <span>Ver todas ({totalCount})</span>
-            <span
-              className="material-symbols-outlined text-[15px] group-hover/gallery-card:translate-x-0.5 transition-transform"
-              aria-hidden="true"
-            >
-              arrow_forward
-            </span>
-          </span>
-          <span className="font-stamp text-[10px] text-ink-muted uppercase tracking-wider bg-paper-linen/80 px-2 py-0.5 rounded-sharp border border-sepia-border">
-            Galería
-          </span>
-        </div>
+        </span>
+        <span className="font-stamp text-[10px] font-bold text-terracotta-dark bg-paper-card px-2.5 py-0.5 rounded-sharp mt-2 uppercase tracking-wider border border-sepia-border shadow-xs">
+          Deslizar en galería
+        </span>
       </button>
     </div>
   );

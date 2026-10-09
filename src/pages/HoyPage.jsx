@@ -301,6 +301,9 @@ export default function HoyPage() {
                           remainingCount={grouped.vencidas.length - 2}
                           totalCount={grouped.vencidas.length}
                           onClickMore={() => openGallery("vencidas", 2)}
+                          onMarkDone={() => handleMarkDone(grouped.vencidas[2])}
+                          onReschedule={() => setRescheduleTarget(grouped.vencidas[2])}
+                          onEdit={() => setEditTarget(grouped.vencidas[2])}
                         />
                       )}
                     </div>
@@ -397,6 +400,9 @@ export default function HoyPage() {
                           remainingCount={grouped.hoy.length - 3}
                           totalCount={grouped.hoy.length}
                           onClickMore={() => openGallery("hoy", 3)}
+                          onMarkDone={() => handleMarkDone(grouped.hoy[3])}
+                          onReschedule={() => setRescheduleTarget(grouped.hoy[3])}
+                          onEdit={() => setEditTarget(grouped.hoy[3])}
                         />
                       </div>
                     )}
@@ -449,6 +455,9 @@ export default function HoyPage() {
                           remainingCount={grouped.proximas.length - 2}
                           totalCount={grouped.proximas.length}
                           onClickMore={() => openGallery("proximas", 2)}
+                          onMarkDone={() => handleMarkDone(grouped.proximas[2])}
+                          onReschedule={() => setRescheduleTarget(grouped.proximas[2])}
+                          onEdit={() => setEditTarget(grouped.proximas[2])}
                         />
                       )}
                     </div>
