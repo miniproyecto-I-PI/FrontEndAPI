@@ -65,75 +65,80 @@ export default function SuggestedDaysSelector({
       role="dialog"
       aria-modal="true"
       aria-labelledby="choose-day-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-charcoal/40 backdrop-blur-sm focus:outline-none"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-ink-charcoal/40 backdrop-blur-sm focus:outline-none overflow-y-auto"
+      onClick={(e) => e.target === e.currentTarget && onBack?.()}
     >
-      <div className="relative w-full max-w-[540px] bg-paper-card border border-sepia-border rounded-sharp p-6 md:p-7 shadow-xl warm-card-shadow">
-        {/* Header con stamp */}
-        <div className="flex items-center justify-between text-ink-muted font-stamp text-[11px] font-bold uppercase mb-1">
-          <div className="flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[16px]">
-              {hasSuggestions ? "calendar_today" : isAtOrAfterEventEnd ? "event_busy" : "info"}
-            </span>
-            <span>
-              {hasSuggestions
-                ? "Resolución de carga"
-                : isAtOrAfterEventEnd
-                ? "Fin de evento alcanzado"
-                : "Disponibilidad agotada"}
-            </span>
+      <div className="relative w-full max-w-[540px] max-h-[92vh] bg-paper-card border border-sepia-border rounded-sharp p-5 sm:p-6 md:p-7 shadow-xl warm-card-shadow flex flex-col my-auto">
+        {/* Header con stamp (fijo) */}
+        <div className="shrink-0">
+          <div className="flex items-center justify-between text-ink-muted font-stamp text-[11px] font-bold uppercase mb-1">
+            <div className="flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[16px]">
+                {hasSuggestions ? "calendar_today" : isAtOrAfterEventEnd ? "event_busy" : "info"}
+              </span>
+              <span>
+                {hasSuggestions
+                  ? "Resolución de carga"
+                  : isAtOrAfterEventEnd
+                  ? "Fin de evento alcanzado"
+                  : "Disponibilidad agotada"}
+              </span>
+            </div>
+            <span>Gestión: {taskHours}h requeridas</span>
           </div>
-          <span>Gestión: {taskHours}h requeridas</span>
+
+          <h2 id="choose-day-title" className="font-heading text-xl md:text-2xl font-bold text-ink-charcoal">
+            Elige otro día
+          </h2>
+
+          {hasSuggestions ? (
+            <p className="font-body text-xs md:text-sm text-ink-muted mt-1 leading-relaxed">
+              Te sugerimos los días más cercanos con disponibilidad suficiente para absorber las {taskHours}h de esta
+              gestión sin superar tu límite diario.
+            </p>
+          ) : isAtOrAfterEventEnd ? (
+            <div className="mt-3.5 p-3.5 bg-crimson-paper/50 border border-crimson-urgent/30 rounded-sharp flex items-start gap-3">
+              <span className="material-symbols-outlined text-crimson-urgent text-[20px] shrink-0 mt-0.5">
+                event_busy
+              </span>
+              <div>
+                <h3 className="font-body text-xs font-bold text-crimson-urgent">
+                  No hay más fechas disponibles: el evento habrá finalizado
+                </h3>
+                <p className="font-body text-[11px] text-ink-charcoal mt-0.5 leading-relaxed">
+                  Esta gestión ya está programada para la fecha límite del evento ({eventDateFormatted}). No es posible posponerla a fechas posteriores porque el evento ya habrá concluido.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-3.5 p-3.5 bg-paper-linen/70 border border-sepia-border rounded-sharp flex items-start gap-3">
+              <span className="material-symbols-outlined text-ink-muted text-[20px] shrink-0 mt-0.5">
+                calendar_month
+              </span>
+              <div>
+                <h3 className="font-body text-xs font-bold text-ink-charcoal">
+                  {eventDateISO
+                    ? "No hay fechas disponibles antes del cierre del evento"
+                    : "No encontramos días con espacio en tu agenda"}
+                </h3>
+                <p className="font-body text-[11px] text-ink-muted mt-0.5 leading-relaxed">
+                  {eventDateISO
+                    ? `Todos los días previos a la fecha límite del evento (${eventDateFormatted}) han alcanzado tu límite diario de ${dailyLimitHours} horas de dedicación.`
+                    : `Tu agenda para los próximos 7 días ya ha alcanzado el límite diario de ${dailyLimitHours} horas de dedicación.`}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
-        <h2 id="choose-day-title" className="font-heading text-xl md:text-2xl font-bold text-ink-charcoal">
-          Elige otro día
-        </h2>
-
-        {hasSuggestions ? (
-          <p className="font-body text-xs md:text-sm text-ink-muted mt-1 leading-relaxed">
-            Te sugerimos los días más cercanos con disponibilidad suficiente para absorber las {taskHours}h de esta
-            gestión sin superar tu límite diario.
-          </p>
-        ) : isAtOrAfterEventEnd ? (
-          <div className="mt-3.5 p-3.5 bg-crimson-paper/50 border border-crimson-urgent/30 rounded-sharp flex items-start gap-3">
-            <span className="material-symbols-outlined text-crimson-urgent text-[20px] shrink-0 mt-0.5">
-              event_busy
-            </span>
-            <div>
-              <h3 className="font-body text-xs font-bold text-crimson-urgent">
-                No hay más fechas disponibles: el evento habrá finalizado
-              </h3>
-              <p className="font-body text-[11px] text-ink-charcoal mt-0.5 leading-relaxed">
-                Esta gestión ya está programada para la fecha límite del evento ({eventDateFormatted}). No es posible posponerla a fechas posteriores porque el evento ya habrá concluido.
+        {/* Cuerpo desplazable */}
+        <div className="overflow-y-auto flex-1 pr-1.5 -mr-1 mt-3 space-y-3">
+          {/* Sección de sugerencias (Estado 1) */}
+          {hasSuggestions && (
+            <div className="space-y-2.5">
+              <p className="font-stamp text-[11px] uppercase tracking-wider text-ink-muted font-bold">
+                Días recomendados con disponibilidad:
               </p>
-            </div>
-          </div>
-        ) : (
-          <div className="mt-3.5 p-3.5 bg-paper-linen/70 border border-sepia-border rounded-sharp flex items-start gap-3">
-            <span className="material-symbols-outlined text-ink-muted text-[20px] shrink-0 mt-0.5">
-              calendar_month
-            </span>
-            <div>
-              <h3 className="font-body text-xs font-bold text-ink-charcoal">
-                {eventDateISO
-                  ? "No hay fechas disponibles antes del cierre del evento"
-                  : "No encontramos días con espacio en tu agenda"}
-              </h3>
-              <p className="font-body text-[11px] text-ink-muted mt-0.5 leading-relaxed">
-                {eventDateISO
-                  ? `Todos los días previos a la fecha límite del evento (${eventDateFormatted}) han alcanzado tu límite diario de ${dailyLimitHours} horas de dedicación.`
-                  : `Tu agenda para los próximos 7 días ya ha alcanzado el límite diario de ${dailyLimitHours} horas de dedicación.`}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Sección de sugerencias (Estado 1) */}
-        {hasSuggestions && (
-          <div className="mt-5 space-y-2.5">
-            <p className="font-stamp text-[11px] uppercase tracking-wider text-ink-muted font-bold">
-              Días recomendados con disponibilidad:
-            </p>
 
             <div className="space-y-2">
               {suggestedDays.map((day) => {
@@ -243,9 +248,10 @@ export default function SuggestedDaysSelector({
             {validationError}
           </p>
         )}
+        </div>
 
-        {/* Acciones */}
-        <div className="flex items-center justify-between pt-5 mt-4 border-t border-sepia-border">
+        {/* Acciones (fijo abajo) */}
+        <div className="shrink-0 flex items-center justify-between pt-4 mt-3 border-t border-sepia-border">
           <button
             type="button"
             onClick={onBack}

@@ -66,37 +66,41 @@ export default function ReduceHoursModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="reduce-hours-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-charcoal/40 backdrop-blur-sm focus:outline-none"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-ink-charcoal/40 backdrop-blur-sm focus:outline-none overflow-y-auto"
     >
-      <div className="relative w-full max-w-[540px] bg-paper-card border border-sepia-border rounded-sharp p-6 md:p-7 shadow-xl warm-card-shadow">
-        {/* Header con botón de cerrar */}
-        <div className="flex items-center justify-between text-ink-muted mb-1">
-          <span className="font-stamp text-[11px] font-bold tracking-wider uppercase">
-            {isOptimal ? (
-              <span className="text-sage-wax">Ajuste recomendado</span>
-            ) : (
-              "Resolución de carga · Gestión"
-            )}
-          </span>
-          <button
-            type="button"
-            onClick={onBack}
-            className="text-ink-muted hover:text-ink-charcoal p-1 rounded-sharp transition-colors"
-            aria-label="Cerrar modal"
-          >
-            <span className="material-symbols-outlined text-[18px]">close</span>
-          </button>
+      <div className="relative w-full max-w-[540px] max-h-[92vh] bg-paper-card border border-sepia-border rounded-sharp p-5 sm:p-6 md:p-7 shadow-xl warm-card-shadow flex flex-col my-auto">
+        {/* Header con botón de cerrar (fijo) */}
+        <div className="shrink-0">
+          <div className="flex items-center justify-between text-ink-muted mb-1">
+            <span className="font-stamp text-[11px] font-bold tracking-wider uppercase">
+              {isOptimal ? (
+                <span className="text-sage-wax">Ajuste recomendado</span>
+              ) : (
+                "Resolución de carga · Gestión"
+              )}
+            </span>
+            <button
+              type="button"
+              onClick={onBack}
+              className="text-ink-muted hover:text-ink-charcoal p-1 rounded-sharp transition-colors"
+              aria-label="Cerrar modal"
+            >
+              <span className="material-symbols-outlined text-[18px]">close</span>
+            </button>
+          </div>
+
+          <h2 id="reduce-hours-title" className="font-heading text-xl md:text-2xl font-bold text-ink-charcoal">
+            Reduce las horas de esta gestión
+          </h2>
+          <p className="font-body text-xs text-ink-muted mt-0.5">
+            <strong className="text-ink-charcoal">{gestion?.title || gestion?.name}</strong> · Estimación actual:{" "}
+            {originalHours.toFixed(1).replace(".", ",")}h
+          </p>
         </div>
 
-        <h2 id="reduce-hours-title" className="font-heading text-xl md:text-2xl font-bold text-ink-charcoal">
-          Reduce las horas de esta gestión
-        </h2>
-        <p className="font-body text-xs text-ink-muted mt-0.5">
-          <strong className="text-ink-charcoal">{gestion?.title || gestion?.name}</strong> · Estimación actual:{" "}
-          {originalHours.toFixed(1).replace(".", ",")}h
-        </p>
-
-        {/* Callout de contexto */}
+        {/* Cuerpo desplazable */}
+        <div className="overflow-y-auto flex-1 pr-1.5 -mr-1 mt-3 space-y-4">
+          {/* Callout de contexto */}
         <div
           className={`mt-4 p-3 rounded-sharp text-xs font-body leading-relaxed border ${
             isInvalidZero
@@ -239,9 +243,10 @@ export default function ReduceHoursModal({
             </div>
           </div>
         )}
+        </div>
 
-        {/* Acciones */}
-        <div className="flex items-center justify-between pt-5 mt-4 border-t border-sepia-border">
+        {/* Acciones (fijo abajo) */}
+        <div className="shrink-0 flex items-center justify-between pt-4 mt-3 border-t border-sepia-border">
           <button
             type="button"
             onClick={onBack}

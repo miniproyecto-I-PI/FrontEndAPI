@@ -65,25 +65,26 @@ export default function ConflictOverloadModal({
       aria-labelledby="conflict-title"
       aria-describedby="conflict-desc"
       tabIndex={-1}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-charcoal/40 backdrop-blur-sm focus:outline-none"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-ink-charcoal/40 backdrop-blur-sm focus:outline-none overflow-y-auto"
       onClick={(e) => e.target === e.currentTarget && onCancel?.()}
     >
-      <div className="relative w-full max-w-[560px] bg-paper-card border border-sepia-border rounded-sharp p-6 md:p-7 shadow-xl warm-card-shadow">
-        {/* Eyebrow de advertencia */}
-        <div className="flex items-center gap-1.5 text-crimson-urgent font-stamp text-[11px] font-bold tracking-wider uppercase mb-1">
-          <span className="material-symbols-outlined text-[17px]" aria-hidden="true">
-            warning
-          </span>
-          <span>Capacidad diaria excedida</span>
-        </div>
+      <div className="relative w-full max-w-[560px] max-h-[92vh] bg-paper-card border border-sepia-border rounded-sharp p-5 sm:p-6 md:p-7 shadow-xl warm-card-shadow flex flex-col my-auto">
+        <div className="overflow-y-auto flex-1 pr-1.5 -mr-1 space-y-4">
+          {/* Eyebrow de advertencia */}
+          <div className="flex items-center gap-1.5 text-crimson-urgent font-stamp text-[11px] font-bold tracking-wider uppercase mb-1">
+            <span className="material-symbols-outlined text-[17px]" aria-hidden="true">
+              warning
+            </span>
+            <span>Capacidad diaria excedida</span>
+          </div>
 
-        {/* Título de conflicto */}
-        <h2
-          id="conflict-title"
-          className="font-heading text-xl md:text-2xl font-bold text-ink-charcoal tracking-tight"
-        >
-          Quedarías con {totalHours}h de gestión planificadas (límite {limitHours}h)
-        </h2>
+          {/* Título de conflicto */}
+          <h2
+            id="conflict-title"
+            className="font-heading text-xl md:text-2xl font-bold text-ink-charcoal tracking-tight"
+          >
+            Quedarías con {totalHours}h de gestión planificadas (límite {limitHours}h)
+          </h2>
 
         {/* Subtítulo descriptivo */}
         <p id="conflict-desc" className="font-body text-xs md:text-sm text-ink-muted mt-1 leading-relaxed">
@@ -226,9 +227,10 @@ export default function ConflictOverloadModal({
             </button>
           </div>
         </div>
+        </div>
 
-        {/* Footer con acciones de cierre */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-5 mt-4 border-t border-sepia-border">
+        {/* Footer con acciones de cierre (fijo abajo) */}
+        <div className="shrink-0 flex flex-wrap items-center justify-between gap-2.5 pt-4 mt-3 border-t border-sepia-border">
           <button
             type="button"
             onClick={onCancel}
