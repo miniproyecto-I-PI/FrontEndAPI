@@ -212,7 +212,7 @@ export default function HoyPage() {
           <StateCard
             icon="event_available"
             title="Hoy no tienes gestiones pendientes. ¿Creamos un evento?"
-            description="No hay tareas atrasadas ni actividades programadas para la jornada. Puedes comenzar planificando un nuevo evento o explorar tus eventos activos."
+            description="No hay gestiones atrasadas ni actividades programadas para la jornada. Puedes comenzar planificando un nuevo evento o explorar tus eventos activos."
             primaryAction={{ label: "Crear evento", icon: "add", onClick: () => navigate("/crear") }}
             secondaryAction={{ label: "Explorar eventos activos", icon: "calendar_month", onClick: () => navigate("/eventos") }}
             footnote={
@@ -328,8 +328,14 @@ export default function HoyPage() {
                   />
                   {/* Grid alineada a Resumen de Actividad (3 de 4 cols a la izquierda, 1 de 4 a la derecha con gap-3.5) */}
                   <div className="grid grid-cols-1 lg:grid-cols-4 gap-3.5 items-stretch">
-                    {/* Columna izquierda: tarjeta principal + segunda tarjeta debajo */}
-                    <div className={grouped.hoy.length > 2 ? "lg:col-span-3 flex flex-col gap-3.5" : "lg:col-span-4 flex flex-col gap-3.5"}>
+                    {/* Gestión 1: siempre arriba a la izquierda (Row 1, Cols 1-3 en desktop, full width si ≤ 2) */}
+                    <div
+                      className={
+                        grouped.hoy.length > 2
+                          ? "lg:col-span-3 lg:col-start-1 lg:row-start-1 order-1 flex flex-col"
+                          : "lg:col-span-4 flex flex-col"
+                      }
+                    >
                       <TaskCard
                         gestion={grouped.hoy[0]}
                         variant="hoy-hero"
@@ -337,7 +343,30 @@ export default function HoyPage() {
                         onReschedule={() => setRescheduleTarget(grouped.hoy[0])}
                         onEdit={() => setEditTarget(grouped.hoy[0])}
                       />
-                      {grouped.hoy.length > 1 && (
+                    </div>
+
+                    {/* Gestión 3: arriba a la derecha (Row 1, Col 4), alineada con Gestión 1 */}
+                    {grouped.hoy.length > 2 && (
+                      <div className="lg:col-span-1 lg:col-start-4 lg:row-start-1 order-3 flex flex-col">
+                        <TaskCard
+                          gestion={grouped.hoy[2]}
+                          variant="hoy-secundaria"
+                          onMarkDone={() => handleMarkDone(grouped.hoy[2])}
+                          onReschedule={() => setRescheduleTarget(grouped.hoy[2])}
+                          onEdit={() => setEditTarget(grouped.hoy[2])}
+                        />
+                      </div>
+                    )}
+
+                    {/* Gestión 2: abajo a la izquierda (Row 2, Cols 1-3 en desktop, full width si solo son 2) */}
+                    {grouped.hoy.length > 1 && (
+                      <div
+                        className={
+                          grouped.hoy.length > 2
+                            ? "lg:col-span-3 lg:col-start-1 lg:row-start-2 order-2 flex flex-col"
+                            : "lg:col-span-4 flex flex-col"
+                        }
+                      >
                         <TaskCard
                           gestion={grouped.hoy[1]}
                           variant="hoy-secundaria"
@@ -345,49 +374,36 @@ export default function HoyPage() {
                           onReschedule={() => setRescheduleTarget(grouped.hoy[1])}
                           onEdit={() => setEditTarget(grouped.hoy[1])}
                         />
-                      )}
-                    </div>
+                      </div>
+                    )}
 
-                    {/* Columna derecha: tarjetas restantes */}
-                    {grouped.hoy.length > 2 && (
-                      <div className="lg:col-span-1 flex flex-col gap-3.5 h-full">
-                        <div className="flex-1">
-                          <TaskCard
-                            gestion={grouped.hoy[2]}
-                            variant="hoy-secundaria"
-                            onMarkDone={() => handleMarkDone(grouped.hoy[2])}
-                            onReschedule={() => setRescheduleTarget(grouped.hoy[2])}
-                            onEdit={() => setEditTarget(grouped.hoy[2])}
-                          />
-                        </div>
+                    {/* Gestión 4: abajo a la derecha (Row 2, Col 4), alineada con Gestión 2 */}
+                    {grouped.hoy.length === 4 && (
+                      <div className="lg:col-span-1 lg:col-start-4 lg:row-start-2 order-4 flex flex-col">
+                        <TaskCard
+                          key={grouped.hoy[3].id}
+                          gestion={grouped.hoy[3]}
+                          variant="hoy-secundaria"
+                          onMarkDone={() => handleMarkDone(grouped.hoy[3])}
+                          onReschedule={() => setRescheduleTarget(grouped.hoy[3])}
+                          onEdit={() => setEditTarget(grouped.hoy[3])}
+                        />
+                      </div>
+                    )}
 
-                        {grouped.hoy.length === 4 && (
-                          <div className="flex-1">
-                            <TaskCard
-                              key={grouped.hoy[3].id}
-                              gestion={grouped.hoy[3]}
-                              variant="hoy-secundaria"
-                              onMarkDone={() => handleMarkDone(grouped.hoy[3])}
-                              onReschedule={() => setRescheduleTarget(grouped.hoy[3])}
-                              onEdit={() => setEditTarget(grouped.hoy[3])}
-                            />
-                          </div>
-                        )}
-
-                        {grouped.hoy.length > 4 && (
-                          <div className="flex-1 min-h-[140px]">
-                            <TaskCardGalleryOverlay
-                              gestion={grouped.hoy[3]}
-                              variant="hoy-secundaria"
-                              remainingCount={grouped.hoy.length - 3}
-                              totalCount={grouped.hoy.length}
-                              onClickMore={() => openGallery("hoy", 3)}
-                              onMarkDone={() => handleMarkDone(grouped.hoy[3])}
-                              onReschedule={() => setRescheduleTarget(grouped.hoy[3])}
-                              onEdit={() => setEditTarget(grouped.hoy[3])}
-                            />
-                          </div>
-                        )}
+                    {/* Más de 4 gestiones: botón de ver más / galería en Row 2, Col 4 */}
+                    {grouped.hoy.length > 4 && (
+                      <div className="lg:col-span-1 lg:col-start-4 lg:row-start-2 order-4 flex flex-col min-h-[140px]">
+                        <TaskCardGalleryOverlay
+                          gestion={grouped.hoy[3]}
+                          variant="hoy-secundaria"
+                          remainingCount={grouped.hoy.length - 3}
+                          totalCount={grouped.hoy.length}
+                          onClickMore={() => openGallery("hoy", 3)}
+                          onMarkDone={() => handleMarkDone(grouped.hoy[3])}
+                          onReschedule={() => setRescheduleTarget(grouped.hoy[3])}
+                          onEdit={() => setEditTarget(grouped.hoy[3])}
+                        />
                       </div>
                     )}
                   </div>

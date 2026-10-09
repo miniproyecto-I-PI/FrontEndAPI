@@ -69,7 +69,8 @@ function toSubtask(task) {
   return { ...task, id: String(task.id), eventId: String(task.event), title: task.name,
     targetDate: task.target_date, estimatedHours: Number(task.estimated_hours), status: statusToFrontend(task.status),
     eventName: task.event_name, eventType: typeToFrontend(task.event_type),
-    provider: task.provider ?? "", time: task.time ?? "" };
+    provider: task.provider ?? "", time: task.time ?? "",
+    conflictResolved: Boolean(task.conflict_resolved) };
 }
 function toEvent(event) {
   if (!event) return event;
@@ -165,6 +166,8 @@ export const userSettingsApi = {
       return {
         dailyLimitHours: Number.isFinite(val) && val >= 1 ? val : 6,
         allowOverload: Boolean(data?.allow_overload),
+        allowSubtasksAfterEvent: Boolean(data?.allow_subtasks_after_event),
+        allowOverdueSubtasks: Boolean(data?.allow_overdue_subtasks),
       };
     } catch {
       try {
@@ -173,13 +176,20 @@ export const userSettingsApi = {
         return {
           dailyLimitHours: Number.isFinite(val) && val >= 1 ? val : 6,
           allowOverload: false,
+          allowSubtasksAfterEvent: false,
+          allowOverdueSubtasks: false,
         };
       } catch {
-        return { dailyLimitHours: 6, allowOverload: false };
+        return {
+          dailyLimitHours: 6,
+          allowOverload: false,
+          allowSubtasksAfterEvent: false,
+          allowOverdueSubtasks: false,
+        };
       }
     }
   },
-  async update({ dailyLimitHours, allowOverload } = {}) {
+  async update({ dailyLimitHours, allowOverload, allowSubtasksAfterEvent, allowOverdueSubtasks } = {}) {
     const payload = {};
     if (dailyLimitHours !== undefined) {
       const num = Number(dailyLimitHours);
@@ -191,18 +201,25 @@ export const userSettingsApi = {
     if (allowOverload !== undefined) {
       payload.allow_overload = Boolean(allowOverload);
     }
+    if (allowSubtasksAfterEvent !== undefined) {
+      payload.allow_subtasks_after_event = Boolean(allowSubtasksAfterEvent);
+    }
+    if (allowOverdueSubtasks !== undefined) {
+      payload.allow_overdue_subtasks = Boolean(allowOverdueSubtasks);
+    }
     const data = await request("/settings", json("PATCH", payload));
     return {
       dailyLimitHours: Number(data.daily_limit_hours),
       allowOverload: Boolean(data.allow_overload),
+      allowSubtasksAfterEvent: Boolean(data.allow_subtasks_after_event),
+      allowOverdueSubtasks: Boolean(data.allow_overdue_subtasks),
     };
   },
 };
 
 export const dailyLimitApi = {
   async get() {
-    const settings = await userSettingsApi.get();
-    return { dailyLimitHours: settings.dailyLimitHours, allowOverload: settings.allowOverload };
+    return userSettingsApi.get();
   },
   async update(hoursOrObj) {
     if (typeof hoursOrObj === "object" && hoursOrObj !== null) {

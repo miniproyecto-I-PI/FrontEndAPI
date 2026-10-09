@@ -56,7 +56,7 @@ export default function UpdateSubtaskSuccessModal({
           </h2>
 
           <p className="text-sm text-ink-muted leading-relaxed max-w-sm mb-6 font-body">
-            Los cambios para la subtarea{" "}
+            Los cambios para la gestión{" "}
             <strong className="font-semibold text-ink-charcoal">
               «{subtaskTitle}»
             </strong>{" "}

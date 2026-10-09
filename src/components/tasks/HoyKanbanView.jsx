@@ -15,9 +15,8 @@ export default function HoyKanbanView({
   onReschedule,
   onEdit,
   today = new Date(),
-  showExecuted = false,
 }) {
-  const { vencidas = [], hoy = [], proximas = [], ejecutadas = [] } = grouped;
+  const { vencidas = [], hoy = [], proximas = [] } = grouped;
 
   // Agrupar vencidas por evento como en el mockup
   const vencidasByEvent = vencidas.reduce((acc, g) => {
@@ -201,7 +200,6 @@ function KanbanCard({
 
   const isVencida = variant === "vencida";
   const isHoy = variant === "hoy";
-  const isProxima = variant === "proxima";
 
   // Formato de hora / fecha según columna
   const timeDisplay = (() => {

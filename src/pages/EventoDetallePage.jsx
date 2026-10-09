@@ -232,7 +232,7 @@ async function handleEditEvent(payload) {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-sepia-border">
               <div className="flex items-center gap-3 flex-wrap">
                 <h2 id="gestiones-evento" className="font-heading text-2xl md:text-3xl text-ink-charcoal font-semibold tracking-tight">
-                  Gestiones y subtareas operativas
+                  Gestiones logísticas
                 </h2>
                 {status === "success" && (
                   <span className="font-mono-stamp text-[11px] bg-paper-card text-ink-muted px-2.5 py-1 rounded-sharp border border-sepia-border font-medium">
@@ -253,7 +253,7 @@ async function handleEditEvent(payload) {
                   className="inline-flex items-center gap-1.5 px-4 py-2 bg-terracotta hover:bg-terracotta-dark text-[#FAF6F0] font-body text-sm font-semibold rounded-sharp shadow-sm transition-colors active:translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-2 focus-visible:ring-offset-paper-base"
                 >
                   <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span>
-                  <span>Crear subgestión</span>
+                  <span>Nueva gestión</span>
                 </button>
               )}
             </div>
@@ -276,7 +276,7 @@ async function handleEditEvent(payload) {
                 icon="assignment_add"
                 stamp="Hoja de ruta vacía"
                 title="Aún no hay gestiones para este evento"
-                description={`Comienza la hoja de ruta de ${event?.name ?? "este evento"} añadiendo proveedores, fechas límite y tareas operativas.`}
+                description={`Comienza la hoja de ruta de ${event?.name ?? "este evento"} añadiendo proveedores, fechas límite y gestiones logísticas.`}
                 primaryAction={{ label: "Crear primera gestión", icon: "add", onClick: () => navigate(`/evento/${id}/gestiones/crear`) }}
                 compact
               />

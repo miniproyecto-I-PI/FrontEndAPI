@@ -35,7 +35,7 @@ export default function CrearGestionPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { event, subtasks, addSubtask, status: eventStatus, isRefreshing, reload } = useEventSubtasks(id);
-  const { hours: dailyLimitHours } = useDailyLimit();
+  const { hours: dailyLimitHours, allowOverload, allowSubtasksAfterEvent, allowOverdueSubtasks } = useDailyLimit();
 
   const [form, setForm] = useState(emptyForm);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -103,10 +103,16 @@ export default function CrearGestionPage() {
     const errors = {};
     if (!form.title.trim())
       errors.title = "Ponle un título para poder identificarla.";
-    if (!form.targetDate) errors.targetDate = "Elige una fecha límite.";
-    else {
-      const afterEvent = validateTargetDateAgainstEvent(form.targetDate, event?.dateTime);
-      if (afterEvent) errors.targetDate = afterEvent;
+    if (!form.targetDate) {
+      errors.targetDate = "Elige una fecha límite.";
+    } else {
+      const todayISO = toDateInputValue(new Date());
+      if (!allowOverdueSubtasks && form.targetDate < todayISO) {
+        errors.targetDate = "La fecha objetivo no puede ser anterior a hoy.";
+      } else if (!allowSubtasksAfterEvent) {
+        const afterEvent = validateTargetDateAgainstEvent(form.targetDate, event?.dateTime);
+        if (afterEvent) errors.targetDate = afterEvent;
+      }
     }
     const hours = Number(form.estimatedHours);
     if (form.estimatedHours === "" || Number.isNaN(hours)) {
@@ -137,10 +143,14 @@ export default function CrearGestionPage() {
         setToast({ message: "La fecha límite no puede ser posterior al evento", intent: "error" });
         return;
       }
-      setGeneralError(
-        err.message || "No pudimos crear la gestión. Intenta de nuevo."
-      );
-      setToast({ message: "No pudimos crear la gestión", intent: "error" });
+      if (err.code === "target_date_in_past") {
+        setFieldErrors((p) => ({ ...p, targetDate: err.details?.target_date?.[0] || err.message }));
+        setToast({ message: "La fecha límite no puede ser anterior a hoy", intent: "error" });
+        return;
+      }
+      const errorMsg = err.message || "No pudimos crear la gestión. Intenta de nuevo.";
+      setGeneralError(errorMsg);
+      setToast({ message: errorMsg, intent: "error" });
     }
   }
 
@@ -171,7 +181,7 @@ export default function CrearGestionPage() {
         dailyLimitHours,
       });
 
-      if (conflict.hasConflict) {
+      if (conflict.hasConflict && !allowOverload) {
         setConflictData(conflict);
         setConflictStep("CONFLICT_ALERT");
         return;
@@ -190,7 +200,7 @@ export default function CrearGestionPage() {
       taskHours: taskH,
       dailyLimitHours,
     });
-    if (rechecked.hasConflict) {
+    if (rechecked.hasConflict && !allowOverload) {
       setConflictData(rechecked);
       setConflictStep("CONFLICT_ALERT");
     } else {
@@ -262,7 +272,7 @@ export default function CrearGestionPage() {
         eyebrow={eventName}
         title="Crear"
         accent="nueva gestión"
-        description="Registra una subtarea operativa en la bitácora con proveedor asignado, fecha límite y estimación de esfuerzo."
+        description="Registra una gestión logística en la bitácora con proveedor asignado, fecha límite y estimación de esfuerzo."
       />
 
       {eventStatus === "notfound" && (
@@ -303,7 +313,7 @@ export default function CrearGestionPage() {
           <section className="space-y-5">
             <SectionHeader
               number="1"
-              title="Definición de la Gestión"
+              title="Definición de la gestión logística"
               badge="Paso Indispensable"
             />
 
@@ -313,7 +323,7 @@ export default function CrearGestionPage() {
                   htmlFor="titulo-gestion"
                   className="font-body text-xs md:text-sm font-semibold text-ink-charcoal"
                 >
-                  Título de la subtarea o gestión{" "}
+                  Título de la gestión logística{" "}
                   <span className="text-terracotta">*</span>
                 </label>
                 <span className="font-body text-[11px] text-ink-muted italic hidden sm:inline">
@@ -432,6 +442,7 @@ export default function CrearGestionPage() {
                   <input
                     id="fecha-limite"
                     type="date"
+                    min={allowOverdueSubtasks ? undefined : toDateInputValue(new Date())}
                     value={form.targetDate}
                     onChange={handleChange("targetDate")}
                     aria-invalid={Boolean(fieldErrors.targetDate)}

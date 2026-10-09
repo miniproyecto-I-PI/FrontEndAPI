@@ -51,7 +51,7 @@ export default function EventDossierHeader({ event, stats, progressUnavailable =
               {days !== null && (
                 <span className="font-medium text-crimson-urgent ml-1">
                   {days > 0
-                    ? `(Faltan ${days} ${days === 1 ? "día" : "días"})`
+                    ? `(${days === 1 ? "Falta 1 día" : `Faltan ${days} días`})`
                     : days === 0
                       ? "(Es hoy)"
                       : `(Hace ${Math.abs(days)} ${Math.abs(days) === 1 ? "día" : "días"})`}

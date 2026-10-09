@@ -107,7 +107,7 @@ export default function DeleteSubtaskModal({
 
         {/* Warning text */}
         <p className="font-body text-sm text-ink-muted mb-5 leading-relaxed">
-          Esta acción eliminará de forma definitiva la subtarea de la hoja de
+          Esta acción eliminará de forma definitiva la gestión de la hoja de
           ruta
           {eventName ? (
             <>

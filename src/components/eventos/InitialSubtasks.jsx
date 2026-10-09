@@ -1,5 +1,6 @@
 import { useId, useState } from "react";
-import { formatShortDate, validateTargetDateAgainstEvent } from "../../utils/dateUtils";
+import { formatShortDate, toDateInputValue, validateTargetDateAgainstEvent } from "../../utils/dateUtils";
+import { useDailyLimit } from "../../hooks/useDailyLimit";
 
 const emptyDraft = { title: "", provider: "", targetDate: "", time: "", estimatedHours: "" };
 
@@ -16,6 +17,7 @@ const emptyDraft = { title: "", provider: "", targetDate: "", time: "", estimate
  *   ninguna gestión puede quedar después de ese día.
  */
 export default function InitialSubtasks({ items, onAdd, onRemove, eventDate = "", disabled = false }) {
+  const { allowSubtasksAfterEvent, allowOverdueSubtasks } = useDailyLimit();
   const [open, setOpen] = useState(true);
   const [draft, setDraft] = useState(emptyDraft);
   const [errors, setErrors] = useState({});
@@ -38,10 +40,16 @@ export default function InitialSubtasks({ items, onAdd, onRemove, eventDate = ""
   function handleAdd() {
     const next = {};
     if (!draft.title.trim()) next.title = "Escribe el título de la gestión.";
-    if (!draft.targetDate) next.targetDate = "Elige la fecha límite.";
-    else {
-      const afterEvent = validateTargetDateAgainstEvent(draft.targetDate, eventDate);
-      if (afterEvent) next.targetDate = afterEvent;
+    if (!draft.targetDate) {
+      next.targetDate = "Elige la fecha límite.";
+    } else {
+      const todayISO = toDateInputValue(new Date());
+      if (!allowOverdueSubtasks && draft.targetDate < todayISO) {
+        next.targetDate = "La fecha objetivo no puede ser anterior a hoy.";
+      } else if (!allowSubtasksAfterEvent) {
+        const afterEvent = validateTargetDateAgainstEvent(draft.targetDate, eventDate);
+        if (afterEvent) next.targetDate = afterEvent;
+      }
     }
     const hours = Number(draft.estimatedHours);
     if (draft.estimatedHours === "" || Number.isNaN(hours)) next.estimatedHours = "Indica las horas.";
@@ -128,6 +136,7 @@ export default function InitialSubtasks({ items, onAdd, onRemove, eventDate = ""
                 <input
                   id={`${baseId}-date`}
                   type="date"
+                  min={allowOverdueSubtasks ? undefined : toDateInputValue(new Date())}
                   value={draft.targetDate}
                   onChange={update("targetDate")}
                   disabled={disabled}

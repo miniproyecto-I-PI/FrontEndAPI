@@ -65,7 +65,7 @@ export default function CreateSubtaskSuccessModal({
           </h2>
 
           <p className="text-sm text-ink-muted leading-relaxed max-w-sm mb-6 font-body">
-            La subtarea{" "}
+            La gestión{" "}
             <strong className="font-semibold text-ink-charcoal">
               «{subtaskTitle}»
             </strong>{" "}

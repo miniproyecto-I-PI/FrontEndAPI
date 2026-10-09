@@ -86,14 +86,42 @@ export function groupAndSortGestiones(gestiones, options = {}) {
     // 'fuera_de_rango' gestiones are intentionally dropped from /hoy.
   }
 
-  const byDateThenEffort = (a, b) =>
-    new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime() ||
-    a.estimatedHours - b.estimatedHours;
+  const getTimeValue = (g) => {
+    if (!g.time) return "00:00"; // backend: sin hora = 00:00, va primero
+    const parts = String(g.time).trim().split(":");
+    if (parts.length >= 2) {
+      const h = parts[0].padStart(2, "0");
+      const m = parts[1].padStart(2, "0");
+      return `${h}:${m}`;
+    }
+    return String(g.time);
+  };
 
-  vencidas.sort(byDateThenEffort); // oldest overdue first
-  hoy.sort(byDateThenEffort); // same day → less effort first
-  proximas.sort(byDateThenEffort); // soonest date first
-  ejecutadas.sort(byDateThenEffort); // same rule, oldest first
+  const byDateThenTimeThenEffort = (a, b) => {
+    // 1. Fecha calendario
+    const dateA = a.targetDate ? a.targetDate.split("T")[0] : "";
+    const dateB = b.targetDate ? b.targetDate.split("T")[0] : "";
+    const dateDiff = new Date(dateA).getTime() - new Date(dateB).getTime();
+    if (dateDiff !== 0) return dateDiff;
+
+    // 2. Hora y minutos (sin hora = 00:00, va primero)
+    const timeA = getTimeValue(a);
+    const timeB = getTimeValue(b);
+    const timeDiff = timeA.localeCompare(timeB);
+    if (timeDiff !== 0) return timeDiff;
+
+    // 3. Menor esfuerzo estimado
+    const effortDiff = (Number(a.estimatedHours) || 0) - (Number(b.estimatedHours) || 0);
+    if (effortDiff !== 0) return effortDiff;
+
+    // 4. ID estable
+    return String(a.id ?? "").localeCompare(String(b.id ?? ""));
+  };
+
+  vencidas.sort(byDateThenTimeThenEffort);
+  hoy.sort(byDateThenTimeThenEffort);
+  proximas.sort(byDateThenTimeThenEffort);
+  ejecutadas.sort(byDateThenTimeThenEffort);
 
   return { vencidas, hoy, proximas, ejecutadas };
 }

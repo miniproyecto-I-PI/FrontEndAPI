@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 
 /**
  * Toast.jsx
@@ -7,6 +8,10 @@ import { useEffect } from "react";
  * passes it down, so multiple pages could reuse this component without a
  * global context. Auto-dismisses after `durationMs` unless the user
  * interacts with it first.
+ *
+ * Utiliza createPortal hacia document.body para evitar que contenedores con
+ * backdrop-filter (como el Header con backdrop-blur-md) capturen el posicionamiento
+ * fixed y desvíen el toast al tope de la pantalla.
  *
  * @param {{ message: string, onUndo?: () => void } | null} toast
  * @param {() => void} onClose
@@ -26,7 +31,9 @@ export default function Toast({ toast, onClose, durationMs = 3500 }) {
   const iconName = isError ? "error" : "check_circle";
   const iconClass = isError ? "text-crimson-urgent" : "text-terracotta";
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div
       aria-live="polite"
       className={`fixed bottom-6 left-6 z-50 transform transition-all duration-300 ${
@@ -66,6 +73,7 @@ export default function Toast({ toast, onClose, durationMs = 3500 }) {
           <span className="material-symbols-outlined text-[16px]">close</span>
         </button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
