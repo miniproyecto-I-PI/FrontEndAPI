@@ -22,7 +22,7 @@ import { formatOverdueLabel, formatShortDate, formatUpcomingLabel } from "../../
  * @param {() => void} [props.onEdit]  abre "Editar gestión" (título y botón Editar)
  * @param {Date} [props.today]
  */
-export default function TaskCard({ gestion, variant, single = false, onMarkDone, onReschedule, onEdit, today = new Date() }) {
+export default function TaskCard({ gestion, variant, single = false, onMarkDone, onReschedule, onPostpone, onEdit, today = new Date() }) {
   const isHero = variant === "hoy-hero";
   const isSecondary = variant === "hoy-secundaria";
   const isVencida = variant === "vencida";
@@ -42,7 +42,7 @@ export default function TaskCard({ gestion, variant, single = false, onMarkDone,
     .filter(Boolean)
     .join(" ");
 
-  const props = { gestion, today, onMarkDone, onReschedule, onEdit };
+  const props = { gestion, today, onMarkDone, onReschedule, onPostpone, onEdit };
   return (
     <article className={containerClasses} data-gestion-id={gestion.id} aria-label={gestion.title}>
       {single && (isVencida || isProxima) ? (
@@ -74,7 +74,7 @@ function PostponedTag() {
   );
 }
 
-function ActionButtons({ onMarkDone, onReschedule, size = "normal" }) {
+function ActionButtons({ onMarkDone, onReschedule, onPostpone, size = "normal" }) {
   const base = size === "normal" ? "px-3.5 py-1.5 text-xs" : "px-3 py-1 text-xs";
   return (
     <>
@@ -93,6 +93,9 @@ function ActionButtons({ onMarkDone, onReschedule, size = "normal" }) {
       >
         <span className="material-symbols-outlined text-[15px] text-ink-muted" aria-hidden="true">event_repeat</span>
         <span>Reprogramar</span>
+      </button>
+      <button type="button" onClick={onPostpone} className={`${base} rounded-sharp bg-paper-card hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body font-medium inline-flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1`}>
+        <span className="material-symbols-outlined text-[15px]" aria-hidden="true">pause_circle</span><span>Posponer</span>
       </button>
     </>
   );
@@ -120,7 +123,7 @@ function Hours({ value }) {
   );
 }
 
-function VencidaBody({ gestion, today, onMarkDone, onReschedule, onEdit }) {
+function VencidaBody({ gestion, today, onMarkDone, onReschedule, onPostpone, onEdit }) {
   return (
     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
       <div className="space-y-1.5 flex-1 min-w-0">
@@ -144,13 +147,13 @@ function VencidaBody({ gestion, today, onMarkDone, onReschedule, onEdit }) {
         )}
       </div>
       <div className="flex items-center gap-2 self-end lg:self-center shrink-0 pt-2 lg:pt-0">
-        <ActionButtons onMarkDone={onMarkDone} onReschedule={onReschedule} />
+        <ActionButtons onMarkDone={onMarkDone} onReschedule={onReschedule} onPostpone={onPostpone} />
       </div>
     </div>
   );
 }
 
-function HeroBody({ gestion, onMarkDone, onReschedule, onEdit }) {
+function HeroBody({ gestion, onMarkDone, onReschedule, onPostpone, onEdit }) {
   return (
     <>
       <div className="space-y-2.5">
@@ -177,14 +180,14 @@ function HeroBody({ gestion, onMarkDone, onReschedule, onEdit }) {
       <div className="flex flex-wrap items-center justify-between gap-2.5 pt-3 mt-3 border-t border-sepia-border">
         <span className="font-body text-xs text-ink-muted">{gestion.provider}</span>
         <div className="flex items-center gap-2">
-          <ActionButtons onMarkDone={onMarkDone} onReschedule={onReschedule} size="compact" />
+          <ActionButtons onMarkDone={onMarkDone} onReschedule={onReschedule} onPostpone={onPostpone} size="compact" />
         </div>
       </div>
     </>
   );
 }
 
-function SecondaryBody({ gestion, onMarkDone, onReschedule, onEdit }) {
+function SecondaryBody({ gestion, onMarkDone, onReschedule, onPostpone, onEdit }) {
   return (
     <>
       <div>
@@ -204,13 +207,13 @@ function SecondaryBody({ gestion, onMarkDone, onReschedule, onEdit }) {
         )}
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2 pt-2.5 mt-2 border-t border-sepia-border/50">
-        <ActionButtons onMarkDone={onMarkDone} onReschedule={onReschedule} size="compact" />
+        <ActionButtons onMarkDone={onMarkDone} onReschedule={onReschedule} onPostpone={onPostpone} size="compact" />
       </div>
     </>
   );
 }
 
-function ProximaBody({ gestion, today, onMarkDone, onReschedule, onEdit }) {
+function ProximaBody({ gestion, today, onMarkDone, onReschedule, onPostpone, onEdit }) {
   return (
     <>
       <div className="space-y-2">
@@ -245,6 +248,13 @@ function ProximaBody({ gestion, today, onMarkDone, onReschedule, onEdit }) {
             className="px-3 py-1.5 rounded-sharp bg-paper-card hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1"
           >
             Reprogramar
+          </button>
+          <button
+            type="button"
+            onClick={onPostpone}
+            className="px-3 py-1.5 rounded-sharp bg-paper-card hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1"
+          >
+            Posponer
           </button>
         </div>
       </div>
@@ -290,7 +300,7 @@ function EjecutadaBody({ gestion, onEdit }) {
   );
 }
 
-function SingleCardBody({ gestion, variant, today, onMarkDone, onReschedule, onEdit }) {
+function SingleCardBody({ gestion, variant, today, onMarkDone, onReschedule, onPostpone, onEdit }) {
   const isVencida = variant === "vencida";
   return (
     <>
@@ -335,7 +345,7 @@ function SingleCardBody({ gestion, variant, today, onMarkDone, onReschedule, onE
           {gestion.provider ? `Encargado: ${gestion.provider}` : ""}
         </span>
         <div className="flex items-center gap-2">
-          <ActionButtons onMarkDone={onMarkDone} onReschedule={onReschedule} size="normal" />
+          <ActionButtons onMarkDone={onMarkDone} onReschedule={onReschedule} onPostpone={onPostpone} size="normal" />
         </div>
       </div>
     </>

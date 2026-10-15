@@ -22,6 +22,7 @@ export default function SubtaskListItem({
   onDelete,
   onMarkDone,
   onReschedule,
+  onPostpone,
 }) {
   const done = isDone(subtask);
   const bucket = classifyByDate(subtask.targetDate);
@@ -165,6 +166,9 @@ export default function SubtaskListItem({
             >
               <span className="material-symbols-outlined text-[15px]">update</span>
               <span>Reprogramar</span>
+            </button>
+            <button type="button" onClick={onPostpone} title="Posponer" className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-sharp font-body text-xs text-ink-charcoal border border-sepia-border hover:bg-paper-linen transition-colors">
+              <span className="material-symbols-outlined text-[15px]">pause_circle</span><span>Posponer</span>
             </button>
           </>
         )}

@@ -13,6 +13,7 @@ export default function HoyKanbanView({
   grouped,
   onMarkDone,
   onReschedule,
+  onPostpone,
   onEdit,
   today = new Date(),
 }) {
@@ -84,6 +85,7 @@ export default function HoyKanbanView({
                         today={today}
                         onMarkDone={() => onMarkDone(g)}
                         onReschedule={() => onReschedule(g)}
+                        onPostpone={() => onPostpone(g)}
                         onEdit={() => onEdit(g)}
                       />
                     ))}
@@ -133,6 +135,7 @@ export default function HoyKanbanView({
                 today={today}
                 onMarkDone={() => onMarkDone(g)}
                 onReschedule={() => onReschedule(g)}
+                onPostpone={() => onPostpone(g)}
                 onEdit={() => onEdit(g)}
               />
             ))}
@@ -174,6 +177,7 @@ export default function HoyKanbanView({
                 today={today}
                 onMarkDone={() => onMarkDone(g)}
                 onReschedule={() => onReschedule(g)}
+                onPostpone={() => onPostpone(g)}
                 onEdit={() => onEdit(g)}
               />
             ))}
@@ -194,6 +198,7 @@ function KanbanCard({
   today,
   onMarkDone,
   onReschedule,
+  onPostpone,
   onEdit,
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -315,6 +320,7 @@ function KanbanCard({
           >
             Reprogramar
           </button>
+          <button type="button" onClick={onPostpone} className="px-2.5 py-1 text-xs font-body font-medium rounded-sharp bg-paper-card hover:bg-paper-linen border border-sepia-border text-ink-charcoal transition-colors focus:outline-none focus:ring-1 focus:ring-terracotta">Posponer</button>
 
           {/* Botón menú tres puntos */}
           <button

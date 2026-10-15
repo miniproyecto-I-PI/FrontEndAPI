@@ -13,6 +13,7 @@ import EditSubtaskModal from "../components/common/EditSubtaskModal";
 import DeleteEventModal from "../components/eventos/DeleteEventModal";
 import EditEventModal from "../components/common/EditEventModal";
 import RescheduleModal from "../components/common/RescheduleModal";
+import PostponeSubtaskModal from "../components/common/PostponeSubtaskModal";
 import DeleteSubtaskModal from "../components/eventos/DeleteSubtaskModal";
 import EventDossierHeader from "../components/eventos/EventDossierHeader";
 import SubtaskFilters from "../components/eventos/SubtaskFilters";
@@ -57,6 +58,7 @@ export default function EventoDetallePage() {
   const [updatedEventName, setUpdatedEventName] = useState(null);
   const [updatedSubtaskTitle, setUpdatedSubtaskTitle] = useState(null);
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
+  const [postponeTarget, setPostponeTarget] = useState(null);
   const [allUserGestiones, setAllUserGestiones] = useState([]);
 
   useEffect(() => {
@@ -150,6 +152,12 @@ async function handleEditEvent(payload) {
     } catch (err) {
       setToast({ message: err.message || "No se pudo actualizar la gestión", intent: "error" })
     }
+  }
+
+  async function handlePostpone(note) {
+    await updateSubtask(postponeTarget.id, { status: "POSPUESTA", note });
+    setPostponeTarget(null);
+    setToast({ message: "Gestión pospuesta" });
   }
 
   async function handleConfirmReschedule() {
@@ -307,6 +315,7 @@ async function handleEditEvent(payload) {
                     onEdit={() => setEditingSubtask(s)}
                     onDelete={() => setDeletingSubtask(s)}
                     onReschedule={() => setRescheduleTarget(s)}
+                    onPostpone={() => setPostponeTarget(s)}
                   />
                 ))}
               </ul>
@@ -325,6 +334,14 @@ async function handleEditEvent(payload) {
     onSubmit={handleEditSubtask}
   />
 )}
+
+      {postponeTarget && (
+        <PostponeSubtaskModal
+          subtask={postponeTarget}
+          onCancel={() => setPostponeTarget(null)}
+          onSubmit={handlePostpone}
+        />
+      )}
 
       {editEventOpen && event && (
         <EditEventModal

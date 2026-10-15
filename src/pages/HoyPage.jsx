@@ -12,6 +12,7 @@ import StateCard from "../components/common/StateCard";
 import LoadingSkeleton, { StatsSkeleton } from "../components/common/LoadingSkeleton";
 import Toast from "../components/common/Toast";
 import RescheduleModal from "../components/common/RescheduleModal";
+import PostponeSubtaskModal from "../components/common/PostponeSubtaskModal";
 import EditSubtaskModal from "../components/common/EditSubtaskModal";
 import GestionesGalleryModal from "../components/common/GestionesGalleryModal";
 import TaskCard from "../components/tasks/TaskCard";
@@ -40,6 +41,7 @@ export default function HoyPage() {
   const [viewMode, setViewMode] = useState("agenda"); // 'agenda' | 'kanban'
   const [simMode, setSimMode] = useState("normal"); // 'normal' | 'empty' | 'error' (solo desarrollo)
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
+  const [postponeTarget, setPostponeTarget] = useState(null);
   const [editTarget, setEditTarget] = useState(null); // gestión en edición (título de la tarjeta o botón Editar)
   const [toast, setToast] = useState(() => (location.state?.toast ? { message: location.state.toast } : null));
   const closeToast = useCallback(() => setToast(null), []);
@@ -99,6 +101,12 @@ export default function HoyPage() {
     setRescheduleTarget(null);
     await reload();
     setToast({ message: "Gestión reprogramada" });
+  }
+
+  async function handlePostpone(note) {
+    await actions.editGestion(postponeTarget.id, { status: "POSPUESTA", note });
+    setPostponeTarget(null);
+    setToast({ message: "Gestión pospuesta" });
   }
 
   async function handleEditSubmit(payload) {
@@ -231,6 +239,7 @@ export default function HoyPage() {
                 grouped={grouped}
                 onMarkDone={handleMarkDone}
                 onReschedule={(g) => setRescheduleTarget(g)}
+                onPostpone={(g) => setPostponeTarget(g)}
                 onEdit={(g) => setEditTarget(g)}
                 showExecuted={filters.showExecuted}
               />
@@ -269,6 +278,7 @@ export default function HoyPage() {
                       variant="vencida"
                       single={true}
                       onMarkDone={() => handleMarkDone(grouped.vencidas[0])}
+                      onPostpone={() => setPostponeTarget(grouped.vencidas[0])}
                       onReschedule={() => setRescheduleTarget(grouped.vencidas[0])}
                       onEdit={() => setEditTarget(grouped.vencidas[0])}
                     />
@@ -280,6 +290,7 @@ export default function HoyPage() {
                           gestion={g}
                           variant="vencida"
                           onMarkDone={() => handleMarkDone(g)}
+                          onPostpone={() => setPostponeTarget(g)}
                           onReschedule={() => setRescheduleTarget(g)}
                           onEdit={() => setEditTarget(g)}
                         />
@@ -290,6 +301,7 @@ export default function HoyPage() {
                           gestion={grouped.vencidas[2]}
                           variant="vencida"
                           onMarkDone={() => handleMarkDone(grouped.vencidas[2])}
+                          onPostpone={() => setPostponeTarget(grouped.vencidas[2])}
                           onReschedule={() => setRescheduleTarget(grouped.vencidas[2])}
                           onEdit={() => setEditTarget(grouped.vencidas[2])}
                         />
@@ -340,6 +352,7 @@ export default function HoyPage() {
                         gestion={grouped.hoy[0]}
                         variant="hoy-hero"
                         onMarkDone={() => handleMarkDone(grouped.hoy[0])}
+                        onPostpone={() => setPostponeTarget(grouped.hoy[0])}
                         onReschedule={() => setRescheduleTarget(grouped.hoy[0])}
                         onEdit={() => setEditTarget(grouped.hoy[0])}
                       />
@@ -352,6 +365,7 @@ export default function HoyPage() {
                           gestion={grouped.hoy[2]}
                           variant="hoy-secundaria"
                           onMarkDone={() => handleMarkDone(grouped.hoy[2])}
+                          onPostpone={() => setPostponeTarget(grouped.hoy[2])}
                           onReschedule={() => setRescheduleTarget(grouped.hoy[2])}
                           onEdit={() => setEditTarget(grouped.hoy[2])}
                         />
@@ -371,6 +385,7 @@ export default function HoyPage() {
                           gestion={grouped.hoy[1]}
                           variant="hoy-secundaria"
                           onMarkDone={() => handleMarkDone(grouped.hoy[1])}
+                          onPostpone={() => setPostponeTarget(grouped.hoy[1])}
                           onReschedule={() => setRescheduleTarget(grouped.hoy[1])}
                           onEdit={() => setEditTarget(grouped.hoy[1])}
                         />
@@ -385,6 +400,7 @@ export default function HoyPage() {
                           gestion={grouped.hoy[3]}
                           variant="hoy-secundaria"
                           onMarkDone={() => handleMarkDone(grouped.hoy[3])}
+                          onPostpone={() => setPostponeTarget(grouped.hoy[3])}
                           onReschedule={() => setRescheduleTarget(grouped.hoy[3])}
                           onEdit={() => setEditTarget(grouped.hoy[3])}
                         />
@@ -419,6 +435,7 @@ export default function HoyPage() {
                       variant="proxima"
                       single={true}
                       onMarkDone={() => handleMarkDone(grouped.proximas[0])}
+                      onPostpone={() => setPostponeTarget(grouped.proximas[0])}
                       onReschedule={() => setRescheduleTarget(grouped.proximas[0])}
                       onEdit={() => setEditTarget(grouped.proximas[0])}
                     />
@@ -434,6 +451,7 @@ export default function HoyPage() {
                           gestion={g}
                           variant="proxima"
                           onMarkDone={() => handleMarkDone(g)}
+                          onPostpone={() => setPostponeTarget(g)}
                           onReschedule={() => setRescheduleTarget(g)}
                           onEdit={() => setEditTarget(g)}
                         />
@@ -444,6 +462,7 @@ export default function HoyPage() {
                           gestion={grouped.proximas[2]}
                           variant="proxima"
                           onMarkDone={() => handleMarkDone(grouped.proximas[2])}
+                          onPostpone={() => setPostponeTarget(grouped.proximas[2])}
                           onReschedule={() => setRescheduleTarget(grouped.proximas[2])}
                           onEdit={() => setEditTarget(grouped.proximas[2])}
                         />
@@ -493,6 +512,14 @@ export default function HoyPage() {
         />
       )}
 
+      {postponeTarget && (
+        <PostponeSubtaskModal
+          subtask={postponeTarget}
+          onCancel={() => setPostponeTarget(null)}
+          onSubmit={handlePostpone}
+        />
+      )}
+
       {galleryModal.isOpen && (
         <GestionesGalleryModal
           key={`${galleryModal.group}-${galleryModal.initialIndex}`}
@@ -507,6 +534,7 @@ export default function HoyPage() {
           onReschedule={(g) => {
             setRescheduleTarget(g);
           }}
+          onPostpone={(g) => setPostponeTarget(g)}
           onEdit={(g) => {
             setEditTarget(g);
           }}

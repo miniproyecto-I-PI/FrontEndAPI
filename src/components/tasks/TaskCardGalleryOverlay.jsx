@@ -16,6 +16,7 @@ export default function TaskCardGalleryOverlay({
   onClickMore,
   onMarkDone,
   onReschedule,
+  onPostpone,
   onEdit,
 }) {
   return (
@@ -27,6 +28,7 @@ export default function TaskCardGalleryOverlay({
           variant={variant}
           onMarkDone={onMarkDone}
           onReschedule={onReschedule}
+          onPostpone={onPostpone}
           onEdit={onEdit}
         />
       </div>

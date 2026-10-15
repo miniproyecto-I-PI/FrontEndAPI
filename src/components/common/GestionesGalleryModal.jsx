@@ -25,6 +25,7 @@ export default function GestionesGalleryModal({
   onClose,
   onMarkDone,
   onReschedule,
+  onPostpone,
   onEdit,
 }) {
   const total = gestiones.length;
@@ -202,6 +203,7 @@ export default function GestionesGalleryModal({
                   onReschedule={() => {
                     onReschedule?.(currentGestion);
                   }}
+                  onPostpone={() => onPostpone?.(currentGestion)}
                   onEdit={() => {
                     onEdit?.(currentGestion);
                   }}
@@ -256,6 +258,7 @@ export default function GestionesGalleryModal({
                   variant={cardVariant}
                   onMarkDone={() => onMarkDone?.(g)}
                   onReschedule={() => onReschedule?.(g)}
+                  onPostpone={() => onPostpone?.(g)}
                   onEdit={() => onEdit?.(g)}
                 />
               </div>
