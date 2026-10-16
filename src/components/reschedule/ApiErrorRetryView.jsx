@@ -92,10 +92,11 @@ export default function ApiErrorRetryView({
           </div>
         </div>
 
-        <p className="font-body text-[11px] text-ink-subtle mt-3 leading-relaxed">
-          No tienes que volver a seleccionar ni reconfigurar la gestión. Al pulsar reintentar enviaremos la solicitud
-          de nuevo.
-        </p>
+        {onRetry && (
+          <p className="font-body text-[11px] text-ink-subtle mt-3 leading-relaxed">
+            No tienes que volver a seleccionar ni reconfigurar la gestión. Al reintentar enviaremos la misma solicitud.
+          </p>
+        )}
 
         {/* Botones de acción */}
         <div className="flex items-center justify-end gap-2.5 pt-5 mt-4 border-t border-sepia-border">
@@ -106,17 +107,19 @@ export default function ApiErrorRetryView({
           >
             Volver
           </button>
-          <button
-            type="button"
-            disabled={isRetrying}
-            onClick={handleRetry}
-            className="px-5 py-2 rounded-sharp bg-terracotta hover:bg-terracotta-dark disabled:opacity-60 text-[#FAF6F0] font-body text-xs font-semibold tracking-wide border border-terracotta-dark shadow-sm transition-colors inline-flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-terracotta"
-          >
-            <span className={`material-symbols-outlined text-[16px] ${isRetrying ? "animate-spin" : ""}`}>
-              sync
-            </span>
-            <span>{isRetrying ? "Reintentando…" : "Reintentar"}</span>
-          </button>
+          {onRetry && (
+            <button
+              type="button"
+              disabled={isRetrying}
+              onClick={handleRetry}
+              className="px-5 py-2 rounded-sharp bg-terracotta hover:bg-terracotta-dark disabled:opacity-60 text-[#FAF6F0] font-body text-xs font-semibold tracking-wide border border-terracotta-dark shadow-sm transition-colors inline-flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-terracotta"
+            >
+              <span className={`material-symbols-outlined text-[16px] ${isRetrying ? "animate-spin" : ""}`}>
+                sync
+              </span>
+              <span>{isRetrying ? "Reintentando…" : "Reintentar"}</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

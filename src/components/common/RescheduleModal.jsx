@@ -51,13 +51,28 @@ export default function RescheduleModal({
     allowSubtasksAfterEvent,
     allowOverdueSubtasks,
   } = useDailyLimit();
+  const taskHours = Number(gestion?.estimatedHours ?? gestion?.estimated_hours ?? 2);
+  const gestionId = gestion?.id;
+  const originalDateISO = toDateInputValue(currentDateISO || gestion?.targetDate);
+  const recommendedDate = mode === "single" ? findNextAvailableDay({
+    gestiones: allGestiones,
+    taskHours,
+    fromDate: currentDateISO || new Date(),
+    dailyLimitHours,
+    eventDate: allowSubtasksAfterEvent ? null : eventDateTime,
+    excludeGestionId: gestionId,
+  })?.dateISO : null;
 
   // Estados del flujo:
   // 'PICK_DATE' | 'CONFLICT_ALERT' | 'SUGGESTED_DAYS' | 'REDUCE_HOURS' | 'API_ERROR' | 'SUCCESS'
   const [step, setStep] = useState("PICK_DATE");
 
   // Datos temporales
-  const [targetDate, setTargetDate] = useState(() => toDateInputValue(currentDateISO) || toDateInputValue(new Date()));
+  const [selectedDate, setSelectedDate] = useState("");
+  const [dateWasEdited, setDateWasEdited] = useState(false);
+  const targetDate = dateWasEdited
+    ? selectedDate
+    : recommendedDate || toDateInputValue(currentDateISO) || toDateInputValue(new Date());
   const [dateError, setDateError] = useState(null);
   const [localToast, setLocalToast] = useState(null);
   const [conflictData, setConflictData] = useState(null);
@@ -69,9 +84,51 @@ export default function RescheduleModal({
   const dateInputRef = useRef(null);
   const dialogRef = useRef(null);
 
-  const taskHours = Number(gestion?.estimatedHours ?? gestion?.estimated_hours ?? 2);
-  const gestionId = gestion?.id;
-  const originalDateISO = toDateInputValue(currentDateISO || gestion?.targetDate);
+  function handleRequestError(err, dateToSet, hours = taskHours, operation = "date") {
+    const isRetryable = err?.code === "network_error" || err?.status === 408 || err?.status === 429 || err?.status >= 500;
+    if (isRetryable) {
+      setApiErrorData({
+        title: operation === "hours" ? "No se pudo guardar el cambio de horas" : "No se pudo guardar la nueva fecha",
+        description: err?.message || "No hubo respuesta del servidor. Puedes reintentar con la misma selección.",
+        retryable: true,
+      });
+      setStep("API_ERROR");
+      return;
+    }
+
+    if (err?.code === "overload_conflict" || err?.status === 409) {
+      const localConflict = evaluateConflict({
+        gestiones: allGestiones,
+        targetDate: dateToSet,
+        taskHours: hours,
+        dailyLimitHours,
+        excludeGestionId: gestionId,
+      });
+      const serverConflict = err?.details?.conflict ?? err?.details?.conflicts?.[0];
+      setSelectedDate(dateToSet);
+      setDateWasEdited(true);
+      setConflictData({
+        ...localConflict,
+        targetDateISO: serverConflict?.target_date || dateToSet,
+        currentHours: Number(serverConflict?.current_hours ?? localConflict.currentHours),
+        taskHours: Number(serverConflict?.task_hours ?? hours),
+        totalHours: Number(serverConflict?.total_hours ?? localConflict.totalHours),
+        limitHours: Number(serverConflict?.limit_hours ?? localConflict.limitHours),
+        excessHours: Number(serverConflict?.excess_hours ?? localConflict.excessHours),
+      });
+      setStep("CONFLICT_ALERT");
+      return;
+    }
+
+    // Validation and other 4xx errors need a correction, not a network retry.
+    if (dateToSet) {
+      setSelectedDate(dateToSet);
+      setDateWasEdited(true);
+    }
+    setDateError(null);
+    setLocalToast({ message: err?.message || "No se pudo reprogramar la gestión. Revisa la fecha e inténtalo de nuevo.", intent: "error" });
+    setStep("PICK_DATE");
+  }
 
   // Foco inicial
   useEffect(() => {
@@ -109,7 +166,7 @@ export default function RescheduleModal({
       }
 
       // Preparar resumen para modal de éxito
-      const prevHours = computeDayWorkload(allGestiones, originalDateISO, gestionId);
+      const prevHours = computeDayWorkload(allGestiones, originalDateISO, gestionId) + taskHours;
       const newDayHours = computeDayWorkload(allGestiones, dateToSet, gestionId);
       const totalInNewDay = Math.round((newDayHours + taskHours) * 10) / 10;
 
@@ -117,11 +174,13 @@ export default function RescheduleModal({
 
       setSuccessData({
         title: isOverride
-          ? "Fecha actualizada (Con sobrecarga)"
+          ? "Reprogramación guardada con sobrecarga"
           : isConflictResolved
             ? "Conflicto resuelto"
-            : "Fecha actualizada",
-        description: `La gestión se ha movido al ${formatShortDate(dateToSet)}.`,
+            : "Reprogramación completada",
+        description: isOverride
+          ? `La gestión quedó programada para el ${formatShortDate(dateToSet)}. Ese día supera el límite diario que elegiste mantener.`
+          : `La gestión quedó programada para el ${formatShortDate(dateToSet)}.`,
         previousDayLabel: formatShortDate(originalDateISO),
         previousDayHours: prevHours,
         newDayLabel: formatShortDate(dateToSet),
@@ -133,16 +192,12 @@ export default function RescheduleModal({
     } catch (err) {
       if (err?.code === "target_date_in_past" || err?.code === "target_date_after_event") {
         const msg = err.message || "La fecha seleccionada no es válida.";
+        setSelectedDate(dateToSet);
+        setDateWasEdited(true);
         setDateError(msg);
         setLocalToast({ message: msg, intent: "error" });
         setStep("PICK_DATE");
-      } else {
-        setApiErrorData({
-          title: "No se pudo aplicar el cambio",
-          description: err?.message || "Ocurrió un problema de conexión al intentar actualizar la fecha de esta gestión en el servidor.",
-        });
-        setStep("API_ERROR");
-      }
+      } else handleRequestError(err, dateToSet);
     } finally {
       setIsSubmitting(false);
     }
@@ -180,10 +235,10 @@ export default function RescheduleModal({
       const isConflictResolved = Boolean(res?.conflictResolved ?? res?.conflict_resolved);
 
       setSuccessData({
-        title: isConflictResolved ? "Conflicto resuelto" : "Horas actualizadas",
-        description: `La gestión se ha movido al ${formatShortDate(activeDateISO)} con ${newHours}h estimadas.`,
+        title: isConflictResolved ? "Conflicto resuelto" : "Reprogramación completada",
+        description: `La gestión quedó programada para el ${formatShortDate(activeDateISO)} con una estimación de ${newHours}h.`,
         previousDayLabel: formatShortDate(originalDateISO),
-        previousDayHours: computeDayWorkload(allGestiones, originalDateISO, gestionId),
+        previousDayHours: computeDayWorkload(allGestiones, originalDateISO, gestionId) + taskHours,
         newDayLabel: formatShortDate(activeDateISO),
         newDayTotalHours: newTotal,
         taskHours: newHours,
@@ -191,11 +246,7 @@ export default function RescheduleModal({
 
       setStep("SUCCESS");
     } catch (err) {
-      setApiErrorData({
-        title: "No se pudo aplicar el cambio",
-        description: err?.message || "Ocurrió un problema de conexión al intentar actualizar la gestión en el servidor.",
-      });
-      setStep("API_ERROR");
+      handleRequestError(err, activeDateISO, newHours, "hours");
     } finally {
       setIsSubmitting(false);
     }
@@ -361,13 +412,13 @@ export default function RescheduleModal({
         retainedValue={lastAttempt?.value}
         retainedLabel={lastAttempt?.label}
         onBack={() => setStep("PICK_DATE")}
-        onRetry={async () => {
+        onRetry={lastAttempt && apiErrorData?.retryable ? async () => {
           if (lastAttempt?.type === "hours") {
             await executeHoursReduction(lastAttempt.value);
           } else {
             await executeDateReschedule(lastAttempt.value);
           }
-        }}
+        } : undefined}
       />
     );
   }
@@ -443,7 +494,8 @@ export default function RescheduleModal({
                   min={allowOverdueSubtasks ? undefined : toDateInputValue(new Date())}
                   value={targetDate}
                   onChange={(e) => {
-                    setTargetDate(e.target.value);
+                    setSelectedDate(e.target.value);
+                    setDateWasEdited(true);
                     setDateError(null);
                     if (localToast) setLocalToast(null);
                   }}
@@ -472,7 +524,9 @@ export default function RescheduleModal({
               </label>
 
               <p className="font-body text-[11px] text-ink-subtle mt-3 italic">
-                💡 Verificaremos tu capacidad diaria disponible antes de confirmar.
+                💡 {targetDate !== originalDateISO && !dateWasEdited
+                  ? "Te proponemos el primer día disponible según tu carga y la fecha del evento. Puedes cambiarlo antes de guardar."
+                  : "Verificaremos tu capacidad diaria disponible y la fecha del evento antes de guardar."}
               </p>
             </>
           )}
@@ -490,7 +544,7 @@ export default function RescheduleModal({
               disabled={!canConfirm || isSubmitting}
               className="px-5 py-2 rounded-sharp bg-terracotta hover:bg-terracotta-dark text-[#FAF6F0] font-body text-xs font-semibold tracking-wide border border-terracotta-dark shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-terracotta focus:ring-offset-1 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
             >
-              <span>{isSubmitting ? "Verificando…" : "Confirmar"}</span>
+              <span>{isSubmitting ? "Guardando…" : "Reprogramar"}</span>
             </button>
           </div>
         </form>

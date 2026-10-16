@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 
 /**
  * RescheduleSuccessModal.jsx
@@ -18,14 +17,14 @@ export default function RescheduleSuccessModal({
   dailyLimitHours = 6,
   onClose,
 }) {
-  const navigate = useNavigate();
   const buttonRef = useRef(null);
   const freeRemaining = Math.max(0, Math.round((dailyLimitHours - newDayTotalHours) * 10) / 10);
+  const previousDayWasWithinLimit = previousDayHours <= dailyLimitHours;
+  const newDayExcess = Math.max(0, Math.round((newDayTotalHours - dailyLimitHours) * 10) / 10);
 
   const handleAction = useCallback(() => {
     onClose?.();
-    navigate("/hoy");
-  }, [navigate, onClose]);
+  }, [onClose]);
 
   useEffect(() => {
     // Foco inicial en el botón principal para accesibilidad
@@ -85,7 +84,11 @@ export default function RescheduleSuccessModal({
               {previousDayHours}h programadas
             </p>
             <p className="font-body text-[11px] text-sage-wax font-medium mt-1 inline-flex items-center gap-1">
-              <span>✓</span> Dentro del límite ({dailyLimitHours}h)
+              {previousDayWasWithinLimit ? (
+                <><span>✓</span> Dentro del límite ({dailyLimitHours}h)</>
+              ) : (
+                <><span>!</span> Antes superaba el límite por {Math.round((previousDayHours - dailyLimitHours) * 10) / 10}h</>
+              )}
             </p>
           </div>
 
@@ -97,8 +100,8 @@ export default function RescheduleSuccessModal({
             <p className="font-body text-sm font-bold text-ink-charcoal mt-0.5">
               {newDayTotalHours}h en total <span className="text-terracotta text-xs font-semibold">(+{taskHours}h)</span>
             </p>
-            <p className="font-body text-[11px] text-sage-wax font-medium mt-1 inline-flex items-center gap-1">
-              <span>✓</span> {freeRemaining}h libres restantes
+            <p className={`font-body text-[11px] font-medium mt-1 inline-flex items-center gap-1 ${newDayExcess ? "text-crimson-urgent" : "text-sage-wax"}`}>
+              {newDayExcess ? <><span>!</span> Supera el límite por {newDayExcess}h</> : <><span>✓</span> {freeRemaining}h libres restantes</>}
             </p>
           </div>
         </div>
@@ -110,7 +113,7 @@ export default function RescheduleSuccessModal({
             onClick={handleAction}
             className="w-full py-2.5 px-4 rounded-sharp bg-terracotta hover:bg-terracotta-dark text-[#FAF6F0] font-body text-xs md:text-sm font-semibold tracking-wide border border-terracotta-dark shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-terracotta"
           >
-            Entendido, ir a la agenda de hoy
+            Continuar
           </button>
         </div>
       </div>
