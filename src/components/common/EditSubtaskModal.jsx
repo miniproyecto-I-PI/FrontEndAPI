@@ -31,6 +31,7 @@ export default function EditSubtaskModal({
   date: toDateInputValue(initialSubtask.targetDate),
   time: initialSubtask.time ?? "",
   status: STATUS_OPTIONS.some((s) => s.key === initialSubtask.status) ? initialSubtask.status : "PENDIENTE",
+  note: initialSubtask.note ?? "",
 }));
   const [fieldErrors, setFieldErrors] = useState({});
   const [generalError, setGeneralError] = useState(null);
@@ -106,6 +107,7 @@ export default function EditSubtaskModal({
         targetDate: form.date,
         time: form.time || null,
         status: form.status,
+        note: form.status === "POSPUESTA" ? form.note.trim() : "",
       });
     } catch (err) {
       setStatus("idle");
@@ -324,9 +326,11 @@ export default function EditSubtaskModal({
                       <button
                         key={s.key}
                         type="button"
-                        onClick={() =>
-                          setForm((p) => ({ ...p, status: s.key }))
-                        }
+                        onClick={() => setForm((p) => ({
+                          ...p,
+                          status: s.key,
+                          ...(s.key !== "POSPUESTA" ? { note: "" } : {}),
+                        }))}
                         aria-pressed={isActive}
                         className={[
                           "flex items-center justify-center gap-2 p-2.5 rounded-sharp font-body text-xs transition-all",
@@ -359,6 +363,28 @@ export default function EditSubtaskModal({
                   })}
                 </div>
               </div>
+
+              {form.status === "POSPUESTA" && (
+                <div className="space-y-1.5" aria-live="polite">
+                  <label
+                    htmlFor="edit-subtask-postponed-note"
+                    className="block font-heading font-semibold text-xs md:text-sm text-ink-charcoal"
+                  >
+                    Motivo de la posposición{" "}
+                    <span className="font-body text-xs text-ink-muted font-normal">(Opcional)</span>
+                  </label>
+                  <textarea
+                    id="edit-subtask-postponed-note"
+                    value={form.note}
+                    onChange={handleChange("note")}
+                    maxLength={500}
+                    rows={3}
+                    placeholder="Escribe por qué se pospuso o qué falta para retomarla…"
+                    className="input-editorial w-full px-3.5 py-2 text-sm text-ink-charcoal placeholder:text-ink-subtle resize-y"
+                  />
+                  <p className="text-right font-body text-xs text-ink-muted">{form.note.length}/500</p>
+                </div>
+              )}
             </div>
           </section>
 

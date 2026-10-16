@@ -20,7 +20,12 @@ export default function ReduceHoursModal({
   isSubmitting = false,
 }) {
   const originalHours = Number(gestion?.estimatedHours ?? gestion?.estimated_hours ?? 2);
-  const [hours, setHours] = useState(() => Math.max(0.5, originalHours - 0.5));
+  const availableHours = Math.floor((dailyLimitHours - currentHoursOnDay + 1e-9) * 10) / 10;
+  const canResolveByReducing = availableHours >= 0.5;
+  const recommendedHours = canResolveByReducing
+    ? Math.max(0.5, Math.floor((Math.min(originalHours, availableHours) + 1e-9) * 10) / 10)
+    : Math.max(0.5, Math.round((originalHours - 0.5) * 10) / 10);
+  const [hours, setHours] = useState(() => recommendedHours);
   const [fieldError, setFieldError] = useState("");
 
   const formattedDay = targetDateISO
@@ -95,6 +100,9 @@ export default function ReduceHoursModal({
           <p className="font-body text-xs text-ink-muted mt-0.5">
             <strong className="text-ink-charcoal">{gestion?.title || gestion?.name}</strong> · Estimación actual:{" "}
             {originalHours.toFixed(1).replace(".", ",")}h
+            {canResolveByReducing && (
+              <> · Sugerencia: reducir {Math.max(0, originalHours - recommendedHours).toFixed(1).replace(".", ",")}h</>
+            )}
           </p>
         </div>
 
@@ -110,7 +118,14 @@ export default function ReduceHoursModal({
               : "bg-paper-linen/70 border-sepia-border text-ink-muted"
           }`}
         >
-          {isInvalidZero ? (
+          {!canResolveByReducing ? (
+            <div className="flex items-start gap-2">
+              <span className="material-symbols-outlined text-crimson-urgent text-[17px] shrink-0 mt-0.5">event_busy</span>
+              <span>
+                Esta jornada ya tiene {currentHoursOnDay.toFixed(1).replace(".", ",")}h y solo quedan {Math.max(0, availableHours).toFixed(1).replace(".", ",")}h disponibles. Como el mínimo de esta gestión es 0,5h, reducirla no resolvería el conflicto. Elige otra fecha.
+              </span>
+            </div>
+          ) : isInvalidZero ? (
             <div className="flex items-start gap-2">
               <span className="material-symbols-outlined text-crimson-urgent text-[17px] shrink-0 mt-0.5">
                 error
@@ -256,7 +271,7 @@ export default function ReduceHoursModal({
           </button>
           <button
             type="button"
-            disabled={isSubmitting || isInvalidZero}
+              disabled={isSubmitting || isInvalidZero || !canResolveByReducing}
             onClick={handleConfirm}
             className={`px-5 py-2 rounded-sharp font-body text-xs font-semibold tracking-wide border shadow-sm transition-colors inline-flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-terracotta disabled:opacity-60 disabled:cursor-not-allowed ${
               isOptimal
@@ -267,6 +282,8 @@ export default function ReduceHoursModal({
             <span>
               {isSubmitting
                 ? "Guardando…"
+                : !canResolveByReducing
+                ? "Elige otra fecha"
                 : isOptimal
                 ? "Confirmar cambio"
                 : "Confirmar con aviso"}
