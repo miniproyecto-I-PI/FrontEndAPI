@@ -16,6 +16,7 @@ import logo from "../../assets/logo.png";
  *  2. `onSearchChange`/`searchValue` son opcionales: el buscador solo se
  *     muestra en las páginas que lo conectan (/hoy y /eventos).
  *  3. "Mis Eventos" queda activo en /eventos, /evento/:id y /crear.
+ *  4. "Progreso" abre el resumen global de gestiones.
  */
 export default function Header({ searchValue, onSearchChange }) {
   const navigate = useNavigate();
@@ -25,6 +26,7 @@ export default function Header({ searchValue, onSearchChange }) {
 
   const isEventsSection =
     pathname.startsWith("/eventos") || pathname.startsWith("/evento/") || pathname === "/crear";
+  const isProgressSection = pathname === "/progreso";
 
   const navLinkClasses = (isActive) =>
     [
@@ -49,6 +51,9 @@ export default function Header({ searchValue, onSearchChange }) {
             </NavLink>
             <NavLink to="/eventos" className={() => navLinkClasses(isEventsSection)}>
               Mis Eventos
+            </NavLink>
+            <NavLink to="/progreso" className={() => navLinkClasses(isProgressSection)}>
+              Progreso
             </NavLink>
           </nav>
         </div>
