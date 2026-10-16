@@ -4,7 +4,7 @@ import Header from "./Header";
 import Footer from "./Footer";
 
 /** Rutas cuyo contenido filtra con el buscador del Header. */
-const SEARCHABLE_ROUTES = ["/hoy", "/eventos"];
+const SEARCHABLE_ROUTES = ["/hoy", "/eventos", "/progreso"];
 
 /**
  * MainLayout.jsx

@@ -1,9 +1,9 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useOutletContext } from "react-router-dom";
 import { EVENT_TYPE_LABEL } from "../data/eventTypes";
 import { useProgressOverview } from "../hooks/useProgressOverview";
 import { formatShortDate, toDateInputValue } from "../utils/dateUtils";
 import PageContainer from "../components/layout/PageContainer";
-import PageHeader from "../components/layout/PageHeader";
+import PageHeader, { Breadcrumb } from "../components/layout/PageHeader";
 import StateCard from "../components/common/StateCard";
 
 const TASK_STATES = [
@@ -27,11 +27,23 @@ function getTaskCounts(event) {
 
 export default function ProgresoPage() {
   const navigate = useNavigate();
+  const { search, setSearch } = useOutletContext();
   const { summary, events, status, errorMessage, reload } = useProgressOverview();
+  const query = search.trim().toLocaleLowerCase("es");
+  const filteredEvents = query
+    ? events.filter((event) => [event.name, event.place, event.contact, EVENT_TYPE_LABEL[event.type] ?? event.type]
+      .some((value) => value?.toLocaleLowerCase("es").includes(query)))
+    : events;
 
   return (
     <PageContainer>
-      <PageHeader eyebrow="Resumen" title="Progreso" accent="de eventos" description="Avance de las gestiones logísticas de cada evento." />
+      <PageHeader
+        breadcrumb={<Breadcrumb backTo="/hoy" items={[{ label: "Convoka", to: "/hoy" }, { label: "Progreso" }]} />}
+        eyebrow="Resumen"
+        title="Progreso"
+        accent="de eventos"
+        description="Avance de las gestiones logísticas de cada evento."
+      />
 
       {status === "loading" && <LoadingState />}
 
@@ -81,11 +93,22 @@ export default function ProgresoPage() {
                 <span className="font-mono-stamp text-[10px] uppercase tracking-wider font-bold text-ink-muted">Seguimiento</span>
                 <h2 id="progress-events-title" className="font-heading text-xl font-bold text-ink-charcoal">Progreso por evento</h2>
               </div>
-              <span className="font-mono-stamp text-xs text-ink-muted">{events.length} {events.length === 1 ? "evento" : "eventos"}</span>
+              <span className="font-mono-stamp text-xs text-ink-muted">{filteredEvents.length} de {events.length} {events.length === 1 ? "evento" : "eventos"}</span>
             </div>
-            <ul className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-              {events.map((event) => <EventProgressCard key={event.id} event={event} />)}
-            </ul>
+            {filteredEvents.length === 0 ? (
+              <StateCard
+                icon="search_off"
+                stamp="0 resultados encontrados"
+                title="No se encontraron eventos"
+                description="Ningún evento coincide con tu búsqueda. Prueba con otro nombre, lugar, contacto o tipo."
+                primaryAction={{ label: "Limpiar búsqueda", icon: "filter_list_off", onClick: () => setSearch("") }}
+                compact
+              />
+            ) : (
+              <ul className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                {filteredEvents.map((event) => <EventProgressCard key={event.id} event={event} />)}
+              </ul>
+            )}
           </section>
         </div>
       )}
