@@ -122,6 +122,46 @@ export async function getEventsWithProgress(options = {}) {
   if (options.simulateError) throw new Error("No pudimos cargar tus eventos");
   return getEvents();
 }
+/**
+ * GET /progress supplies the authoritative aggregate and per-event percentages.
+ * GET /events supplies each event's persisted task states for the progress cards.
+ * The backend prefetches those tasks, so this stays at two requests rather than N+1.
+ */
+export async function getProgressOverview() {
+  const [overview, events] = await Promise.all([request("/progress"), getEvents()]);
+  if (!overview?.summary || !Array.isArray(overview.events)) {
+    throw new Error("El servidor devolvió un resumen de progreso incompleto.");
+  }
+
+  const eventById = new Map(events.map((event) => [String(event.id), event]));
+  const progressEvents = overview.events.map((item) => {
+    const event = eventById.get(String(item.event_id));
+    if (!event) {
+      throw new Error("El resumen y el listado de eventos no coinciden. Actualiza la vista para volver a sincronizar.");
+    }
+    return {
+      ...event,
+      name: item.event_name,
+      type: typeToFrontend(item.event_type),
+      dateTime: item.event_datetime,
+      progress: {
+        done: Number(item.done) || 0,
+        total: Number(item.total) || 0,
+        percent: Number(item.percent) || 0,
+      },
+    };
+  });
+
+  return {
+    summary: {
+      totalEvents: Number(overview.summary.total_events) || 0,
+      totalSubtasks: Number(overview.summary.total_subtasks) || 0,
+      totalDone: Number(overview.summary.total_done) || 0,
+      globalPercent: Number(overview.summary.global_percent) || 0,
+    },
+    events: progressEvents,
+  };
+}
 export async function getEventById(id) { return toEvent(await request(`/events/${id}`)); }
 export async function getEventSubtasks(id) { return (await request(`/events/${id}/subtasks`)).map(toSubtask); }
 export async function addSubtask(id, task) { return toSubtask(await request(`/events/${id}/subtasks`, json("POST", fromSubtask(task)))); }
