@@ -13,8 +13,8 @@ import logo from "../../assets/logo.png";
  *
  *  1. El ícono de configuración abre el modal "límite diario de horas"
  *     (US-12). Por Arquitectura de Información (C5) es un modal global.
- *  2. `onSearchChange`/`searchValue` son opcionales: el buscador solo se
- *     muestra en las páginas que lo conectan (/hoy, /eventos y /progreso).
+ *  2. `onSearchChange`/`searchValue` son opcionales: el buscador se muestra
+ *     en /hoy, /eventos, /progreso y en el detalle de cada evento.
  *  3. "Mis Eventos" queda activo en /eventos, /evento/:id y /crear.
  *  4. "Progreso" abre el resumen global de gestiones.
  */

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useOutletContext, useParams } from "react-router-dom";
 
 import { useEventSubtasks } from "../hooks/useEventSubtasks";
 import { deleteEvent, getToday } from "../services/api";
@@ -36,6 +36,7 @@ export default function EventoDetallePage() {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { search, setSearch } = useOutletContext();
 
   const {
     event,
@@ -90,6 +91,7 @@ export default function EventoDetallePage() {
   }, [subtasks]);
 
   const filtered = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase("es");
     const sorted = [...subtasks].sort((a, b) => {
       const aDone = isDone(a);
       const bDone = isDone(b);
@@ -100,17 +102,20 @@ export default function EventoDetallePage() {
     );
     });
 
+    let result = sorted;
     if (filter === "vencidas")
-      return sorted.filter(
+      result = result.filter(
         (s) => !isDone(s) && classifyByDate(s.targetDate) === "vencida"
       );
     if (filter === "pendientes")
-      return sorted.filter(
+      result = result.filter(
         (s) => !isDone(s) && classifyByDate(s.targetDate) !== "vencida"
       );
-    if (filter === "completadas") return sorted.filter(isDone);
-    return sorted;
-  }, [subtasks, filter]);
+    if (filter === "completadas") result = result.filter(isDone);
+    if (!query) return result;
+    return result.filter((subtask) => [subtask.title, subtask.provider, subtask.note]
+      .some((value) => value?.toLocaleLowerCase("es").includes(query)));
+  }, [subtasks, filter, search]);
 
 
 
@@ -297,9 +302,16 @@ async function handleEditEvent(payload) {
             {status === "success" && stats.total > 0 && filtered.length === 0 && (
               <StateCard
                 icon="filter_alt_off"
-                title="No hay gestiones en este filtro"
-                description="Cambia de filtro para ver el resto de la hoja de ruta."
-                primaryAction={{ label: "Ver todas", icon: "list", onClick: () => setFilter("todas") }}
+                title={search.trim() ? "No se encontraron gestiones" : "No hay gestiones en este filtro"}
+                description={search.trim() ? "Ninguna gestión coincide con tu búsqueda y el filtro seleccionado." : "Cambia de filtro para ver el resto de la hoja de ruta."}
+                primaryAction={{
+                  label: search.trim() ? "Limpiar búsqueda" : "Ver todas",
+                  icon: search.trim() ? "search_off" : "list",
+                  onClick: () => {
+                    setFilter("todas");
+                    setSearch("");
+                  },
+                }}
                 compact
               />
             )}

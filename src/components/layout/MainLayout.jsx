@@ -23,7 +23,8 @@ export default function MainLayout() {
   // Reiniciar el buscador al navegar sin un efecto adicional.
   const search = searchState.path === pathname ? searchState.value : "";
   const setSearch = (value) => setSearchState({ path: pathname, value });
-  const isSearchable = SEARCHABLE_ROUTES.includes(pathname);
+  const isEventDetail = /^\/evento\/[^/]+$/.test(pathname);
+  const isSearchable = SEARCHABLE_ROUTES.includes(pathname) || isEventDetail;
 
   return (
     <div className="min-h-screen flex flex-col bg-paper-base dot-grid-pattern font-body text-ink-charcoal antialiased selection:bg-terracotta-light selection:text-terracotta-dark">
