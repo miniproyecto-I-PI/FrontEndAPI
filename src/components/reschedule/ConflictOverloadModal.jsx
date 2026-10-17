@@ -212,7 +212,7 @@ export default function ConflictOverloadModal({
                 </span>
                 <div>
                   <h3 className="font-body text-xs md:text-sm font-bold text-ink-charcoal">
-                    Posponer
+                    Aplazar
                   </h3>
                   <p className="font-body text-[11px] text-ink-muted">
                     {isEventEnd
