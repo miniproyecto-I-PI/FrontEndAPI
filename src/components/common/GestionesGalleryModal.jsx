@@ -27,31 +27,25 @@ export default function GestionesGalleryModal({
   onReschedule,
   onPostpone,
   onEdit,
+  onDelete,
 }) {
   const total = gestiones.length;
   const [currentIndex, setCurrentIndex] = useState(() => {
     if (initialIndex >= 0 && initialIndex < total) return initialIndex;
     return 0;
   });
-  const [viewMode, setViewMode] = useState("slider"); // 'slider' | 'list'
+  const [viewMode, setViewMode] = useState("slider");
 
   const touchStartXRef = useRef(null);
   const modalRef = useRef(null);
 
-  // Manejo de teclado
   useEffect(() => {
     if (!isOpen) return;
-
     function handleKeyDown(e) {
-      if (e.key === "Escape") {
-        onClose?.();
-      } else if (e.key === "ArrowLeft") {
-        setCurrentIndex((prev) => (prev > 0 ? prev - 1 : total - 1));
-      } else if (e.key === "ArrowRight") {
-        setCurrentIndex((prev) => (prev < total - 1 ? prev + 1 : 0));
-      }
+      if (e.key === "Escape") onClose?.();
+      else if (e.key === "ArrowLeft") setCurrentIndex((prev) => (prev > 0 ? prev - 1 : total - 1));
+      else if (e.key === "ArrowRight") setCurrentIndex((prev) => (prev < total - 1 ? prev + 1 : 0));
     }
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, total, onClose]);
@@ -60,41 +54,22 @@ export default function GestionesGalleryModal({
 
   const currentGestion = gestiones[currentIndex] || gestiones[0];
 
-  function handlePrev() {
-    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : total - 1));
-  }
+  function handlePrev() { setCurrentIndex((prev) => (prev > 0 ? prev - 1 : total - 1)); }
+  function handleNext() { setCurrentIndex((prev) => (prev < total - 1 ? prev + 1 : 0)); }
 
-  function handleNext() {
-    setCurrentIndex((prev) => (prev < total - 1 ? prev + 1 : 0));
-  }
-
-  // Soporte para gestos táctiles (Swipe)
-  function handleTouchStart(e) {
-    touchStartXRef.current = e.touches[0].clientX;
-  }
-
+  function handleTouchStart(e) { touchStartXRef.current = e.touches[0].clientX; }
   function handleTouchEnd(e) {
     if (touchStartXRef.current === null) return;
     const touchEndX = e.changedTouches[0].clientX;
     const diffX = touchEndX - touchStartXRef.current;
     touchStartXRef.current = null;
-
-    if (diffX > 45) {
-      // Swipe hacia la derecha -> anterior
-      handlePrev();
-    } else if (diffX < -45) {
-      // Swipe hacia la izquierda -> siguiente
-      handleNext();
-    }
+    if (diffX > 45) handlePrev();
+    else if (diffX < -45) handleNext();
   }
 
-  // Determinar variante de tarjeta según el tono/título
   let cardVariant = "hoy-secundaria";
-  if (tone === "crimson" || title.toLowerCase().includes("vencida")) {
-    cardVariant = "vencida";
-  } else if (title.toLowerCase().includes("próxima")) {
-    cardVariant = "proxima";
-  }
+  if (tone === "crimson" || title.toLowerCase().includes("vencida")) cardVariant = "vencida";
+  else if (title.toLowerCase().includes("próxima")) cardVariant = "proxima";
 
   const modalContent = (
     <div
@@ -106,30 +81,22 @@ export default function GestionesGalleryModal({
       onClick={(e) => e.target === e.currentTarget && onClose?.()}
     >
       <div className="relative w-full max-w-2xl bg-paper-card border border-sepia-border rounded-sharp shadow-2xl warm-card-shadow flex flex-col max-h-[92vh] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-        {/* Cabecera del modal */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-sepia-border bg-paper-linen/60">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className="font-heading text-xs font-bold text-ink-muted">
-              {numeral}
-            </span>
-            <h2 className="font-heading text-lg sm:text-xl font-bold text-ink-charcoal truncate">
-              {title}
-            </h2>
+            <span className="font-heading text-xs font-bold text-ink-muted">{numeral}</span>
+            <h2 className="font-heading text-lg sm:text-xl font-bold text-ink-charcoal truncate">{title}</h2>
             <span className="px-2 py-0.5 rounded-sharp bg-paper-base border border-sepia-border font-stamp text-[10px] font-bold text-ink-muted shrink-0">
               {total} gestiones
             </span>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Toggle de vista */}
             <div className="hidden sm:flex items-center bg-paper-base border border-sepia-border rounded-sharp p-0.5 text-xs font-body">
               <button
                 type="button"
                 onClick={() => setViewMode("slider")}
                 className={`px-2.5 py-1 rounded-sharp transition-colors flex items-center gap-1 ${
-                  viewMode === "slider"
-                    ? "bg-terracotta text-[#FAF6F0] font-semibold"
-                    : "text-ink-muted hover:text-ink-charcoal"
+                  viewMode === "slider" ? "bg-terracotta text-[#FAF6F0] font-semibold" : "text-ink-muted hover:text-ink-charcoal"
                 }`}
                 title="Modo carrusel deslizable"
               >
@@ -140,9 +107,7 @@ export default function GestionesGalleryModal({
                 type="button"
                 onClick={() => setViewMode("list")}
                 className={`px-2.5 py-1 rounded-sharp transition-colors flex items-center gap-1 ${
-                  viewMode === "list"
-                    ? "bg-terracotta text-[#FAF6F0] font-semibold"
-                    : "text-ink-muted hover:text-ink-charcoal"
+                  viewMode === "list" ? "bg-terracotta text-[#FAF6F0] font-semibold" : "text-ink-muted hover:text-ink-charcoal"
                 }`}
                 title="Modo lista completa"
               >
@@ -151,7 +116,6 @@ export default function GestionesGalleryModal({
               </button>
             </div>
 
-            {/* Botón cerrar */}
             <button
               type="button"
               onClick={onClose}
@@ -163,14 +127,12 @@ export default function GestionesGalleryModal({
           </div>
         </div>
 
-        {/* Cuerpo del modal según modo */}
         {viewMode === "slider" ? (
           <div
-            className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col justify-between select-none"
+            className="flex-1 overflow-y-auto scrollbar-editorial p-4 sm:p-6 flex flex-col justify-between select-none"
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
           >
-            {/* Barra superior del visor con contador y flechas rápidas */}
             <div className="flex items-center justify-between mb-3 text-xs font-body text-ink-muted">
               <span className="font-stamp text-[11px] font-bold text-terracotta uppercase tracking-wider">
                 Gestión {currentIndex + 1} de {total}
@@ -180,9 +142,7 @@ export default function GestionesGalleryModal({
               </span>
             </div>
 
-            {/* Contenedor central con tarjeta y flechas laterales */}
             <div className="relative flex items-center gap-2 sm:gap-4 my-auto py-2">
-              {/* Flecha izquierda */}
               <button
                 type="button"
                 onClick={handlePrev}
@@ -193,24 +153,19 @@ export default function GestionesGalleryModal({
                 <span className="material-symbols-outlined text-[20px]">chevron_left</span>
               </button>
 
-              {/* Tarjeta activa */}
               <div className="flex-1 min-w-0 transition-all duration-200">
                 <TaskCard
                   key={currentGestion.id}
                   gestion={currentGestion}
                   variant={cardVariant}
                   onMarkDone={() => onMarkDone?.(currentGestion)}
-                  onReschedule={() => {
-                    onReschedule?.(currentGestion);
-                  }}
+                  onReschedule={() => onReschedule?.(currentGestion)}
                   onPostpone={() => onPostpone?.(currentGestion)}
-                  onEdit={() => {
-                    onEdit?.(currentGestion);
-                  }}
+                  onEdit={() => onEdit?.(currentGestion)}
+                  onDelete={() => onDelete?.(currentGestion)}
                 />
               </div>
 
-              {/* Flecha derecha */}
               <button
                 type="button"
                 onClick={handleNext}
@@ -222,9 +177,8 @@ export default function GestionesGalleryModal({
               </button>
             </div>
 
-            {/* Paginador inferior con tira de puntos / pills */}
             <div className="pt-4 mt-2 border-t border-sepia-border/60">
-              <div className="flex items-center justify-center gap-1.5 flex-wrap max-h-24 overflow-y-auto px-2 py-1">
+              <div className="flex items-center justify-center gap-1.5 flex-wrap max-h-24 overflow-y-auto scrollbar-editorial px-2 py-1">
                 {gestiones.map((g, idx) => {
                   const isActive = idx === currentIndex;
                   return (
@@ -246,8 +200,7 @@ export default function GestionesGalleryModal({
             </div>
           </div>
         ) : (
-          /* Modo lista completa */
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3">
+          <div className="flex-1 overflow-y-auto scrollbar-editorial p-4 sm:p-6 space-y-3">
             {gestiones.map((g, idx) => (
               <div key={g.id || idx} className="relative">
                 <div className="text-[10px] font-stamp text-ink-muted uppercase font-bold mb-1">
@@ -260,17 +213,15 @@ export default function GestionesGalleryModal({
                   onReschedule={() => onReschedule?.(g)}
                   onPostpone={() => onPostpone?.(g)}
                   onEdit={() => onEdit?.(g)}
+                  onDelete={() => onDelete?.(g)}
                 />
               </div>
             ))}
           </div>
         )}
 
-        {/* Footer del modal */}
         <div className="flex items-center justify-between px-5 py-3 border-t border-sepia-border bg-paper-linen/40">
-          <span className="font-body text-xs text-ink-muted">
-            {currentIndex + 1} de {total} gestiones
-          </span>
+          <span className="font-body text-xs text-ink-muted">{currentIndex + 1} de {total} gestiones</span>
           <button
             type="button"
             onClick={onClose}

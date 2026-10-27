@@ -18,6 +18,7 @@ export default function TaskCardGalleryOverlay({
   onReschedule,
   onPostpone,
   onEdit,
+  onDelete,
 }) {
   return (
     <div className="relative group/gallery-item h-full overflow-hidden rounded-sharp">
@@ -30,6 +31,7 @@ export default function TaskCardGalleryOverlay({
           onReschedule={onReschedule}
           onPostpone={onPostpone}
           onEdit={onEdit}
+          onDelete={onDelete}
         />
       </div>
 

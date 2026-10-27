@@ -22,7 +22,7 @@ import { formatOverdueLabel, formatShortDate, formatUpcomingLabel } from "../../
  * @param {() => void} [props.onEdit]  abre "Editar gestión" (título y botón Editar)
  * @param {Date} [props.today]
  */
-export default function TaskCard({ gestion, variant, single = false, onMarkDone, onReschedule, onPostpone, onEdit, today = new Date() }) {
+export default function TaskCard({ gestion, variant, single = false, onMarkDone, onReschedule, onPostpone, onEdit, onDelete, today = new Date() }) {
   const isHero = variant === "hoy-hero";
   const isSecondary = variant === "hoy-secundaria";
   const isVencida = variant === "vencida";
@@ -42,7 +42,7 @@ export default function TaskCard({ gestion, variant, single = false, onMarkDone,
     .filter(Boolean)
     .join(" ");
 
-  const props = { gestion, today, onMarkDone, onReschedule, onPostpone, onEdit };
+  const props = { gestion, today, onMarkDone, onReschedule, onPostpone, onEdit, onDelete };
   return (
     <article className={containerClasses} data-gestion-id={gestion.id} aria-label={gestion.title}>
       {single && (isVencida || isProxima) ? (
@@ -53,7 +53,7 @@ export default function TaskCard({ gestion, variant, single = false, onMarkDone,
           {isHero && <HeroBody {...props} />}
           {isSecondary && <SecondaryBody {...props} />}
           {isProxima && <ProximaBody {...props} />}
-          {isEjecutada && <EjecutadaBody gestion={gestion} onEdit={onEdit} />}
+          {isEjecutada && <EjecutadaBody gestion={gestion} onEdit={onEdit} onDelete={onDelete} />}
         </>
       )}
     </article>
@@ -74,8 +74,9 @@ function PostponedTag() {
   );
 }
 
-function ActionButtons({ onMarkDone, onReschedule, onPostpone, size = "normal" }) {
+function ActionButtons({ gestion, onMarkDone, onReschedule, onPostpone, onEdit, onDelete, size = "normal" }) {
   const base = size === "normal" ? "px-3.5 py-1.5 text-xs" : "px-3 py-1 text-xs";
+  const ghost = `${base} rounded-sharp bg-paper-card hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body font-medium inline-flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1`;
   return (
     <>
       <button
@@ -86,17 +87,36 @@ function ActionButtons({ onMarkDone, onReschedule, onPostpone, size = "normal" }
         <span className="material-symbols-outlined text-[15px]" aria-hidden="true">check_circle</span>
         <span>Marcar como hecha</span>
       </button>
-      <button
-        type="button"
-        onClick={onReschedule}
-        className={`${base} rounded-sharp bg-paper-card hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body font-medium inline-flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1`}
-      >
+      <button type="button" onClick={onReschedule} className={ghost}>
         <span className="material-symbols-outlined text-[15px] text-ink-muted" aria-hidden="true">event_repeat</span>
         <span>Reprogramar</span>
       </button>
-      <button type="button" onClick={onPostpone} className={`${base} rounded-sharp bg-paper-card hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body font-medium inline-flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1`}>
-        <span className="material-symbols-outlined text-[15px]" aria-hidden="true">pause_circle</span><span>Posponer</span>
+      <button type="button" onClick={onPostpone} className={ghost}>
+        <span className="material-symbols-outlined text-[15px] text-ink-muted" aria-hidden="true">pause_circle</span>
+        <span>Posponer</span>
       </button>
+      {onEdit && (
+        <button
+          type="button"
+          onClick={onEdit}
+          className={ghost}
+          aria-label={gestion ? `Editar gestión ${gestion.title}` : "Editar gestión"}
+        >
+          <span className="material-symbols-outlined text-[15px] text-ink-muted" aria-hidden="true">edit</span>
+          <span>Editar</span>
+        </button>
+      )}
+      {onDelete && (
+        <button
+          type="button"
+          onClick={onDelete}
+          className={`${base} rounded-sharp bg-paper-card hover:bg-crimson-paper border border-sepia-border hover:border-crimson-urgent/60 text-ink-charcoal hover:text-crimson-urgent font-body font-medium inline-flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-crimson-urgent focus-visible:ring-offset-1`}
+          aria-label={gestion ? `Eliminar gestión ${gestion.title}` : "Eliminar gestión"}
+        >
+          <span className="material-symbols-outlined text-[15px] text-ink-muted" aria-hidden="true">delete</span>
+          <span>Eliminar</span>
+        </button>
+      )}
     </>
   );
 }
@@ -116,14 +136,10 @@ function EditableTitle({ gestion, onEdit }) {
 }
 
 function Hours({ value }) {
-  return (
-    <span className="font-stamp text-[11px] text-ink-muted">
-      {value} hrs
-    </span>
-  );
+  return <span className="font-stamp text-[11px] text-ink-muted">{value} hrs</span>;
 }
 
-function VencidaBody({ gestion, today, onMarkDone, onReschedule, onPostpone, onEdit }) {
+function VencidaBody({ gestion, today, onMarkDone, onReschedule, onPostpone, onEdit, onDelete }) {
   return (
     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
       <div className="space-y-1.5 flex-1 min-w-0">
@@ -146,14 +162,14 @@ function VencidaBody({ gestion, today, onMarkDone, onReschedule, onPostpone, onE
           </div>
         )}
       </div>
-      <div className="flex items-center gap-2 self-end lg:self-center shrink-0 pt-2 lg:pt-0">
-        <ActionButtons onMarkDone={onMarkDone} onReschedule={onReschedule} onPostpone={onPostpone} />
+      <div className="flex flex-wrap items-center gap-2 self-end lg:self-center shrink-0 pt-2 lg:pt-0">
+        <ActionButtons gestion={gestion} onMarkDone={onMarkDone} onReschedule={onReschedule} onPostpone={onPostpone} onEdit={onEdit} onDelete={onDelete} />
       </div>
     </div>
   );
 }
 
-function HeroBody({ gestion, onMarkDone, onReschedule, onPostpone, onEdit }) {
+function HeroBody({ gestion, onMarkDone, onReschedule, onPostpone, onEdit, onDelete }) {
   return (
     <>
       <div className="space-y-2.5">
@@ -179,15 +195,15 @@ function HeroBody({ gestion, onMarkDone, onReschedule, onPostpone, onEdit }) {
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2.5 pt-3 mt-3 border-t border-sepia-border">
         <span className="font-body text-xs text-ink-muted">{gestion.provider}</span>
-        <div className="flex items-center gap-2">
-          <ActionButtons onMarkDone={onMarkDone} onReschedule={onReschedule} onPostpone={onPostpone} size="compact" />
+        <div className="flex flex-wrap items-center gap-2">
+          <ActionButtons gestion={gestion} onMarkDone={onMarkDone} onReschedule={onReschedule} onPostpone={onPostpone} onEdit={onEdit} onDelete={onDelete} size="compact" />
         </div>
       </div>
     </>
   );
 }
 
-function SecondaryBody({ gestion, onMarkDone, onReschedule, onPostpone, onEdit }) {
+function SecondaryBody({ gestion, onMarkDone, onReschedule, onPostpone, onEdit, onDelete }) {
   return (
     <>
       <div>
@@ -207,13 +223,13 @@ function SecondaryBody({ gestion, onMarkDone, onReschedule, onPostpone, onEdit }
         )}
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2 pt-2.5 mt-2 border-t border-sepia-border/50">
-        <ActionButtons onMarkDone={onMarkDone} onReschedule={onReschedule} onPostpone={onPostpone} size="compact" />
+        <ActionButtons gestion={gestion} onMarkDone={onMarkDone} onReschedule={onReschedule} onPostpone={onPostpone} onEdit={onEdit} onDelete={onDelete} size="compact" />
       </div>
     </>
   );
 }
 
-function ProximaBody({ gestion, today, onMarkDone, onReschedule, onPostpone, onEdit }) {
+function ProximaBody({ gestion, today, onMarkDone, onReschedule, onPostpone, onEdit, onDelete }) {
   return (
     <>
       <div className="space-y-2">
@@ -233,36 +249,15 @@ function ProximaBody({ gestion, today, onMarkDone, onReschedule, onPostpone, onE
       </div>
       <div className="pt-3 mt-3 border-t border-sepia-border/50">
         {gestion.provider && <span className="font-body text-xs text-ink-muted block mb-2 font-medium">{gestion.provider}</span>}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onMarkDone}
-            className="flex-1 px-3 py-1.5 rounded-sharp bg-terracotta text-[#FAF6F0] font-body text-xs font-semibold inline-flex items-center justify-center gap-1 hover:bg-terracotta-dark transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1"
-          >
-            <span className="material-symbols-outlined text-[14px]" aria-hidden="true">check</span>
-            <span>Marcar hecha</span>
-          </button>
-          <button
-            type="button"
-            onClick={onReschedule}
-            className="px-3 py-1.5 rounded-sharp bg-paper-card hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1"
-          >
-            Reprogramar
-          </button>
-          <button
-            type="button"
-            onClick={onPostpone}
-            className="px-3 py-1.5 rounded-sharp bg-paper-card hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1"
-          >
-            Posponer
-          </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <ActionButtons gestion={gestion} onMarkDone={onMarkDone} onReschedule={onReschedule} onPostpone={onPostpone} onEdit={onEdit} onDelete={onDelete} size="compact" />
         </div>
       </div>
     </>
   );
 }
 
-function EjecutadaBody({ gestion, onEdit }) {
+function EjecutadaBody({ gestion, onEdit, onDelete }) {
   return (
     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
       <div className="space-y-1.5 flex-1 min-w-0">
@@ -277,14 +272,14 @@ function EjecutadaBody({ gestion, onEdit }) {
           </span>
           <span className="font-body font-medium text-ink-charcoal">{gestion.eventName}</span>
           <span className="text-sepia-dark" aria-hidden="true">•</span>
-          <Hours value={gestion.estimatedHours} long />
+          <Hours value={gestion.estimatedHours} />
         </div>
         <h3 className="font-heading text-xl text-ink-muted font-semibold leading-snug"><EditableTitle gestion={gestion} onEdit={onEdit} /></h3>
         {(gestion.provider || gestion.note) && (
           <p className="text-xs font-body text-ink-muted pt-0.5">{[gestion.provider, gestion.note].filter(Boolean).join(" • ")}</p>
         )}
       </div>
-      <div className="flex items-center gap-2 self-end lg:self-center shrink-0 pt-2 lg:pt-0">
+      <div className="flex flex-wrap items-center gap-2 self-end lg:self-center shrink-0 pt-2 lg:pt-0">
         <button
           type="button"
           onClick={onEdit}
@@ -295,12 +290,24 @@ function EjecutadaBody({ gestion, onEdit }) {
           <span className="material-symbols-outlined text-[15px] text-ink-muted" aria-hidden="true">edit</span>
           <span>Editar</span>
         </button>
+        {onDelete && (
+          <button
+            type="button"
+            onClick={onDelete}
+            title="Eliminar gestión"
+            aria-label={`Eliminar gestión ${gestion.title}`}
+            className="px-3.5 py-1.5 text-xs rounded-sharp bg-paper-card hover:bg-crimson-paper border border-sepia-border hover:border-crimson-urgent/60 text-ink-charcoal hover:text-crimson-urgent font-body font-medium inline-flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-crimson-urgent focus-visible:ring-offset-1"
+          >
+            <span className="material-symbols-outlined text-[15px] text-ink-muted" aria-hidden="true">delete</span>
+            <span>Eliminar</span>
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
-function SingleCardBody({ gestion, variant, today, onMarkDone, onReschedule, onPostpone, onEdit }) {
+function SingleCardBody({ gestion, variant, today, onMarkDone, onReschedule, onPostpone, onEdit, onDelete }) {
   const isVencida = variant === "vencida";
   return (
     <>
@@ -323,7 +330,7 @@ function SingleCardBody({ gestion, variant, today, onMarkDone, onReschedule, onP
               {gestion.eventName}
             </span>
           </div>
-          <Hours value={gestion.estimatedHours} long />
+          <Hours value={gestion.estimatedHours} />
         </div>
 
         <div>
@@ -344,8 +351,8 @@ function SingleCardBody({ gestion, variant, today, onMarkDone, onReschedule, onP
         <span className="font-body text-xs text-ink-muted font-medium">
           {gestion.provider ? `Encargado: ${gestion.provider}` : ""}
         </span>
-        <div className="flex items-center gap-2">
-          <ActionButtons onMarkDone={onMarkDone} onReschedule={onReschedule} onPostpone={onPostpone} size="normal" />
+        <div className="flex flex-wrap items-center gap-2">
+          <ActionButtons gestion={gestion} onMarkDone={onMarkDone} onReschedule={onReschedule} onPostpone={onPostpone} onEdit={onEdit} onDelete={onDelete} size="normal" />
         </div>
       </div>
     </>
