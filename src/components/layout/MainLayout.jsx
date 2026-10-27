@@ -31,12 +31,11 @@ export default function MainLayout() {
         searchValue={isSearchable ? search : undefined}
         onSearchChange={isSearchable ? setSearch : undefined}
       />
-      {/* Espaciador para el Header fijo (reemplaza el pt-16 que tenía <main>) */}
       <div className="h-16 flex-shrink-0" aria-hidden="true" />
       <main className="w-full flex-1 min-h-0 overflow-y-auto scrollbar-editorial">
         <Outlet context={{ search, setSearch }} />
+        <Footer />
       </main>
-      <Footer />
     </div>
   );
 }
