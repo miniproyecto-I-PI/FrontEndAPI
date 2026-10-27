@@ -168,10 +168,10 @@ export default function EditSubtaskModal({
         </div>
 
         <form
-          onSubmit={handleSubmit}
-          noValidate
-          className="p-6 md:p-8 overflow-y-auto flex-1 space-y-6"
-        >
+  onSubmit={handleSubmit}
+  noValidate
+  className="p-6 md:p-8 overflow-y-auto scrollbar-editorial flex-1 space-y-6"
+>
           <section className="bg-paper-card border border-sepia-border rounded-sharp p-5 md:p-6 space-y-6">
             <div className="space-y-4">
               <ModalSectionHeader

@@ -20,19 +20,20 @@ export default function MainLayout() {
   const { pathname } = useLocation();
   const [searchState, setSearchState] = useState({ path: pathname, value: "" });
 
-  // Reiniciar el buscador al navegar sin un efecto adicional.
   const search = searchState.path === pathname ? searchState.value : "";
   const setSearch = (value) => setSearchState({ path: pathname, value });
   const isEventDetail = /^\/evento\/[^/]+$/.test(pathname);
   const isSearchable = SEARCHABLE_ROUTES.includes(pathname) || isEventDetail;
 
   return (
-    <div className="min-h-screen flex flex-col bg-paper-base dot-grid-pattern font-body text-ink-charcoal antialiased selection:bg-terracotta-light selection:text-terracotta-dark">
+    <div className="h-screen flex flex-col bg-paper-base dot-grid-pattern font-body text-ink-charcoal antialiased selection:bg-terracotta-light selection:text-terracotta-dark">
       <Header
         searchValue={isSearchable ? search : undefined}
         onSearchChange={isSearchable ? setSearch : undefined}
       />
-      <main className="w-full pt-16 flex-1">
+      {/* Espaciador para el Header fijo (reemplaza el pt-16 que tenía <main>) */}
+      <div className="h-16 flex-shrink-0" aria-hidden="true" />
+      <main className="w-full flex-1 min-h-0 overflow-y-auto scrollbar-editorial">
         <Outlet context={{ search, setSearch }} />
       </main>
       <Footer />
