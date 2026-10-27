@@ -20,7 +20,7 @@ import TaskCardGalleryOverlay from "../components/tasks/TaskCardGalleryOverlay";
 import HoyFilters from "../components/tasks/HoyFilters";
 import HoyKanbanView from "../components/tasks/HoyKanbanView";
 import SimulationToolbar from "../components/dev/SimulationToolbar";
-import DeleteSubtaskModal from "../components/common/DeleteSubtaskModal";
+import DeleteSubtaskModal from "../components/eventos/DeleteSubtaskModal";
 
 /**
  * HoyPage.jsx — ruta "/hoy" (T2: US-04 vista Hoy + US-05 filtros).
