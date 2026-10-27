@@ -32,7 +32,7 @@ export default function MainLayout() {
         onSearchChange={isSearchable ? setSearch : undefined}
       />
       <div className="h-16 flex-shrink-0" aria-hidden="true" />
-      <main className="w-full flex-1 min-h-0 overflow-y-auto scrollbar-editorial">
+      <main className="w-full min-h-0 overflow-y-auto scrollbar-editorial">
         <Outlet context={{ search, setSearch }} />
         <Footer />
       </main>
