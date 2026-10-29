@@ -40,22 +40,19 @@ export default function TaskCardGalleryOverlay({
         type="button"
         onClick={onClickMore}
         aria-label={`Ver ${remainingCount} gestiones más en galería interactiva`}
-        className="absolute inset-0 z-20 rounded-sharp bg-[#FAF6F0]/94 hover:bg-[#FAF6F0]/98 backdrop-blur-[3px] border-2 border-dashed border-sepia-dark/40 hover:border-terracotta/70 transition-all flex flex-col items-center justify-center p-4 text-ink-charcoal cursor-pointer text-center select-none shadow-sm focus:outline-none focus:ring-2 focus:ring-terracotta focus:ring-offset-2 focus:ring-offset-paper-card"
+        className="absolute inset-0 z-20 rounded-sharp bg-[#FAF6F0]/94 hover:bg-[#FAF6F0]/98 backdrop-blur-[3px] border-2 border-dashed border-sepia-dark/40 hover:border-terracotta/70 transition-all flex flex-col items-center gap-1 justify-center p-4 text-ink-charcoal cursor-pointer text-center select-none shadow-sm focus:outline-none focus:ring-2 focus:ring-terracotta focus:ring-offset-2 focus:ring-offset-paper-card"
       >
-        <span className="material-symbols-outlined text-[30px] text-terracotta mb-1 group-hover/gallery-item:scale-110 transition-transform">
+        <span className="material-symbols-outlined text-[30px] text-terracotta  group-hover/gallery-item:scale-110 transition-transform">
           collections
         </span>
         <span className="font-heading text-3xl sm:text-4xl font-extrabold tracking-tight text-terracotta group-hover/gallery-item:text-terracotta-dark group-hover/gallery-item:scale-105 transition-all">
           +{remainingCount}
         </span>
-        <span className="font-body text-xs sm:text-sm font-bold text-ink-charcoal mt-1 inline-flex items-center gap-1 group-hover/gallery-item:text-terracotta group-hover/gallery-item:underline decoration-1 underline-offset-2 transition-colors">
+        <span className="font-body text-xs sm:text-sm font-bold text-ink-charcoal inline-flex items-center gap-1 group-hover/gallery-item:text-terracotta group-hover/gallery-item:underline decoration-1 underline-offset-2 transition-colors">
           <span>Ver todas ({totalCount})</span>
           <span className="material-symbols-outlined text-[15px] text-terracotta group-hover/gallery-item:translate-x-0.5 transition-transform" aria-hidden="true">
             arrow_forward
           </span>
-        </span>
-        <span className="font-stamp text-[10px] font-bold text-terracotta-dark bg-paper-card px-2.5 py-0.5 rounded-sharp mt-2 uppercase tracking-wider border border-sepia-border shadow-xs">
-          Deslizar en galería
         </span>
       </button>
     </div>

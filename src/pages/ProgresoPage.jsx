@@ -89,12 +89,9 @@ export default function ProgresoPage() {
 
           <section aria-labelledby="progress-events-title">
             <div className="flex items-end justify-between gap-3 mb-3">
-              <div>
-                <span className="font-mono-stamp text-[10px] uppercase tracking-wider font-bold text-ink-muted">Seguimiento</span>
-                <h2 id="progress-events-title" className="font-heading text-xl font-bold text-ink-charcoal">Progreso por evento</h2>
-              </div>
-              <span className="font-mono-stamp text-xs text-ink-muted">{filteredEvents.length} de {events.length} {events.length === 1 ? "evento" : "eventos"}</span>
-            </div>
+            <h2 id="progress-events-title" className="font-heading text-2xl md:text-3xl font-bold text-ink-charcoal tracking-tight">Progreso por evento</h2>
+            <span className="font-mono-stamp text-xs text-ink-muted">{filteredEvents.length} de {events.length} {events.length === 1 ? "evento" : "eventos"}</span>
+          </div>
             {filteredEvents.length === 0 ? (
               <StateCard
                 icon="search_off"
