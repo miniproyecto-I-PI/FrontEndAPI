@@ -15,11 +15,11 @@ export default function HoyKanbanView({
   onReschedule,
   onPostpone,
   onEdit,
+  onDelete,
   today = new Date(),
 }) {
   const { vencidas = [], hoy = [], proximas = [] } = grouped;
 
-  // Agrupar vencidas por evento como en el mockup
   const vencidasByEvent = vencidas.reduce((acc, g) => {
     const key = g.eventName || "Sin evento asignado";
     if (!acc[key]) acc[key] = [];
@@ -29,29 +29,21 @@ export default function HoyKanbanView({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
-      {/* =====================================================================
-          COLUMNA 1: VENCIDAS
-         ===================================================================== */}
+      {/* COLUMNA 1: VENCIDAS */}
       <div className="flex flex-col gap-3 min-w-0">
-        {/* Cabecera de columna */}
         <div className="flex items-center justify-between gap-2 pb-2 border-b border-sepia-border">
           <div className="flex items-center gap-2">
-            <h2 className="font-heading font-bold text-lg md:text-xl text-ink-charcoal">
-              Vencidas
-            </h2>
+            <h2 className="font-heading font-bold text-lg md:text-xl text-ink-charcoal">Vencidas</h2>
             <span className="font-stamp text-xs font-bold px-2 py-0.5 rounded-sharp bg-crimson-paper border border-crimson-urgent/30 text-crimson-urgent">
               {vencidas.length}
             </span>
           </div>
           <span className="inline-flex items-center gap-1 font-body text-xs font-semibold text-crimson-tag">
-            <span className="material-symbols-outlined text-[15px]" aria-hidden="true">
-              warning
-            </span>
+            <span className="material-symbols-outlined text-[15px]" aria-hidden="true">warning</span>
             <span>Requieren atención inmediata</span>
           </span>
         </div>
 
-        {/* Contenido de columna */}
         {vencidas.length === 0 ? (
           <div className="p-6 text-center bg-paper-card border border-dashed border-sepia-border rounded-sharp text-xs text-ink-muted">
             No tienes gestiones vencidas al día de hoy.
@@ -59,13 +51,9 @@ export default function HoyKanbanView({
         ) : (
           <div className="space-y-4">
             {Object.entries(vencidasByEvent).map(([eventName, items]) => {
-              const totalEventHours = items.reduce(
-                (sum, it) => sum + Number(it.estimatedHours || 0),
-                0
-              );
+              const totalEventHours = items.reduce((sum, it) => sum + Number(it.estimatedHours || 0), 0);
               return (
                 <div key={eventName} className="space-y-2.5">
-                  {/* Encabezado del grupo de evento */}
                   <div className="flex items-center justify-between text-[11px] font-stamp text-ink-muted uppercase tracking-wider px-1">
                     <span className="inline-flex items-center gap-1.5 font-bold text-crimson-urgent">
                       <span className="w-1.5 h-1.5 rounded-full bg-crimson-urgent" aria-hidden="true" />
@@ -74,8 +62,6 @@ export default function HoyKanbanView({
                     </span>
                     <span>Total: {totalEventHours.toFixed(1).replace(".0", "")}h</span>
                   </div>
-
-                  {/* Tarjetas de gestiones vencidas */}
                   <div className="space-y-2.5">
                     {items.map((g) => (
                       <KanbanCard
@@ -87,6 +73,7 @@ export default function HoyKanbanView({
                         onReschedule={() => onReschedule(g)}
                         onPostpone={() => onPostpone(g)}
                         onEdit={() => onEdit(g)}
+                        onDelete={() => onDelete(g)}
                       />
                     ))}
                   </div>
@@ -97,29 +84,21 @@ export default function HoyKanbanView({
         )}
       </div>
 
-      {/* =====================================================================
-          COLUMNA 2: HOY
-         ===================================================================== */}
+      {/* COLUMNA 2: HOY */}
       <div className="flex flex-col gap-3 min-w-0">
-        {/* Cabecera de columna */}
         <div className="flex items-center justify-between gap-2 pb-2 border-b border-sepia-border">
           <div className="flex items-center gap-2">
-            <h2 className="font-heading font-bold text-lg md:text-xl text-ink-charcoal">
-              Hoy
-            </h2>
+            <h2 className="font-heading font-bold text-lg md:text-xl text-ink-charcoal">Hoy</h2>
             <span className="font-stamp text-xs font-bold px-2 py-0.5 rounded-sharp bg-terracotta-light/70 border border-terracotta/30 text-terracotta-dark">
               {hoy.length}
             </span>
           </div>
           <span className="inline-flex items-center gap-1 font-body text-xs text-ink-muted">
-            <span className="material-symbols-outlined text-[15px]" aria-hidden="true">
-              schedule
-            </span>
+            <span className="material-symbols-outlined text-[15px]" aria-hidden="true">schedule</span>
             <span>Orden cronológico</span>
           </span>
         </div>
 
-        {/* Contenido de columna */}
         {hoy.length === 0 ? (
           <div className="p-6 text-center bg-paper-card border border-dashed border-sepia-border rounded-sharp text-xs text-ink-muted">
             No tienes gestiones programadas para hoy.
@@ -137,32 +116,25 @@ export default function HoyKanbanView({
                 onReschedule={() => onReschedule(g)}
                 onPostpone={() => onPostpone(g)}
                 onEdit={() => onEdit(g)}
+                onDelete={() => onDelete(g)}
               />
             ))}
           </div>
         )}
       </div>
 
-      {/* =====================================================================
-          COLUMNA 3: PRÓXIMAS
-         ===================================================================== */}
+      {/* COLUMNA 3: PRÓXIMAS */}
       <div className="flex flex-col gap-3 min-w-0">
-        {/* Cabecera de columna */}
         <div className="flex items-center justify-between gap-2 pb-2 border-b border-sepia-border">
           <div className="flex items-center gap-2">
-            <h2 className="font-heading font-bold text-lg md:text-xl text-ink-charcoal">
-              Próximas
-            </h2>
+            <h2 className="font-heading font-bold text-lg md:text-xl text-ink-charcoal">Próximas</h2>
             <span className="font-stamp text-xs font-bold px-2 py-0.5 rounded-sharp bg-paper-linen border border-sepia-border text-ink-charcoal">
               {proximas.length}
             </span>
           </div>
-          <span className="font-body text-xs text-ink-muted">
-            Próximos días
-          </span>
+          <span className="font-body text-xs text-ink-muted">Próximos días</span>
         </div>
 
-        {/* Contenido de columna */}
         {proximas.length === 0 ? (
           <div className="p-6 text-center bg-paper-card border border-dashed border-sepia-border rounded-sharp text-xs text-ink-muted">
             No tienes gestiones futuras en los próximos días.
@@ -179,6 +151,7 @@ export default function HoyKanbanView({
                 onReschedule={() => onReschedule(g)}
                 onPostpone={() => onPostpone(g)}
                 onEdit={() => onEdit(g)}
+                onDelete={() => onDelete(g)}
               />
             ))}
           </div>
@@ -188,9 +161,6 @@ export default function HoyKanbanView({
   );
 }
 
-/**
- * Tarjeta individual del tablero Kanban (siguiendo estilo y detalles de Image 2).
- */
 function KanbanCard({
   gestion,
   variant,
@@ -200,47 +170,30 @@ function KanbanCard({
   onReschedule,
   onPostpone,
   onEdit,
+  onDelete,
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const isVencida = variant === "vencida";
   const isHoy = variant === "hoy";
 
-  // Formato de hora / fecha según columna
   const timeDisplay = (() => {
-    if (isVencida) {
+    if (isVencida || isHoy) {
       return (
         <div className="text-right shrink-0">
           <div className="font-stamp text-xs font-bold text-ink-charcoal">
             {gestion.time || "Sin hora"}
           </div>
-          <div className="font-stamp text-[11px] text-ink-muted">
-            {gestion.estimatedHours}h
-          </div>
+          <div className="font-stamp text-[11px] text-ink-muted">{gestion.estimatedHours}h</div>
         </div>
       );
     }
-    if (isHoy) {
-      return (
-        <div className="text-right shrink-0">
-          <div className="font-stamp text-xs font-bold text-ink-charcoal">
-            {gestion.time || "Sin hora"}
-          </div>
-          <div className="font-stamp text-[11px] text-ink-muted">
-            {gestion.estimatedHours}h
-          </div>
-        </div>
-      );
-    }
-    // Próxima
     return (
       <div className="text-right shrink-0">
         <div className="font-stamp text-xs font-semibold text-ink-charcoal whitespace-nowrap">
           {formatUpcomingLabel(gestion.targetDate, today)} {gestion.time ? gestion.time : ""}
         </div>
-        <div className="font-stamp text-[11px] text-ink-muted">
-          {gestion.estimatedHours}h
-        </div>
+        <div className="font-stamp text-[11px] text-ink-muted">{gestion.estimatedHours}h</div>
       </div>
     );
   })();
@@ -252,7 +205,6 @@ function KanbanCard({
       }`}
     >
       <div className="flex items-start gap-3">
-        {/* Círculo para marcar como hecha */}
         <button
           type="button"
           onClick={onMarkDone}
@@ -265,7 +217,6 @@ function KanbanCard({
           </span>
         </button>
 
-        {/* Información central y título */}
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2 flex-wrap">
             <button
@@ -282,19 +233,15 @@ function KanbanCard({
               </span>
             )}
           </div>
-
-          {/* Subtítulo: evento / cliente */}
           <div className="font-body text-xs text-ink-muted truncate mt-0.5">
             {gestion.eventName}
             {gestion.provider && ` · ${gestion.provider}`}
           </div>
         </div>
 
-        {/* Hora y estimación */}
         {timeDisplay}
       </div>
 
-      {/* Fila inferior de acciones y etiqueta */}
       <div className="flex items-center justify-between gap-2 pt-2.5 mt-2.5 border-t border-sepia-border/50">
         <div>
           {isVencida ? (
@@ -320,35 +267,32 @@ function KanbanCard({
           >
             Reprogramar
           </button>
-          <button type="button" onClick={onPostpone} className="px-2.5 py-1 text-xs font-body font-medium rounded-sharp bg-paper-card hover:bg-paper-linen border border-sepia-border text-ink-charcoal transition-colors focus:outline-none focus:ring-1 focus:ring-terracotta">Posponer</button>
+          <button
+            type="button"
+            onClick={onPostpone}
+            className="px-2.5 py-1 text-xs font-body font-medium rounded-sharp bg-paper-card hover:bg-paper-linen border border-sepia-border text-ink-charcoal transition-colors focus:outline-none focus:ring-1 focus:ring-terracotta"
+          >
+            Posponer
+          </button>
 
-          {/* Botón menú tres puntos */}
           <button
             type="button"
             onClick={() => setIsMenuOpen((v) => !v)}
             title="Más opciones"
             aria-label="Más opciones"
+            aria-expanded={isMenuOpen}
             className="p-1 rounded-sharp text-ink-muted hover:text-ink-charcoal hover:bg-paper-linen transition-colors focus:outline-none focus:ring-1 focus:ring-terracotta"
           >
-            <span className="material-symbols-outlined text-[16px] leading-none">
-              more_horiz
-            </span>
+            <span className="material-symbols-outlined text-[16px] leading-none">more_horiz</span>
           </button>
 
-          {/* Menú desplegable */}
           {isMenuOpen && (
             <>
-              <div
-                className="fixed inset-0 z-30"
-                onClick={() => setIsMenuOpen(false)}
-              />
-              <div className="absolute right-0 bottom-full mb-1 z-40 w-36 bg-paper-card border border-sepia-border rounded-sharp shadow-lg py-1">
+              <div className="fixed inset-0 z-30" onClick={() => setIsMenuOpen(false)} />
+              <div className="absolute right-0 bottom-full mb-1 z-40 w-40 bg-paper-card border border-sepia-border rounded-sharp shadow-lg py-1">
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    onEdit();
-                  }}
+                  onClick={() => { setIsMenuOpen(false); onEdit(); }}
                   className="w-full text-left px-3 py-1.5 font-body text-xs text-ink-charcoal hover:bg-paper-linen transition-colors flex items-center gap-2"
                 >
                   <span className="material-symbols-outlined text-[14px]">edit</span>
@@ -356,16 +300,20 @@ function KanbanCard({
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    onMarkDone();
-                  }}
+                  onClick={() => { setIsMenuOpen(false); onMarkDone(); }}
                   className="w-full text-left px-3 py-1.5 font-body text-xs text-ink-charcoal hover:bg-paper-linen transition-colors flex items-center gap-2"
                 >
-                  <span className="material-symbols-outlined text-[14px] text-terracotta">
-                    check_circle
-                  </span>
+                  <span className="material-symbols-outlined text-[14px] text-terracotta">check_circle</span>
                   <span>Completar</span>
+                </button>
+                <div className="my-1 border-t border-sepia-border" aria-hidden="true" />
+                <button
+                  type="button"
+                  onClick={() => { setIsMenuOpen(false); onDelete(); }}
+                  className="w-full text-left px-3 py-1.5 font-body text-xs text-crimson-urgent hover:bg-crimson-paper transition-colors flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-[14px]">delete</span>
+                  <span>Eliminar</span>
                 </button>
               </div>
             </>

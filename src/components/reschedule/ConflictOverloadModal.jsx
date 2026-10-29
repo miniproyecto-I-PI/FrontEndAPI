@@ -69,7 +69,7 @@ export default function ConflictOverloadModal({
       onClick={(e) => e.target === e.currentTarget && onCancel?.()}
     >
       <div className="relative w-full max-w-[560px] max-h-[92vh] bg-paper-card border border-sepia-border rounded-sharp p-5 sm:p-6 md:p-7 shadow-xl warm-card-shadow flex flex-col my-auto">
-        <div className="overflow-y-auto flex-1 pr-1.5 -mr-1 space-y-4">
+        <div className="overflow-y-auto scrollbar-editorial flex-1 pr-1.5 -mr-1 space-y-4">
           {/* Eyebrow de advertencia */}
           <div className="flex items-center gap-1.5 text-crimson-urgent font-stamp text-[11px] font-bold tracking-wider uppercase mb-1">
             <span className="material-symbols-outlined text-[17px]" aria-hidden="true">

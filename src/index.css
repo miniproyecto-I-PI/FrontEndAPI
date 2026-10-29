@@ -90,3 +90,28 @@
 .input-editorial.error-field:focus {
   box-shadow: 0 0 0 1px #B83D2B;
 }
+
+
+@layer utilities {
+  .scrollbar-editorial {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.terracotta') theme('colors.paper-linen');
+    overflow-y: auto;
+  }
+  .scrollbar-editorial::-webkit-scrollbar {
+    display: block;          
+    width: 12px;
+  }
+  .scrollbar-editorial::-webkit-scrollbar-track {
+    background: theme('colors.paper-linen');
+    border-radius: 6px;
+  }
+  .scrollbar-editorial::-webkit-scrollbar-thumb {
+    background: theme('colors.terracotta');
+    border-radius: 6px;
+    border: 2px solid theme('colors.paper-linen');
+  }
+  .scrollbar-editorial::-webkit-scrollbar-thumb:hover {
+    background: theme('colors.terracotta-dark');
+  }
+}

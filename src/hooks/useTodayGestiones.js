@@ -17,7 +17,7 @@
  *    sección "0. Ejecutadas" y se editan con el modal de /evento/:id.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getEvents, getToday, markGestionAsDone, rescheduleGestion, updateSubtask } from "../services/api";
+import { getEvents, getToday, markGestionAsDone, rescheduleGestion, updateSubtask, deleteSubtask } from "../services/api";
 import { computeHoyStats, groupAndSortGestiones } from "../utils/sortGestiones";
 
 export const STATUS_FILTERS = [
@@ -166,6 +166,15 @@ export function useTodayGestiones({ query = "", simulateError = false, simulateE
     [fetchData]
   );
 
+  /** US-03 — Eliminar una gestión. Lanza si falla, para que el modal muestre el error. */
+  const deleteGestion = useCallback(
+    async (id) => {
+      await deleteSubtask(id);
+      await fetchData();
+    },
+    [fetchData]
+  );
+
   const clearFilters = useCallback(() => {
     setEventFilter("");
     setStatusFilter("");
@@ -182,7 +191,7 @@ export function useTodayGestiones({ query = "", simulateError = false, simulateE
     allGestiones: rawGestiones,
     filters: { eventFilter, setEventFilter, statusFilter, setStatusFilter, hasServerFilters, clearFilters, showExecuted, setShowExecuted },
     eventOptions,
-    actions: { markAsDone, undoMarkAsDone, reschedule, editGestion },
+    actions: { markAsDone, undoMarkAsDone, reschedule, editGestion, deleteGestion },
     reload: fetchData,
   };
 }

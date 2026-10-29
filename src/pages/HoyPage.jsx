@@ -20,6 +20,7 @@ import TaskCardGalleryOverlay from "../components/tasks/TaskCardGalleryOverlay";
 import HoyFilters from "../components/tasks/HoyFilters";
 import HoyKanbanView from "../components/tasks/HoyKanbanView";
 import SimulationToolbar from "../components/dev/SimulationToolbar";
+import DeleteSubtaskModal from "../components/eventos/DeleteSubtaskModal";
 
 /**
  * HoyPage.jsx — ruta "/hoy" (T2: US-04 vista Hoy + US-05 filtros).
@@ -43,6 +44,7 @@ export default function HoyPage() {
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
   const [postponeTarget, setPostponeTarget] = useState(null);
   const [editTarget, setEditTarget] = useState(null); // gestión en edición (título de la tarjeta o botón Editar)
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [toast, setToast] = useState(() => (location.state?.toast ? { message: location.state.toast } : null));
   const closeToast = useCallback(() => setToast(null), []);
 
@@ -113,6 +115,13 @@ export default function HoyPage() {
     await actions.editGestion(editTarget.id, payload);
     setEditTarget(null);
     setToast({ message: "Gestión actualizada" });
+  }
+
+  async function handleDeleteConfirm() {
+    if (!deleteTarget) return;
+    await actions.deleteGestion(deleteTarget.id);
+    setDeleteTarget(null);
+    setToast({ message: "Gestión eliminada" });
   }
 
   // /today no trae la fecha del evento; se toma de la lista de eventos.
@@ -241,6 +250,7 @@ export default function HoyPage() {
                 onReschedule={(g) => setRescheduleTarget(g)}
                 onPostpone={(g) => setPostponeTarget(g)}
                 onEdit={(g) => setEditTarget(g)}
+                onDelete={(g) => setDeleteTarget(g)}
                 showExecuted={filters.showExecuted}
               />
             </div>
@@ -251,7 +261,7 @@ export default function HoyPage() {
                   <SectionHeading id="hoy-ejecutadas" numeral="0." title="Ejecutadas" rule={PRIORITY_RULE_BY_GROUP.ejecutadas} tone="sage" />
                   <div className="grid grid-cols-1 gap-3">
                     {grouped.ejecutadas.map((g) => (
-                      <TaskCard key={g.id} gestion={g} variant="ejecutada" onEdit={() => setEditTarget(g)} />
+                      <TaskCard key={g.id} gestion={g} variant="ejecutada" onEdit={() => setEditTarget(g) } onDelete={() => setDeleteTarget(g)} />
                     ))}
                   </div>
                 </section>
@@ -281,6 +291,7 @@ export default function HoyPage() {
                       onPostpone={() => setPostponeTarget(grouped.vencidas[0])}
                       onReschedule={() => setRescheduleTarget(grouped.vencidas[0])}
                       onEdit={() => setEditTarget(grouped.vencidas[0])}
+                      onDelete={() => setDeleteTarget(grouped.vencidas[0])}
                     />
                   ) : (
                     <div className="grid grid-cols-1 gap-3">
@@ -293,6 +304,7 @@ export default function HoyPage() {
                           onPostpone={() => setPostponeTarget(g)}
                           onReschedule={() => setRescheduleTarget(g)}
                           onEdit={() => setEditTarget(g)}
+                          onDelete={() => setDeleteTarget(g)}
                         />
                       ))}
                       {grouped.vencidas.length === 3 && (
@@ -304,6 +316,7 @@ export default function HoyPage() {
                           onPostpone={() => setPostponeTarget(grouped.vencidas[2])}
                           onReschedule={() => setRescheduleTarget(grouped.vencidas[2])}
                           onEdit={() => setEditTarget(grouped.vencidas[2])}
+                          onDelete={() => setDeleteTarget(grouped.vencidas[2])}
                         />
                       )}
                       {grouped.vencidas.length > 3 && (
@@ -316,6 +329,7 @@ export default function HoyPage() {
                           onMarkDone={() => handleMarkDone(grouped.vencidas[2])}
                           onReschedule={() => setRescheduleTarget(grouped.vencidas[2])}
                           onEdit={() => setEditTarget(grouped.vencidas[2])}
+                          onDelete={() => setDeleteTarget(grouped.vencidas[2])}
                         />
                       )}
                     </div>
@@ -355,6 +369,7 @@ export default function HoyPage() {
                         onPostpone={() => setPostponeTarget(grouped.hoy[0])}
                         onReschedule={() => setRescheduleTarget(grouped.hoy[0])}
                         onEdit={() => setEditTarget(grouped.hoy[0])}
+                        onDelete={() => setDeleteTarget(grouped.hoy[0])}
                       />
                     </div>
 
@@ -368,6 +383,7 @@ export default function HoyPage() {
                           onPostpone={() => setPostponeTarget(grouped.hoy[2])}
                           onReschedule={() => setRescheduleTarget(grouped.hoy[2])}
                           onEdit={() => setEditTarget(grouped.hoy[2])}
+                          onDelete={() => setDeleteTarget(grouped.hoy[2])}
                         />
                       </div>
                     )}
@@ -388,6 +404,7 @@ export default function HoyPage() {
                           onPostpone={() => setPostponeTarget(grouped.hoy[1])}
                           onReschedule={() => setRescheduleTarget(grouped.hoy[1])}
                           onEdit={() => setEditTarget(grouped.hoy[1])}
+                          onDelete={() => setDeleteTarget(grouped.hoy[1])}
                         />
                       </div>
                     )}
@@ -403,6 +420,7 @@ export default function HoyPage() {
                           onPostpone={() => setPostponeTarget(grouped.hoy[3])}
                           onReschedule={() => setRescheduleTarget(grouped.hoy[3])}
                           onEdit={() => setEditTarget(grouped.hoy[3])}
+                          onDelete={() => setDeleteTarget(grouped.hoy[3])}
                         />
                       </div>
                     )}
@@ -419,6 +437,7 @@ export default function HoyPage() {
                           onMarkDone={() => handleMarkDone(grouped.hoy[3])}
                           onReschedule={() => setRescheduleTarget(grouped.hoy[3])}
                           onEdit={() => setEditTarget(grouped.hoy[3])}
+                          onDelete={() => setDeleteTarget(grouped.hoy[3])}
                         />
                       </div>
                     )}
@@ -438,6 +457,7 @@ export default function HoyPage() {
                       onPostpone={() => setPostponeTarget(grouped.proximas[0])}
                       onReschedule={() => setRescheduleTarget(grouped.proximas[0])}
                       onEdit={() => setEditTarget(grouped.proximas[0])}
+                      onDelete={() => setDeleteTarget(grouped.proximas[0])}
                     />
                   ) : (
                     <div
@@ -454,6 +474,7 @@ export default function HoyPage() {
                           onPostpone={() => setPostponeTarget(g)}
                           onReschedule={() => setRescheduleTarget(g)}
                           onEdit={() => setEditTarget(g)}
+                          onDelete={() => setDeleteTarget(g)}
                         />
                       ))}
                       {grouped.proximas.length === 3 && (
@@ -465,6 +486,7 @@ export default function HoyPage() {
                           onPostpone={() => setPostponeTarget(grouped.proximas[2])}
                           onReschedule={() => setRescheduleTarget(grouped.proximas[2])}
                           onEdit={() => setEditTarget(grouped.proximas[2])}
+                          onDelete={() => setDeleteTarget(grouped.proximas[2])}
                         />
                       )}
                       {grouped.proximas.length > 3 && (
@@ -477,6 +499,7 @@ export default function HoyPage() {
                           onMarkDone={() => handleMarkDone(grouped.proximas[2])}
                           onReschedule={() => setRescheduleTarget(grouped.proximas[2])}
                           onEdit={() => setEditTarget(grouped.proximas[2])}
+                          onDelete={() => setDeleteTarget(grouped.proximas[2])}
                         />
                       )}
                     </div>
@@ -497,6 +520,15 @@ export default function HoyPage() {
           eventDateTime={eventDateOf(editTarget)}
           onCancel={() => setEditTarget(null)}
           onSubmit={handleEditSubmit}
+        />
+      )}
+
+      {deleteTarget && (
+        <DeleteSubtaskModal
+          subtask={deleteTarget}
+          eventName={deleteTarget.eventName}
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={handleDeleteConfirm}
         />
       )}
 
@@ -538,6 +570,7 @@ export default function HoyPage() {
           onEdit={(g) => {
             setEditTarget(g);
           }}
+          onDelete={(g) => setDeleteTarget(g)}
         />
       )}
 

@@ -295,7 +295,7 @@ function handleSuccessGoToEvents() {
               <span className="material-symbols-outlined text-[18px]">
                 check_circle
               </span>
-              <span>{isLoading ? "Creando…" : "Crear y abrir expediente"}</span>
+              <span>{isLoading ? "Creando…" : "Crear el evento"}</span>
             </button>
           </div>
         </div>
