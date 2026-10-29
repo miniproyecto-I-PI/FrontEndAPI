@@ -154,17 +154,18 @@ export default function GestionesGalleryModal({
               </button>
 
               <div className="flex-1 min-w-0 transition-all duration-200">
-                <TaskCard
-                  key={currentGestion.id}
-                  gestion={currentGestion}
-                  variant={cardVariant}
-                  onMarkDone={() => onMarkDone?.(currentGestion)}
-                  onReschedule={() => onReschedule?.(currentGestion)}
-                  onPostpone={() => onPostpone?.(currentGestion)}
-                  onEdit={() => onEdit?.(currentGestion)}
-                  onDelete={() => onDelete?.(currentGestion)}
-                />
-              </div>
+                    <TaskCard
+                      key={currentGestion.id}
+                      gestion={currentGestion}
+                      variant={cardVariant}
+                      compactActions
+                      onMarkDone={() => onMarkDone?.(currentGestion)}
+                      onReschedule={() => onReschedule?.(currentGestion)}
+                      onPostpone={() => onPostpone?.(currentGestion)}
+                      onEdit={() => onEdit?.(currentGestion)}
+                      onDelete={() => onDelete?.(currentGestion)}
+                    />
+                  </div>
 
               <button
                 type="button"
@@ -202,21 +203,22 @@ export default function GestionesGalleryModal({
         ) : (
           <div className="flex-1 overflow-y-auto scrollbar-editorial p-4 sm:p-6 space-y-3">
             {gestiones.map((g, idx) => (
-              <div key={g.id || idx} className="relative">
-                <div className="text-[10px] font-stamp text-ink-muted uppercase font-bold mb-1">
-                  #{idx + 1} de {total}
-                </div>
-                <TaskCard
-                  gestion={g}
-                  variant={cardVariant}
-                  onMarkDone={() => onMarkDone?.(g)}
-                  onReschedule={() => onReschedule?.(g)}
-                  onPostpone={() => onPostpone?.(g)}
-                  onEdit={() => onEdit?.(g)}
-                  onDelete={() => onDelete?.(g)}
-                />
-              </div>
-            ))}
+  <div key={g.id || idx} className="relative">
+    <div className="text-[10px] font-stamp text-ink-muted uppercase font-bold mb-1">
+              #{idx + 1} de {total}
+            </div>
+            <TaskCard
+              gestion={g}
+              variant={cardVariant}
+              compactActions
+              onMarkDone={() => onMarkDone?.(g)}
+              onReschedule={() => onReschedule?.(g)}
+              onPostpone={() => onPostpone?.(g)}
+              onEdit={() => onEdit?.(g)}
+              onDelete={() => onDelete?.(g)}
+            />
+          </div>
+        ))}
           </div>
         )}
 
