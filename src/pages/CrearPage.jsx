@@ -35,6 +35,7 @@ export default function CrearPage() {
   const [generalError, setGeneralError] = useState(null);
   const [status, setStatus] = useState("idle");
   const [toast, setToast] = useState(null);
+  const [showInitialSubtasks, setShowInitialSubtasks] = useState(false);
   const [createdEventName, setCreatedEventName] = useState(null);
   const [initialSubtasks, setInitialSubtasks] = useState([]);
   const closeToast = useCallback(() => setToast(null), []);
@@ -267,13 +268,35 @@ function handleSuccessGoToEvents() {
           </div>
         </section>
 
-        <InitialSubtasks
-          items={initialSubtasks}
-          eventDate={form.date}
-          onAdd={(item) => setInitialSubtasks((list) => [...list, item])}
-          onRemove={(index) => setInitialSubtasks((list) => list.filter((_, i) => i !== index))}
-          disabled={isLoading}
-        />
+                {!showInitialSubtasks && initialSubtasks.length === 0 ? (
+          <div className="bg-paper-card border border-sepia-border rounded-sharp p-10 warm-card-shadow flex flex-col items-center justify-center text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-paper-base border border-sepia-border flex items-center justify-center text-terracotta mb-2">
+              <span className="material-symbols-outlined text-[32px]">playlist_add</span>
+            </div>
+            <h3 className="font-heading text-2xl font-bold text-ink-charcoal tracking-tight">
+              Aún no tienes gestiones
+            </h3>
+            <p className="font-body text-sm text-ink-muted max-w-md mx-auto leading-relaxed">
+              Comienza a planificar tu evento agregando las primeras tareas logísticas para su preparación.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowInitialSubtasks(true)}
+              className="mt-4 inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-terracotta hover:bg-terracotta-dark text-[#FAF6F0] font-heading font-semibold text-sm rounded-sharp border border-terracotta-dark shadow-sm transition-colors active:translate-y-0.5"
+            >
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              Crear gestiones iniciales
+            </button>
+          </div>
+        ) : (
+          <InitialSubtasks
+            items={initialSubtasks}
+            eventDate={form.date}
+            onAdd={(item) => setInitialSubtasks((list) => [...list, item])}
+            onRemove={(index) => setInitialSubtasks((list) => list.filter((_, i) => i !== index))}
+            disabled={isLoading}
+          />
+        )}
 
         {/* Acciones */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-sepia-border">
