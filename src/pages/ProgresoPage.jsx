@@ -73,11 +73,6 @@ export default function ProgresoPage() {
 
       {status === "success" && events.length > 0 && (
         <div className="space-y-6">
-          <section className="grid grid-cols-1 sm:grid-cols-3 gap-3" aria-label="Resumen global">
-            <SummaryMetric label="Avance global" value={`${summary.globalPercent}%`} icon="donut_large" highlight />
-            <SummaryMetric label="Eventos registrados" value={summary.totalEvents} icon="event" />
-            <SummaryMetric label="Gestiones ejecutadas" value={`${summary.totalDone} / ${summary.totalSubtasks}`} icon="task_alt" />
-          </section>
           <div className="bg-paper-card border border-sepia-border rounded-sharp p-5 warm-card-shadow">
             <div className="flex items-center justify-between gap-3 mb-3">
               <h2 className="font-heading text-lg font-semibold text-ink-charcoal">Avance general de gestiones</h2>
@@ -123,18 +118,6 @@ function LoadingState() {
         {[0, 1].map((key) => <li key={key} className="h-56 animate-warm-pulse bg-paper-card border border-sepia-border rounded-sharp" />)}
       </ul>
       <span className="sr-only">Cargando el resumen de progreso desde el servidor.</span>
-    </div>
-  );
-}
-
-function SummaryMetric({ label, value, icon, highlight = false }) {
-  return (
-    <div className="bg-paper-card border border-sepia-border rounded-sharp p-4 warm-card-shadow flex items-center gap-3">
-      <span className={`material-symbols-outlined text-2xl ${highlight ? "text-terracotta" : "text-ink-muted"}`} aria-hidden="true">{icon}</span>
-      <div>
-        <span className="block font-mono-stamp text-[10px] uppercase tracking-wider font-bold text-ink-muted">{label}</span>
-        <strong className={`font-heading text-2xl leading-tight ${highlight ? "text-terracotta-dark" : "text-ink-charcoal"}`}>{value}</strong>
-      </div>
     </div>
   );
 }
