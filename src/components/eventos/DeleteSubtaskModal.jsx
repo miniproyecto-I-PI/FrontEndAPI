@@ -66,7 +66,7 @@ export default function DeleteSubtaskModal({
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="delete-subtask-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-ink-charcoal/40 backdrop-blur-sm"
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-ink-charcoal/40 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isLoading) onCancel();
       }}

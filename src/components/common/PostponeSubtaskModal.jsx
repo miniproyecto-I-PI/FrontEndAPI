@@ -92,7 +92,7 @@ export default function PostponeSubtaskModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="postpone-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-charcoal/50 backdrop-blur-sm"
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-ink-charcoal/50 backdrop-blur-sm"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !saving) onCancel();
       }}
