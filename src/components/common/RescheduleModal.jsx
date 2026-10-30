@@ -398,6 +398,7 @@ export default function RescheduleModal({
         isSubmitting={isSubmitting}
         onConfirmHours={(newHours) => executeHoursReduction(newHours)}
         onBack={() => setStep("CONFLICT_ALERT")}
+        allowOverload={allowOverload}
       />
     );
   }
