@@ -205,7 +205,8 @@ function handleSuccessGoToEvents() {
                   htmlFor="event-host"
                   className="block font-heading font-semibold text-sm text-ink-charcoal"
                 >
-                  Cliente o anfitrión
+                  <span>Cliente o anfitrión</span>
+                  <span className="font-body text-[11px] text-ink-muted font-normal">Opcional</span>
                 </label>
                 <input
                   id="event-host"
@@ -253,7 +254,8 @@ function handleSuccessGoToEvents() {
                   htmlFor="event-venue"
                   className="block font-heading font-semibold text-sm text-ink-charcoal"
                 >
-                  Lugar o recinto tentativo
+                  <span>Lugar o recinto tentativo</span>
+                  <span className="font-body text-[11px] text-ink-muted font-normal">Opcional</span>
                 </label>
                 <input
                   id="event-venue"
