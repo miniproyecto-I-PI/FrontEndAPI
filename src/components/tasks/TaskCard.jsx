@@ -27,7 +27,7 @@ export default function TaskCard({
     single && isVencida && "relative bg-crimson-paper/50 border-l-[6px] border-l-crimson-urgent p-5 md:p-6 flex flex-col justify-between",
     single && isProxima && "border-l-4 border-l-sepia-dark p-5 md:p-6 flex flex-col justify-between",
     !single && isVencida && "relative bg-crimson-paper/50 border-l-[6px] border-l-crimson-urgent p-4 md:p-5",
-    isHero && "border-l-[6px] border-l-terracotta p-4 md:p-5 flex flex-col justify-between h-full",
+    isHero && "border-l-[6px] border-l-terracotta p-4 flex flex-col justify-between h-full",
     isSecondary && "border-l-4 border-l-terracotta p-4 flex flex-col justify-between h-full",
     !single && isProxima && "border-l-2 border-l-sepia-dark p-4 flex flex-col justify-between h-full",
     isEjecutada && "border-l-[6px] border-l-sage-wax p-4 md:p-5",
@@ -224,7 +224,7 @@ function EditableTitle({ gestion, onEdit }) {
     >
       <span>{gestion.title}</span>
       <span
-        className="material-symbols-outlined text-[0.72em] text-ink-muted opacity-40 group-hover/title:opacity-100 group-hover/title:text-terracotta transition-all"
+        className="material-symbols-outlined text-[0.72em] text-ink-muted group-hover/title:text-terracotta transition-colors"
         aria-hidden="true"
       >
         edit
@@ -239,30 +239,37 @@ function Hours({ value }) {
 
 function VencidaBody({ gestion, today, onMarkDone, onReschedule, onPostpone, onEdit, onDelete, compactActions }) {
   return (
-    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pr-8">
-      <div className="space-y-1.5 flex-1 min-w-0">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-          <span className="inline-flex items-center gap-1 font-body text-[11px] font-bold text-crimson-tag bg-[#F6DDD7] border border-crimson-urgent/30 px-2 py-0.5 rounded-sharp uppercase tracking-wide">
-            <span className="material-symbols-outlined text-[13px]" aria-hidden="true">warning</span>
-            {formatOverdueLabel(gestion.targetDate, today)}
-          </span>
-          {isPostponed(gestion) && <PostponedTag />}
-          <span className="font-body font-medium text-ink-charcoal">{gestion.eventName}</span>
-          <span className="text-sepia-dark" aria-hidden="true">•</span>
-          <Hours value={gestion.estimatedHours} />
+    <div className="flex flex-col gap-3 pr-8">
+      {/* Fila 1: Badges y metadatos */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+        <span className="inline-flex items-center gap-1 font-body text-[11px] font-bold text-crimson-tag bg-[#F6DDD7] border border-crimson-urgent/30 px-2 py-0.5 rounded-sharp uppercase tracking-wide">
+          <span className="material-symbols-outlined text-[13px]" aria-hidden="true">warning</span>
+          {formatOverdueLabel(gestion.targetDate, today)}
+        </span>
+        {isPostponed(gestion) && <PostponedTag />}
+        <span className="font-body font-medium text-ink-charcoal">{gestion.eventName}</span>
+        <span className="text-ink-muted" aria-hidden="true">•</span>
+        <Hours value={gestion.estimatedHours} />
+      </div>
+
+      {/* Fila 2: Título y Botones alineados horizontalmente */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <h3 className="font-heading text-xl text-ink-charcoal font-semibold leading-snug flex-1 min-w-0">
+          <EditableTitle gestion={gestion} onEdit={onEdit} />
+        </h3>
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <ActionButtons gestion={gestion} onMarkDone={onMarkDone} onReschedule={onReschedule} onPostpone={onPostpone} onEdit={onEdit} onDelete={onDelete} compactActions={compactActions} />
         </div>
-        <h3 className="font-heading text-xl text-ink-charcoal font-semibold leading-snug"><EditableTitle gestion={gestion} onEdit={onEdit} /></h3>
-        {(gestion.provider || gestion.note) && (
-          <div className="flex flex-wrap items-center gap-x-2 text-xs font-body text-ink-muted pt-0.5">
-            {gestion.provider && <span>{gestion.provider}</span>}
-            {gestion.provider && gestion.note && <span className="text-sepia-dark" aria-hidden="true">•</span>}
-            {gestion.note && <span className="text-crimson-tag font-medium">{gestion.note}</span>}
-          </div>
-        )}
       </div>
-      <div className="flex flex-wrap items-center gap-2 self-end lg:self-center shrink-0 pt-2 lg:pt-0">
-        <ActionButtons gestion={gestion} onMarkDone={onMarkDone} onReschedule={onReschedule} onPostpone={onPostpone} onEdit={onEdit} onDelete={onDelete} compactActions={compactActions} />
-      </div>
+
+      {/* Fila 3: Detalles adicionales */}
+      {(gestion.provider || gestion.note) && (
+        <div className="flex flex-wrap items-center gap-x-2 text-xs font-body text-ink-muted">
+          {gestion.provider && <span>{gestion.provider}</span>}
+          {gestion.provider && gestion.note && <span className="text-ink-muted" aria-hidden="true">•</span>}
+          {gestion.note && <span className="text-crimson-tag font-medium">{gestion.note}</span>}
+        </div>
+      )}
     </div>
   );
 }
@@ -369,7 +376,7 @@ function EjecutadaBody({ gestion, onEdit, onDelete }) {
             {gestion.time ? ` • ${gestion.time}` : ""}
           </span>
           <span className="font-body font-medium text-ink-charcoal">{gestion.eventName}</span>
-          <span className="text-sepia-dark" aria-hidden="true">•</span>
+          <span className="text-ink-muted" aria-hidden="true">•</span>
           <Hours value={gestion.estimatedHours} />
         </div>
         <h3 className="font-heading text-xl text-ink-muted font-semibold leading-snug"><EditableTitle gestion={gestion} onEdit={onEdit} /></h3>
@@ -385,7 +392,12 @@ function EjecutadaBody({ gestion, onEdit, onDelete }) {
           aria-label={`Editar gestión ${gestion.title}`}
           className="px-3.5 py-1.5 text-xs rounded-sharp bg-paper-card hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body font-medium inline-flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1"
         >
-          <span className="material-symbols-outlined text-[15px] text-ink-muted" aria-hidden="true">edit</span>
+          <span
+  className="material-symbols-outlined text-[0.72em] text-ink-subtle group-hover/title:text-terracotta transition-colors"
+  aria-hidden="true"
+>
+  edit
+</span>
           <span>Editar</span>
         </button>
         {onDelete && (

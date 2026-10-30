@@ -41,10 +41,23 @@ export default function Header({ searchValue, onSearchChange }) {
       <div className="h-16 max-w-[1440px] mx-auto px-4 md:px-8 lg:px-12 flex items-center justify-between gap-4">
         {/* Marca + navegación principal */}
         <div className="flex items-center gap-4 lg:gap-6 shrink-0">
-          <Link to="/hoy" className="flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta rounded-sharp" aria-label="Convoka — ir a Hoy">
-            <img src={logo} alt="Convoka Events" className="h-8 w-auto" />
-          </Link>
-          <div className="h-5 w-px bg-sepia-border hidden md:block" />
+          {pathname === "/hoy" ? (
+  <div
+    className="flex items-center"
+    aria-label="Convoka — ya estás en Hoy"
+  >
+    <img src={logo} alt="Convoka Events" className="h-8 w-auto" />
+  </div>
+) : (
+  <Link
+  to="/"
+  className="flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta rounded-sharp"
+  aria-label="Convoka — ir al inicio"
+>
+  <img src={logo} alt="Convoka Events" className="h-8 w-auto" />
+</Link>
+)}
+          <div className="h-5 w-px bg-sepia-border hidden md:block" aria-hidden="true" />
           <nav className="hidden md:flex items-center gap-1" aria-label="Navegación principal">
             <NavLink to="/hoy" className={({ isActive }) => navLinkClasses(isActive)}>
               Hoy

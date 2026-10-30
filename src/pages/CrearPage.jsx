@@ -150,7 +150,7 @@ function handleSuccessGoToEvents() {
         breadcrumb={
           <Breadcrumb
             backTo="/eventos"
-            items={[{ label: "Convoka", to: "/hoy" }, { label: "Eventos", to: "/eventos" }, { label: "Nuevo evento" }]}
+            items={[{ label: "Convoka"}, { label: "Eventos", to: "/eventos" }, { label: "Nuevo evento" }]}
           />
         }
         title="Crear"
@@ -179,7 +179,6 @@ function handleSuccessGoToEvents() {
             <SectionHeader
               number="1"
               title="Datos del Evento"
-              badge="Paso indispensable"
             />
             <div className="space-y-5">
               <div className="space-y-1.5">
@@ -210,14 +209,15 @@ function handleSuccessGoToEvents() {
               </div>
 
               <div className="space-y-2 pt-1">
-                <label className="block font-heading font-semibold text-sm text-ink-charcoal">
-                  Tipo de celebración{" "}
-                  <span className="text-crimson-urgent">*</span>
-                </label>
-                <EventTypeSelector
-                  value={form.type}
-                  onChange={handleTypeChange}
-                />
+                <span id="event-type-label" className="block font-heading font-semibold text-sm text-ink-charcoal">
+                  Tipo de celebración <span className="text-crimson-urgent">*</span>
+                </span>
+                <div role="group" aria-labelledby="event-type-label">
+                  <EventTypeSelector
+                    value={form.type}
+                    onChange={handleTypeChange}
+                  />
+                </div>
               </div>
 
               <div className="space-y-1.5 pt-1">
@@ -245,7 +245,6 @@ function handleSuccessGoToEvents() {
             <SectionHeader
               number="2"
               title="Cuándo y Dónde"
-              badge="Calendario"
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -370,7 +369,7 @@ function handleSuccessGoToEvents() {
 
 // ---------------------------------------------------------------------------
 
-function SectionHeader({ number, title, badge }) {
+function SectionHeader({ number, title }) {
   return (
     <div className="flex items-center justify-between pb-3 border-b border-sepia-border">
       <div className="flex items-center gap-3">
@@ -381,9 +380,6 @@ function SectionHeader({ number, title, badge }) {
           {title}
         </h2>
       </div>
-      <span className="font-mono-stamp text-[10px] text-ink-muted uppercase">
-        {badge}
-      </span>
     </div>
   );
 }

@@ -119,7 +119,7 @@ const filtered = useMemo(() => {
           {/* ---------- Cabecera ---------- */}
           <section className="mb-6">
             <PageHeader
-              breadcrumb={<Breadcrumb backTo="/hoy" items={[{ label: "Convoka", to: "/hoy" }, { label: "Eventos" }]} />}
+              breadcrumb={<Breadcrumb backTo="/hoy" items={[{ label: "Convoka"}, { label: "Eventos" }]} />}
               title="Todos los"
               accent="eventos"
               description="Expedientes de producción, fechas de celebración y estado operativo de tus clientes."

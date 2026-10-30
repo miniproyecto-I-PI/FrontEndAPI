@@ -38,7 +38,7 @@ export default function ProgresoPage() {
   return (
     <PageContainer>
       <PageHeader
-        breadcrumb={<Breadcrumb backTo="/hoy" items={[{ label: "Convoka", to: "/hoy" }, { label: "Progreso" }]} />}
+        breadcrumb={<Breadcrumb backTo="/hoy" items={[{ label: "Convoka"}, { label: "Progreso" }]} />}
         eyebrow="Resumen"
         title="Progreso"
         accent="de eventos"
@@ -134,7 +134,7 @@ function EventProgressCard({ event }) {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
             <span className="font-mono-stamp text-[10px] uppercase tracking-wider font-bold text-terracotta-dark">{typeLabel}</span>
-            <span className="text-sepia-border" aria-hidden="true">·</span>
+            <span className="text-ink-muted" aria-hidden="true">·</span>
             <span className="font-mono-stamp text-xs text-ink-muted">{dateLabel}</span>
           </div>
           <h3 className="font-heading text-xl font-bold text-ink-charcoal leading-tight">{event.name}</h3>
