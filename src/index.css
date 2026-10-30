@@ -115,3 +115,10 @@
     background: theme('colors.terracotta-dark');
   }
 }
+
+/* Placeholder de contraseñas: menos contraste para que no parezca relleno */
+input[type="password"]::placeholder {
+  color: #B5A99A;
+  opacity: 1;
+  letter-spacing: 0.08em;
+}

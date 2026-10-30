@@ -152,7 +152,7 @@ export default function LoginPage() {
             icon="lock"
             type="password"
             autoComplete="current-password"
-            placeholder="••••••••••••"
+            placeholder="··········"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             error={fieldErrors.password}

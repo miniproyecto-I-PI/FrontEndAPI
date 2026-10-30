@@ -80,14 +80,14 @@ export default function InitialSubtasks({ items, onAdd, onRemove, eventDate = ""
         aria-controls={panelId}
         className="w-full flex items-center justify-between pb-3 border-b border-sepia-border text-left rounded-sharp focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta"
       >
-        <span className="flex items-center gap-3 flex-wrap">
+                <span className="flex items-center gap-3 flex-wrap">
           <span className="w-6 h-6 rounded-full bg-paper-base border border-sepia-border flex items-center justify-center font-heading text-xs font-bold text-terracotta">
             3
           </span>
-          <span className="font-heading text-xl font-semibold text-ink-charcoal">
-            Gestiones iniciales <span className="font-body text-sm font-normal text-ink-muted">(opcional)</span>
+          <span className="font-heading text-xl font-semibold text-ink-charcoal flex items-baseline gap-2">
+            Gestiones iniciales 
+            <span className="font-body text-base font-normal text-ink-muted italic">(Opcional)</span>
           </span>
-          <span className="font-mono-stamp text-[10px] text-ink-muted uppercase">Hoja de ruta</span>
         </span>
         <span className="material-symbols-outlined text-[20px] text-ink-muted" aria-hidden="true">
           {open ? "expand_less" : "expand_more"}
@@ -177,11 +177,11 @@ export default function InitialSubtasks({ items, onAdd, onRemove, eventDate = ""
               </div>
             </div>
             <div className="flex justify-end">
-              <button
+                <button
                 type="button"
                 onClick={handleAdd}
                 disabled={disabled}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-paper-card hover:bg-paper-base border border-sepia-border text-ink-charcoal font-body text-xs font-semibold rounded-sharp transition-colors disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-terracotta hover:bg-terracotta-dark border border-terracotta-dark text-[#FAF6F0] font-body text-xs font-semibold rounded-sharp transition-colors disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1 shadow-sm active:translate-y-0.5"
               >
                 <span className="material-symbols-outlined text-[16px]" aria-hidden="true">add</span>
                 Añadir gestión
