@@ -220,13 +220,19 @@ function KanbanCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2 flex-wrap">
             <button
-              type="button"
-              onClick={onEdit}
-              title="Editar gestión"
-              className="text-left font-body font-semibold text-sm text-ink-charcoal hover:underline decoration-sepia-dark underline-offset-2 focus:outline-none"
-            >
-              {gestion.title}
-            </button>
+                type="button"
+                onClick={onEdit}
+                title="Editar gestión"
+                className="group/title inline-flex items-baseline gap-1 text-left font-body font-semibold text-sm text-ink-charcoal hover:underline decoration-sepia-dark underline-offset-2 focus:outline-none"
+              >
+                <span>{gestion.title}</span>
+                <span
+                  className="material-symbols-outlined text-[12px] text-ink-muted opacity-40 group-hover/title:opacity-100 group-hover/title:text-terracotta transition-all"
+                  aria-hidden="true"
+                >
+                  edit
+                </span>
+              </button>
             {isHoy && isPriority && (
               <span className="font-body text-[10px] font-bold text-terracotta-dark bg-terracotta-light/70 border border-terracotta/30 px-1.5 py-0.2 rounded-sharp uppercase tracking-wider">
                 Prioritaria
