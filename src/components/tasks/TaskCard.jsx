@@ -78,7 +78,6 @@ function PostponedTag() {
   );
 }
 
-/** Menú "⋯" en la esquina superior derecha de la tarjeta. */
 function CardOverflowMenu({ gestion, compactActions, onEdit, onReschedule, onPostpone, onDelete }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const ref = useRef(null);
@@ -172,41 +171,36 @@ function CardOverflowMenu({ gestion, compactActions, onEdit, onReschedule, onPos
   );
 }
 
-function ActionButtons({
-  gestion,
-  onMarkDone,
-  onReschedule,
-  onPostpone,
-  onEdit,
-  onDelete,
-  size = "normal",
-  compactActions = false,
-}) {
-  const base = size === "normal" ? "px-3.5 py-1.5 text-xs" : "px-3 py-1 text-xs";
-  const ghost = `${base} rounded-sharp bg-paper-card hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body font-medium inline-flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1`;
+function ActionButtons({ gestion, onMarkDone, onReschedule, onPostpone, onEdit, onDelete, size = "normal", compactActions = false }) {
+  const isTiny = size === "tiny";
+  const base = isTiny
+    ? "px-2 py-1 text-[10px] gap-1"
+    : size === "normal"
+      ? "px-3.5 py-1.5 text-xs"
+      : "px-3 py-1 text-xs";
+  const iconSize = isTiny ? "text-[13px]" : "text-[15px]";
+  const ghost = `${base} rounded-sharp bg-paper-card hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body font-medium inline-flex items-center ${isTiny ? "gap-1" : "gap-1.5"} transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1`;
 
   const primaryBtn = (
     <button
       type="button"
       onClick={onMarkDone}
-      className={`${base} rounded-sharp bg-terracotta text-[#FAF6F0] font-body font-semibold tracking-wide inline-flex items-center gap-1.5 border border-terracotta-dark shadow-sm hover:bg-terracotta-dark transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1`}
+      className={`${base} rounded-sharp bg-terracotta text-[#FAF6F0] font-body font-semibold tracking-wide inline-flex items-center ${isTiny ? "gap-1" : "gap-1.5"} border border-terracotta-dark shadow-sm hover:bg-terracotta-dark transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1`}
     >
-      <span className="material-symbols-outlined text-[15px]" aria-hidden="true">check_circle</span>
+      <span className={`material-symbols-outlined ${iconSize}`} aria-hidden="true">check_circle</span>
       <span>Marcar como hecha</span>
     </button>
   );
 
-  // Modo compacto: solo el botón primario (todo lo demás en el menú ⋯).
   if (compactActions) {
     return primaryBtn;
   }
 
-  // Modo normal: primario + Reprogramar. El resto (Editar, Posponer, Eliminar) en el menú ⋯.
   return (
     <>
       {primaryBtn}
       <button type="button" onClick={onReschedule} className={ghost}>
-        <span className="material-symbols-outlined text-[15px] text-ink-muted" aria-hidden="true">event_repeat</span>
+        <span className={`material-symbols-outlined ${iconSize} text-ink-muted`} aria-hidden="true">event_repeat</span>
         <span>Reprogramar</span>
       </button>
     </>
@@ -240,7 +234,6 @@ function Hours({ value }) {
 function VencidaBody({ gestion, today, onMarkDone, onReschedule, onPostpone, onEdit, onDelete, compactActions }) {
   return (
     <div className="flex flex-col gap-3 pr-8">
-      {/* Fila 1: Badges y metadatos */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
         <span className="inline-flex items-center gap-1 font-body text-[11px] font-bold text-crimson-tag bg-[#F6DDD7] border border-crimson-urgent/30 px-2 py-0.5 rounded-sharp uppercase tracking-wide">
           <span className="material-symbols-outlined text-[13px]" aria-hidden="true">warning</span>
@@ -252,7 +245,6 @@ function VencidaBody({ gestion, today, onMarkDone, onReschedule, onPostpone, onE
         <Hours value={gestion.estimatedHours} />
       </div>
 
-      {/* Fila 2: Título y Botones alineados horizontalmente */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <h3 className="font-heading text-xl text-ink-charcoal font-semibold leading-snug flex-1 min-w-0">
           <EditableTitle gestion={gestion} onEdit={onEdit} />
@@ -262,7 +254,6 @@ function VencidaBody({ gestion, today, onMarkDone, onReschedule, onPostpone, onE
         </div>
       </div>
 
-      {/* Fila 3: Detalles adicionales */}
       {(gestion.provider || gestion.note) && (
         <div className="flex flex-wrap items-center gap-x-2 text-xs font-body text-ink-muted">
           {gestion.provider && <span>{gestion.provider}</span>}
@@ -327,8 +318,8 @@ function SecondaryBody({ gestion, onMarkDone, onReschedule, onPostpone, onEdit, 
           <p className="text-xs font-body text-ink-muted mt-1">{[gestion.provider, gestion.note].filter(Boolean).join(" • ")}</p>
         )}
       </div>
-      <div className="flex flex-wrap items-center justify-end gap-2 pt-2.5 mt-2 border-t border-sepia-border/50">
-        <ActionButtons gestion={gestion} onMarkDone={onMarkDone} onReschedule={onReschedule} onPostpone={onPostpone} onEdit={onEdit} onDelete={onDelete} compactActions={compactActions} size="compact" />
+      <div className="flex flex-wrap sm:flex-nowrap items-center justify-end gap-1.5 pt-2.5 mt-2 border-t border-sepia-border/50">
+        <ActionButtons gestion={gestion} onMarkDone={onMarkDone} onReschedule={onReschedule} onPostpone={onPostpone} onEdit={onEdit} onDelete={onDelete} compactActions={compactActions} size="tiny" />
       </div>
     </>
   );
@@ -392,12 +383,7 @@ function EjecutadaBody({ gestion, onEdit, onDelete }) {
           aria-label={`Editar gestión ${gestion.title}`}
           className="px-3.5 py-1.5 text-xs rounded-sharp bg-paper-card hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body font-medium inline-flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1"
         >
-          <span
-  className="material-symbols-outlined text-[0.72em] text-ink-subtle group-hover/title:text-terracotta transition-colors"
-  aria-hidden="true"
->
-  edit
-</span>
+          <span className="material-symbols-outlined text-[15px] text-ink-muted" aria-hidden="true">edit</span>
           <span>Editar</span>
         </button>
         {onDelete && (
