@@ -412,6 +412,7 @@ export default function HoyPage() {
                         <TaskCard
                           gestion={grouped.hoy[1]}
                           variant="hoy-secundaria"
+                          actionsSize="compact"
                           onMarkDone={() => handleMarkDone(grouped.hoy[1])}
                           onPostpone={() => setPostponeTarget(grouped.hoy[1])}
                           onReschedule={() => setRescheduleTarget(grouped.hoy[1])}
