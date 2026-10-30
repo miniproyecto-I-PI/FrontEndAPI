@@ -597,6 +597,7 @@ export default function CrearGestionPage() {
           isSubmitting={isLoading}
           onConfirmHours={handleConflictReduceConfirm}
           onBack={() => setConflictStep("CONFLICT_ALERT")}
+          allowOverload={allowOverload}
         />
       )}
 
