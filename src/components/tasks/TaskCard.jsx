@@ -108,10 +108,10 @@ function CardOverflowMenu({ gestion, compactActions, onEdit, onReschedule, onPos
         aria-haspopup="menu"
         aria-label="Más opciones"
         title="Más opciones"
-        className={`w-7 h-7 inline-flex items-center justify-center rounded-sharp border border-sepia-border shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1 ${
+        className={`w-7 h-7 inline-flex items-center justify-center rounded-sharp transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1 ${
           menuOpen
-            ? "bg-paper-linen text-ink-charcoal"
-            : "bg-paper-card/95 hover:bg-paper-linen text-ink-muted hover:text-ink-charcoal"
+            ? "text-ink-charcoal bg-paper-linen/60"
+            : "text-ink-muted hover:text-ink-charcoal hover:bg-paper-linen/60"
         }`}
       >
         <span className="material-symbols-outlined text-[16px]" aria-hidden="true">more_horiz</span>
