@@ -4,7 +4,8 @@ import { useState } from "react";
  * ReduceHoursModal.jsx
  * ---------------------------------------------------------------------------
  * US-08: Resolución reduciendo horas estimadas.
- * El botón de confirmar se bloquea si el conflicto aún no se ha resuelto.
+ * Toma en cuenta si el usuario permite sobrecarga (allowOverload) para
+ * habilitar o bloquear el botón de confirmación.
  */
 export default function ReduceHoursModal({
   gestion,
@@ -14,6 +15,7 @@ export default function ReduceHoursModal({
   onConfirmHours,
   onBack,
   isSubmitting = false,
+  allowOverload = false, // <-- NUEVA PROP
 }) {
   const originalHours = Number(gestion?.estimatedHours ?? gestion?.estimated_hours ?? 2);
   const availableHours = Math.floor((dailyLimitHours - currentHoursOnDay + 1e-9) * 10) / 10;
@@ -29,6 +31,11 @@ export default function ReduceHoursModal({
   const excess = isOverLimit ? Math.round((totalCalculated - dailyLimitHours) * 10) / 10 : 0;
   const isOptimal = !isOverLimit && hours >= 0.5;
   const isInvalidZero = hours < 0.5;
+
+  // El botón se habilita si:
+  // 1. Se puede resolver reduciendo (hay margen).
+  // 2. Se llegó al valor óptimo (resuelto) O el usuario permite sobrecarga.
+  const canSubmit = canResolveByReducing && (isOptimal || allowOverload);
 
   function handleDecrement() {
     setHours((prev) => {
@@ -210,12 +217,14 @@ export default function ReduceHoursModal({
           </button>
           <button
             type="button"
-            disabled={isSubmitting || !canResolveByReducing || !isOptimal}
+            disabled={isSubmitting || !canSubmit}
             onClick={handleConfirm}
             className={`px-6 py-2.5 rounded-sharp font-body text-xs font-semibold tracking-wide border shadow-sm transition-colors inline-flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-terracotta disabled:opacity-60 disabled:cursor-not-allowed ${
               isOptimal
                 ? "bg-sage-wax hover:bg-[#2F422F] text-[#FAF6F0] border-[#2F422F]"
-                : "bg-paper-linen text-ink-muted border-sepia-border"
+                : !allowOverload
+                  ? "bg-paper-linen text-ink-muted border-sepia-border"
+                  : "bg-terracotta hover:bg-terracotta-dark text-[#FAF6F0] border-terracotta-dark"
             }`}
           >
             <span>
@@ -224,10 +233,10 @@ export default function ReduceHoursModal({
                 : !canResolveByReducing
                   ? "Elige otra fecha"
                   : !isOptimal
-                    ? "Conflicto sin resolver"
+                    ? allowOverload ? "Confirmar con aviso" : "Conflicto sin resolver"
                     : "Confirmar cambio"}
             </span>
-            {isOptimal && <span aria-hidden="true">→</span>}
+            {canSubmit && <span aria-hidden="true">→</span>}
           </button>
         </div>
       </div>
