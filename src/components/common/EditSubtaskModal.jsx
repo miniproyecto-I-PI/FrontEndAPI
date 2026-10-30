@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { toDateInputValue, validateTargetDateAgainstEvent } from "../../utils/dateUtils";
 import { useDailyLimit } from "../../hooks/useDailyLimit";
+import DurationInput from "../common/DurationInput";
 
 // "Pospuesta" no está en el diseño, pero es un estado real del backend: sin
 // esta opción, editar una gestión pospuesta la devolvía a PENDIENTE.
@@ -127,7 +128,7 @@ export default function EditSubtaskModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="edit-subtask-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-charcoal/50 backdrop-blur-sm overflow-y-auto"
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-ink-charcoal/50 backdrop-blur-sm overflow-y-auto"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isLoading) onCancel();
       }}
@@ -233,37 +234,34 @@ export default function EditSubtaskModal({
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label
-                    htmlFor="edit-subtask-hours"
-                    className="block font-heading font-semibold text-xs md:text-sm text-ink-charcoal"
-                  >
-                    Dedicación estimada{" "}
-                    <span className="font-body text-xs text-ink-muted font-normal">
-                      (Carga de trabajo)
-                    </span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="edit-subtask-hours"
-                      type="number"
-                      step="0.5"
-                      min="0.5"
-                      inputMode="decimal"
-                      value={form.estimatedHours}
-                      onChange={handleChange("estimatedHours")}
-                      aria-invalid={Boolean(fieldErrors.estimatedHours)}
-                      className={`input-editorial w-full px-3.5 py-2 text-sm text-ink-charcoal font-mono-stamp ${
-                        fieldErrors.estimatedHours ? "error-field" : ""
-                      }`}
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 font-mono-stamp text-xs text-ink-muted pointer-events-none">
-                      horas
-                    </span>
-                  </div>
-                  {fieldErrors.estimatedHours && (
-                    <FieldError msg={fieldErrors.estimatedHours} />
-                  )}
-                </div>
+  <label
+    htmlFor="edit-subtask-hours"
+    className="block font-heading font-semibold text-xs md:text-sm text-ink-charcoal"
+  >
+    Dedicación estimada{" "}
+    <span className="font-body text-xs text-ink-muted font-normal">
+      (Carga de trabajo)
+    </span>
+  </label>
+  <DurationInput
+    id="edit-subtask-hours"
+    value={form.estimatedHours}
+    onChange={(v) => {
+      setForm((p) => ({ ...p, estimatedHours: v }));
+      setFieldErrors((p) => {
+        if (!p.estimatedHours) return p;
+        const n = { ...p };
+        delete n.estimatedHours;
+        return n;
+      });
+    }}
+    disabled={isLoading}
+    invalid={Boolean(fieldErrors.estimatedHours)}
+  />
+  {fieldErrors.estimatedHours && (
+    <FieldError msg={fieldErrors.estimatedHours} />
+  )}
+</div>
               </div>
             </div>
 

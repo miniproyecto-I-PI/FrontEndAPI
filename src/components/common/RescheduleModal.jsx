@@ -454,7 +454,7 @@ export default function RescheduleModal({
       aria-modal="true"
       aria-labelledby="reschedule-title"
       tabIndex={-1}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-charcoal/40 backdrop-blur-sm focus:outline-none"
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-ink-charcoal/40 backdrop-blur-sm focus:outline-none"
       onClick={(e) => e.target === e.currentTarget && onCancel?.()}
     >
       <div className="relative w-full max-w-md bg-paper-card border border-sepia-border rounded-sharp p-6 shadow-xl warm-card-shadow">

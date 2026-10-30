@@ -1,6 +1,8 @@
-import { useId, useState } from "react";
+import { useId, useState, useEffect } from "react";
 import { formatShortDate, toDateInputValue, validateTargetDateAgainstEvent } from "../../utils/dateUtils";
 import { useDailyLimit } from "../../hooks/useDailyLimit";
+import DurationInput from "../common/DurationInput";
+
 
 const emptyDraft = { title: "", provider: "", targetDate: "", time: "", estimatedHours: "" };
 
@@ -16,13 +18,19 @@ const emptyDraft = { title: "", provider: "", targetDate: "", time: "", estimate
  * @param {string} eventDate  "AAAA-MM-DD" del evento ("" si aún no se elige):
  *   ninguna gestión puede quedar después de ese día.
  */
-export default function InitialSubtasks({ items, onAdd, onRemove, eventDate = "", disabled = false }) {
+export default function InitialSubtasks({ items, onAdd, onRemove, eventDate = "", disabled = false, onDraftChange }) {
   const { allowSubtasksAfterEvent, allowOverdueSubtasks } = useDailyLimit();
   const [open, setOpen] = useState(true);
   const [draft, setDraft] = useState(emptyDraft);
   const [errors, setErrors] = useState({});
   const baseId = useId();
   const panelId = `${baseId}-panel`;
+
+useEffect(() => {
+    if (!onDraftChange) return;
+    const hasContent = Object.values(draft).some((v) => String(v ?? "").trim() !== "");
+    onDraftChange({ draft, hasContent });
+  }, [draft, onDraftChange]);
 
   function update(field) {
     return (e) => {
@@ -160,21 +168,33 @@ export default function InitialSubtasks({ items, onAdd, onRemove, eventDate = ""
                 />
               </div>
               <div className="sm:col-span-4 space-y-1">
-                <label htmlFor={`${baseId}-hours`} className="block font-body font-semibold text-xs text-ink-charcoal">Horas est.</label>
-                <input
-                  id={`${baseId}-hours`}
-                  type="number"
-                  min="0.5"
-                  step="0.5"
-                  value={draft.estimatedHours}
-                  onChange={update("estimatedHours")}
-                  disabled={disabled}
-                  placeholder="Ej. 2.0 h"
-                  aria-invalid={Boolean(errors.estimatedHours)}
-                  className={inputClass("estimatedHours")}
-                />
-                {errors.estimatedHours && <p className="text-[11px] text-crimson-urgent font-medium">{errors.estimatedHours}</p>}
-              </div>
+  <label
+    htmlFor={`${baseId}-hours`}
+    className="block font-body font-semibold text-xs text-ink-charcoal"
+  >
+    Dedicación estimada
+  </label>
+  <DurationInput
+    id={`${baseId}-hours`}
+    value={draft.estimatedHours}
+    onChange={(v) => {
+      setDraft((d) => ({ ...d, estimatedHours: v }));
+      setErrors((prev) => {
+        if (!prev.estimatedHours) return prev;
+        const next = { ...prev };
+        delete next.estimatedHours;
+        return next;
+      });
+    }}
+    disabled={disabled}
+    invalid={Boolean(errors.estimatedHours)}
+  />
+  {errors.estimatedHours && (
+    <p className="text-[11px] text-crimson-urgent font-medium">
+      {errors.estimatedHours}
+    </p>
+  )}
+</div>
             </div>
             <div className="flex justify-end">
                 <button

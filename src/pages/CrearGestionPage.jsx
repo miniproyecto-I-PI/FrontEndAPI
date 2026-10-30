@@ -17,6 +17,7 @@ import StateCard from "../components/common/StateCard";
 import PageContainer from "../components/layout/PageContainer";
 import PageHeader, { Breadcrumb } from "../components/layout/PageHeader";
 import { formatShortDate, toDateInputValue, validateTargetDateAgainstEvent } from "../utils/dateUtils";
+import DurationInput from "../components/common/DurationInput";
 
 const emptyForm = {
   title: "",
@@ -346,41 +347,34 @@ export default function CrearGestionPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
   <div className="space-y-1.5">
-    <label
-      htmlFor="horas-estimadas"
-      className="font-body text-xs md:text-sm font-semibold text-ink-charcoal flex items-center justify-between"
-    >
-      <span>Dedicación estimada</span>
-      <span className="font-body text-[11px] text-ink-muted font-normal">
-        Para cálculo de carga
-      </span>
-    </label>
-    <div className="relative">
-      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-ink-muted pointer-events-none">
-        schedule
-      </span>
-      <input
-        id="horas-estimadas"
-        type="number"
-        step="0.5"
-        min="0.5"
-        inputMode="decimal"
-        value={form.estimatedHours}
-        onChange={handleChange("estimatedHours")}
-        placeholder="2.5"
-        aria-invalid={Boolean(fieldErrors.estimatedHours)}
-        className={`input-editorial w-full h-11 pl-10 pr-16 text-sm text-ink-charcoal placeholder:text-ink-subtle placeholder:italic ${
-          fieldErrors.estimatedHours ? "error-field" : ""
-        }`}
-      />
-      <span className="absolute right-3.5 top-1/2 -translate-y-1/2 font-mono-stamp text-xs text-ink-muted">
-        horas
-      </span>
-    </div>
-    {fieldErrors.estimatedHours && (
-      <FieldError msg={fieldErrors.estimatedHours} />
-    )}
-  </div>
+  <label
+    htmlFor="horas-estimadas"
+    className="font-body text-xs md:text-sm font-semibold text-ink-charcoal flex items-center justify-between"
+  >
+    <span>Dedicación estimada</span>
+    <span className="font-body text-[11px] text-ink-muted font-normal">
+      Para cálculo de carga
+    </span>
+  </label>
+  <DurationInput
+    id="horas-estimadas"
+    value={form.estimatedHours}
+    onChange={(v) => {
+      setForm((p) => ({ ...p, estimatedHours: v }));
+      setFieldErrors((p) => {
+        if (!p.estimatedHours) return p;
+        const n = { ...p };
+        delete n.estimatedHours;
+        return n;
+      });
+    }}
+    disabled={isLoading}
+    invalid={Boolean(fieldErrors.estimatedHours)}
+  />
+  {fieldErrors.estimatedHours && (
+    <FieldError msg={fieldErrors.estimatedHours} />
+  )}
+</div>
 
   <div className="space-y-1.5">
         <label

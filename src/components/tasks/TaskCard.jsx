@@ -220,9 +220,15 @@ function EditableTitle({ gestion, onEdit }) {
       type="button"
       onClick={onEdit}
       title="Editar gestión"
-      className="text-left rounded-sharp hover:underline decoration-sepia-dark underline-offset-4 decoration-1 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1"
+      className="group/title inline-flex items-center gap-1.5 text-left rounded-sharp hover:underline decoration-sepia-dark underline-offset-4 decoration-1 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1"
     >
-      {gestion.title}
+      <span>{gestion.title}</span>
+      <span
+        className="material-symbols-outlined text-[0.72em] text-ink-muted opacity-40 group-hover/title:opacity-100 group-hover/title:text-terracotta transition-all"
+        aria-hidden="true"
+      >
+        edit
+      </span>
     </button>
   );
 }

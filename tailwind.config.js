@@ -32,6 +32,12 @@ export default {
         "sage-light": "#E4ECE2",
         "sepia-border": "#D8CBC0",
         "sepia-dark": "#A89785",
+        gold: {
+              DEFAULT: "#B8860B",   // dorado oscuro, encaja con tu tono editorial
+              light: "#FDF6E3",     // fondo cálido muy claro (opcional)
+              border: "#E5D4A1",    // borde dorado suave
+              dark: "#8B6508",      // hover
+            },
       },
       borderRadius: {
         "asym-book": "18px 4px 18px 4px",

@@ -9,21 +9,14 @@
  *   3. Luego las próximas, ordenadas por fecha más cercana.
  *   4. En caso de empate (misma fecha), gana la de MENOR esfuerzo estimado.
  *
+ * "Próximas" ya NO tiene límite de días (decisión UX): cualquier gestión con
+ * target_date > hoy cae en ese grupo. El backend (GET /today) tampoco filtra
+ * por fecha superior, así que ambos lados son consistentes.
+ *
  * This lives as a pure, framework-agnostic module (no React, no fetch) so it
  * can be unit-tested in isolation and so the exact same rule can be reused
  * by /evento/:id (which also needs to react to reprogramming — US-06/US-07).
- *
- * IMPORTANT — Sprint 0 scope note:
- * For the MVP, this grouping/sorting happens on the frontend over data that
- * (eventually) comes from `GET /today` (see services/api.js). The backlog's
- * "Evidencia esperada" for US-04 allows either backend-side or frontend-side
- * grouping as long as it's documented — here it's documented as FRONTEND.
  */
-
-import { classifyByDate } from "./dateUtils";
-
-/** Días hacia adelante que cubre el grupo "Próximas" (decisión UX, = backend). */
-export const UPCOMING_WINDOW_DAYS = 7;
 
 /**
  * Texto visible de la regla por grupo (US-04, sin jerga técnica). Lo muestra
@@ -55,6 +48,14 @@ export const PRIORITY_RULE_BY_GROUP = {
  * @property {string} [note]
  */
 
+/** Fecha local en formato "YYYY-MM-DD" sin desfase de zona horaria. */
+function toISODateLocal(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 /**
  * Groups and sorts a flat list of gestiones into { vencidas, hoy, proximas }.
  * Gestiones EJECUTADA stay out of the three groups (US-04: "excluir
@@ -62,14 +63,16 @@ export const PRIORITY_RULE_BY_GROUP = {
  * only shows as section "0. Ejecutadas" (switch or "Ejecutadas" chip).
  * POSPUESTA stay in their date group with a "Pospuesta" tag (Sprint 2), so
  * the US-05 status filter (Pendiente / Pospuesta) is meaningful.
- * Anything further than `upcomingWindowDays` away is excluded too — it will
- * "enter" the view naturally as the date approaches.
+ *
+ * Toda gestión con target_date > hoy va a "próximas", sin importar cuán
+ * lejos esté (no hay ventana de días). Así el FE nunca "esconde" trabajo
+ * futuro que el backend sí devuelve.
  *
  * @param {Gestion[]} gestiones
- * @param {{ today?: Date, upcomingWindowDays?: number }} [options]
+ * @param {{ today?: Date }} [options]
  */
 export function groupAndSortGestiones(gestiones, options = {}) {
-  const { today = new Date(), upcomingWindowDays = UPCOMING_WINDOW_DAYS } = options;
+  const { today = new Date() } = options;
 
   const active = gestiones.filter((g) => g.status !== "EJECUTADA");
   const ejecutadas = gestiones.filter((g) => g.status === "EJECUTADA");
@@ -78,12 +81,14 @@ export function groupAndSortGestiones(gestiones, options = {}) {
   const hoy = [];
   const proximas = [];
 
+  const todayISO = toISODateLocal(today);
+
   for (const gestion of active) {
-    const bucket = classifyByDate(gestion.targetDate, today, upcomingWindowDays);
-    if (bucket === "vencida") vencidas.push(gestion);
-    else if (bucket === "hoy") hoy.push(gestion);
-    else if (bucket === "proxima") proximas.push(gestion);
-    // 'fuera_de_rango' gestiones are intentionally dropped from /hoy.
+    const dateISO = String(gestion.targetDate ?? "").split("T")[0];
+    if (!dateISO) continue; // sin fecha → no aparece en /hoy
+    if (dateISO < todayISO) vencidas.push(gestion);
+    else if (dateISO === todayISO) hoy.push(gestion);
+    else proximas.push(gestion);
   }
 
   const getTimeValue = (g) => {
@@ -128,10 +133,8 @@ export function groupAndSortGestiones(gestiones, options = {}) {
 
 /**
  * Derives the header metrics shown at the top of "/hoy".
- * "Carga estimada" intentionally covers hoy + próximas (the workload still
- * ahead), while vencidas are tracked separately as risk rather than load —
- * this mirrors the numbers in the original prototype. Flag for product/UX
- * to confirm once `GET /today` is implemented for real.
+ * "Carga estimada" covers hoy + próximas (the workload still ahead),
+ * while vencidas are tracked separately as risk rather than load.
  */
 export function computeHoyStats({ vencidas, hoy, proximas }) {
   const sumHours = (list) => list.reduce((total, g) => total + g.estimatedHours, 0);
