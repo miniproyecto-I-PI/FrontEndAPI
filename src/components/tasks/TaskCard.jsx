@@ -11,6 +11,7 @@ export default function TaskCard({
   onEdit,
   onDelete,
   compactActions = false,
+  actionsSize = "tiny",
   today = new Date(),
 }) {
   const isHero = variant === "hoy-hero";
@@ -35,7 +36,7 @@ export default function TaskCard({
     .filter(Boolean)
     .join(" ");
 
-  const props = { gestion, today, onMarkDone, onReschedule, onPostpone, onEdit, onDelete, compactActions };
+  const props = { gestion, today, onMarkDone, onReschedule, onPostpone, onEdit, onDelete, compactActions, actionsSize };
 
   return (
     <article className={containerClasses} data-gestion-id={gestion.id} aria-label={gestion.title}>
@@ -299,7 +300,7 @@ function HeroBody({ gestion, onMarkDone, onReschedule, onPostpone, onEdit, onDel
   );
 }
 
-function SecondaryBody({ gestion, onMarkDone, onReschedule, onPostpone, onEdit, onDelete, compactActions }) {
+function SecondaryBody({ gestion, onMarkDone, onReschedule, onPostpone, onEdit, onDelete, compactActions, actionsSize }) {
   return (
     <>
       <div>
@@ -319,7 +320,7 @@ function SecondaryBody({ gestion, onMarkDone, onReschedule, onPostpone, onEdit, 
         )}
       </div>
       <div className="flex flex-wrap sm:flex-nowrap items-center justify-end gap-1.5 pt-2.5 mt-2 border-t border-sepia-border/50">
-        <ActionButtons gestion={gestion} onMarkDone={onMarkDone} onReschedule={onReschedule} onPostpone={onPostpone} onEdit={onEdit} onDelete={onDelete} compactActions={compactActions} size="tiny" />
+        <ActionButtons gestion={gestion} onMarkDone={onMarkDone} onReschedule={onReschedule} onPostpone={onPostpone} onEdit={onEdit} onDelete={onDelete} compactActions={compactActions} size={actionsSize} />
       </div>
     </>
   );
