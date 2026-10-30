@@ -248,7 +248,7 @@ function VencidaBody({ gestion, today, onMarkDone, onReschedule, onPostpone, onE
         </span>
         {isPostponed(gestion) && <PostponedTag />}
         <span className="font-body font-medium text-ink-charcoal">{gestion.eventName}</span>
-        <span className="text-sepia-dark" aria-hidden="true">•</span>
+        <span className="text-ink-muted" aria-hidden="true">•</span>
         <Hours value={gestion.estimatedHours} />
       </div>
 
@@ -266,7 +266,7 @@ function VencidaBody({ gestion, today, onMarkDone, onReschedule, onPostpone, onE
       {(gestion.provider || gestion.note) && (
         <div className="flex flex-wrap items-center gap-x-2 text-xs font-body text-ink-muted">
           {gestion.provider && <span>{gestion.provider}</span>}
-          {gestion.provider && gestion.note && <span className="text-sepia-dark" aria-hidden="true">•</span>}
+          {gestion.provider && gestion.note && <span className="text-ink-muted" aria-hidden="true">•</span>}
           {gestion.note && <span className="text-crimson-tag font-medium">{gestion.note}</span>}
         </div>
       )}
@@ -376,7 +376,7 @@ function EjecutadaBody({ gestion, onEdit, onDelete }) {
             {gestion.time ? ` • ${gestion.time}` : ""}
           </span>
           <span className="font-body font-medium text-ink-charcoal">{gestion.eventName}</span>
-          <span className="text-sepia-dark" aria-hidden="true">•</span>
+          <span className="text-ink-muted" aria-hidden="true">•</span>
           <Hours value={gestion.estimatedHours} />
         </div>
         <h3 className="font-heading text-xl text-ink-muted font-semibold leading-snug"><EditableTitle gestion={gestion} onEdit={onEdit} /></h3>
@@ -392,7 +392,12 @@ function EjecutadaBody({ gestion, onEdit, onDelete }) {
           aria-label={`Editar gestión ${gestion.title}`}
           className="px-3.5 py-1.5 text-xs rounded-sharp bg-paper-card hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body font-medium inline-flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1"
         >
-          <span className="material-symbols-outlined text-[15px] text-ink-muted" aria-hidden="true">edit</span>
+          <span
+  className="material-symbols-outlined text-[0.72em] text-ink-subtle group-hover/title:text-terracotta transition-colors"
+  aria-hidden="true"
+>
+  edit
+</span>
           <span>Editar</span>
         </button>
         {onDelete && (
