@@ -4,12 +4,8 @@ import TaskCard from "./TaskCard";
  * TaskCardGalleryOverlay.jsx
  * ---------------------------------------------------------------------------
  * Tarjeta con capa de galería estilo WhatsApp.
- * Representa la tercera tarjeta cuando hay más tareas en el grupo; muestra
- * la tarjeta en segundo plano con un overlay translúcido indicando
- * `+{remainingCount}` y permitiendo hacer clic para abrir el modal carrusel.
- *
- * Layout horizontal (ícono +N a la izquierda, "Ver todas" a la derecha)
- * para evitar que el contenido se corte en tarjetas de poca altura.
+ * Se ajustó el overflow para que el focus ring sea visible al navegar con teclado.
+ * Se añadieron clases group-focus-visible para replicar los efectos de hover.
  */
 export default function TaskCardGalleryOverlay({
   gestion,
@@ -24,9 +20,11 @@ export default function TaskCardGalleryOverlay({
   onDelete,
 }) {
   return (
-    <div className="relative group/gallery-item h-full overflow-hidden rounded-sharp">
+    /* 1. Quitamos overflow-hidden del padre para que el anillo de foco se vea */
+    <div className="relative group/gallery-item h-full rounded-sharp">
       {/* Tarjeta de fondo */}
-      <div className="pointer-events-none select-none opacity-85 filter contrast-95">
+      {/* 2. Mantenemos el overflow-hidden aquí para que las esquinas de la tarjeta de atrás no se salgan */}
+      <div className="pointer-events-none select-none opacity-85 filter contrast-95 h-full overflow-hidden rounded-sharp">
         <TaskCard
           gestion={gestion}
           variant={variant}
@@ -43,14 +41,16 @@ export default function TaskCardGalleryOverlay({
         type="button"
         onClick={onClickMore}
         aria-label={`Ver ${remainingCount} gestiones más en galería interactiva`}
-        className="absolute inset-0 z-20 rounded-sharp bg-[#FAF6F0]/94 hover:bg-[#FAF6F0]/98 backdrop-blur-[3px] border-2 border-dashed border-sepia-dark/40 hover:border-terracotta/70 transition-all flex items-center justify-center gap-3 sm:gap-4 p-3 text-ink-charcoal cursor-pointer select-none shadow-sm focus:outline-none focus:ring-2 focus:ring-terracotta focus:ring-offset-2 focus:ring-offset-paper-card"
+        /* 3. Usamos focus-visible para que el anillo aparezca solo con Tab y no al hacer clic */
+        className="absolute inset-0 z-20 rounded-sharp bg-[#FAF6F0]/94 hover:bg-[#FAF6F0]/98 focus-visible:bg-[#FAF6F0]/98 backdrop-blur-[3px] border-2 border-dashed border-sepia-dark/40 hover:border-terracotta/70 focus-visible:border-terracotta/70 transition-all flex items-center justify-center gap-3 sm:gap-4 p-3 text-ink-charcoal cursor-pointer select-none shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-2 focus-visible:ring-offset-paper-card"
       >
         {/* Bloque izquierdo: ícono + contador */}
-        <div className="flex flex-col items-center shrink-0 group-hover/gallery-item:scale-105 transition-transform">
+        {/* 4. Añadimos group-focus-visible para que escale al recibir foco por teclado */}
+        <div className="flex flex-col items-center shrink-0 group-hover/gallery-item:scale-105 group-focus-visible/gallery-item:scale-105 transition-transform">
           <span className="material-symbols-outlined text-[22px] sm:text-[24px] text-terracotta leading-none">
             collections
           </span>
-          <span className="font-heading text-2xl sm:text-3xl font-extrabold tracking-tight text-terracotta group-hover/gallery-item:text-terracotta-dark transition-colors leading-none mt-0.5">
+          <span className="font-heading text-2xl sm:text-3xl font-extrabold tracking-tight text-terracotta group-hover/gallery-item:text-terracotta-dark group-focus-visible/gallery-item:text-terracotta-dark transition-colors leading-none mt-0.5">
             +{remainingCount}
           </span>
         </div>
@@ -60,10 +60,10 @@ export default function TaskCardGalleryOverlay({
 
         {/* Bloque derecho: ver todas */}
         <div className="flex flex-col items-start min-w-0">
-          <span className="font-body text-xs sm:text-sm font-bold text-ink-charcoal group-hover/gallery-item:text-terracotta transition-colors inline-flex items-center gap-1">
+          <span className="font-body text-xs sm:text-sm font-bold text-ink-charcoal group-hover/gallery-item:text-terracotta group-focus-visible/gallery-item:text-terracotta transition-colors inline-flex items-center gap-1">
             <span>Ver todas ({totalCount})</span>
             <span
-              className="material-symbols-outlined text-[15px] text-terracotta group-hover/gallery-item:translate-x-0.5 transition-transform"
+              className="material-symbols-outlined text-[15px] text-terracotta group-hover/gallery-item:translate-x-0.5 group-focus-visible/gallery-item:translate-x-0.5 transition-transform"
               aria-hidden="true"
             >
               arrow_forward
