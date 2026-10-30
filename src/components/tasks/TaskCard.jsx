@@ -19,7 +19,7 @@ export default function TaskCard({
   const isProxima = variant === "proxima";
   const isEjecutada = variant === "ejecutada";
 
-  const showOverflow = compactActions && !isEjecutada;
+  const showOverflow = !isEjecutada;
 
   const containerClasses = [
     "bg-paper-card border border-sepia-border rounded-sharp warm-card-shadow warm-card-hover transition-all group",
@@ -42,6 +42,7 @@ export default function TaskCard({
       {showOverflow && (
         <CardOverflowMenu
           gestion={gestion}
+          compactActions={compactActions}
           onEdit={onEdit}
           onReschedule={onReschedule}
           onPostpone={onPostpone}
@@ -77,8 +78,8 @@ function PostponedTag() {
   );
 }
 
-/** Menú "⋯" en la esquina superior derecha de la tarjeta (solo compactActions). */
-function CardOverflowMenu({ gestion, onEdit, onReschedule, onPostpone, onDelete }) {
+/** Menú "⋯" en la esquina superior derecha de la tarjeta. */
+function CardOverflowMenu({ gestion, compactActions, onEdit, onReschedule, onPostpone, onDelete }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const ref = useRef(null);
 
@@ -131,15 +132,17 @@ function CardOverflowMenu({ gestion, onEdit, onReschedule, onPostpone, onDelete 
               <span>Editar</span>
             </button>
           )}
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => { setMenuOpen(false); onReschedule?.(); }}
-            className="w-full text-left px-3 py-1.5 font-body text-xs text-ink-charcoal hover:bg-paper-linen transition-colors flex items-center gap-2"
-          >
-            <span className="material-symbols-outlined text-[14px] text-ink-muted" aria-hidden="true">event_repeat</span>
-            <span>Reprogramar</span>
-          </button>
+          {compactActions && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => { setMenuOpen(false); onReschedule?.(); }}
+              className="w-full text-left px-3 py-1.5 font-body text-xs text-ink-charcoal hover:bg-paper-linen transition-colors flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-[14px] text-ink-muted" aria-hidden="true">event_repeat</span>
+              <span>Reprogramar</span>
+            </button>
+          )}
           <button
             type="button"
             role="menuitem"
@@ -193,11 +196,12 @@ function ActionButtons({
     </button>
   );
 
-  // En modo compacto solo queda "Marcar como hecha"; el resto vive en el menú ⋯.
+  // Modo compacto: solo el botón primario (todo lo demás en el menú ⋯).
   if (compactActions) {
     return primaryBtn;
   }
 
+  // Modo normal: primario + Reprogramar. El resto (Editar, Posponer, Eliminar) en el menú ⋯.
   return (
     <>
       {primaryBtn}
@@ -205,32 +209,6 @@ function ActionButtons({
         <span className="material-symbols-outlined text-[15px] text-ink-muted" aria-hidden="true">event_repeat</span>
         <span>Reprogramar</span>
       </button>
-      <button type="button" onClick={onPostpone} className={ghost}>
-        <span className="material-symbols-outlined text-[15px] text-ink-muted" aria-hidden="true">pause_circle</span>
-        <span>Posponer</span>
-      </button>
-      {onEdit && (
-        <button
-          type="button"
-          onClick={onEdit}
-          className={ghost}
-          aria-label={gestion ? `Editar gestión ${gestion.title}` : "Editar gestión"}
-        >
-          <span className="material-symbols-outlined text-[15px] text-ink-muted" aria-hidden="true">edit</span>
-          <span>Editar</span>
-        </button>
-      )}
-      {onDelete && (
-        <button
-          type="button"
-          onClick={onDelete}
-          className={`${base} rounded-sharp bg-paper-card hover:bg-crimson-paper border border-sepia-border hover:border-crimson-urgent/60 text-ink-charcoal hover:text-crimson-urgent font-body font-medium inline-flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-crimson-urgent focus-visible:ring-offset-1`}
-          aria-label={gestion ? `Eliminar gestión ${gestion.title}` : "Eliminar gestión"}
-        >
-          <span className="material-symbols-outlined text-[15px] text-ink-muted" aria-hidden="true">delete</span>
-          <span>Eliminar</span>
-        </button>
-      )}
     </>
   );
 }
@@ -255,7 +233,7 @@ function Hours({ value }) {
 
 function VencidaBody({ gestion, today, onMarkDone, onReschedule, onPostpone, onEdit, onDelete, compactActions }) {
   return (
-    <div className={`flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${compactActions ? "pr-8" : ""}`}>
+    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pr-8">
       <div className="space-y-1.5 flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
           <span className="inline-flex items-center gap-1 font-body text-[11px] font-bold text-crimson-tag bg-[#F6DDD7] border border-crimson-urgent/30 px-2 py-0.5 rounded-sharp uppercase tracking-wide">
@@ -287,7 +265,7 @@ function HeroBody({ gestion, onMarkDone, onReschedule, onPostpone, onEdit, onDel
   return (
     <>
       <div className="space-y-2.5">
-        <div className={`flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-sepia-border/70 ${compactActions ? "pr-8" : ""}`}>
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-sepia-border/70 pr-8">
           <div className="flex items-center gap-2">
             <span className="font-body text-[11px] font-bold text-terracotta-dark bg-terracotta-light/70 border border-terracotta/30 px-2.5 py-0.5 rounded-sharp uppercase tracking-wide">
               {todayLabel(gestion)}
@@ -321,7 +299,7 @@ function SecondaryBody({ gestion, onMarkDone, onReschedule, onPostpone, onEdit, 
   return (
     <>
       <div>
-        <div className={`flex items-center justify-between gap-2 pb-1.5 border-b border-sepia-border/40 ${compactActions ? "pr-8" : ""}`}>
+        <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-sepia-border/40 pr-8">
           <div className="flex items-center gap-2">
             <span className="font-body text-[11px] font-bold text-terracotta-dark bg-terracotta-light/60 border border-terracotta/30 px-2 py-0.5 rounded-sharp uppercase tracking-wide">
               {todayLabel(gestion)}
@@ -347,7 +325,7 @@ function ProximaBody({ gestion, today, onMarkDone, onReschedule, onPostpone, onE
   return (
     <>
       <div className="space-y-2">
-        <div className={`flex items-center justify-between gap-1 pb-1.5 border-b border-sepia-border/50 ${compactActions ? "pr-8" : ""}`}>
+        <div className="flex items-center justify-between gap-1 pb-1.5 border-b border-sepia-border/50 pr-8">
           <div className="flex items-center gap-2">
             <span className="font-body text-[11px] font-semibold text-ink-charcoal bg-paper-linen border border-sepia-border px-2 py-0.5 rounded-sharp">
               {formatUpcomingLabel(gestion.targetDate, today)}
@@ -426,7 +404,7 @@ function SingleCardBody({ gestion, variant, today, onMarkDone, onReschedule, onP
   return (
     <>
       <div className="space-y-3">
-        <div className={`flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-sepia-border/70 ${compactActions ? "pr-8" : ""}`}>
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-sepia-border/70 pr-8">
           <div className="flex flex-wrap items-center gap-2.5">
             {isVencida ? (
               <span className="inline-flex items-center gap-1 font-body text-[11px] font-bold text-crimson-tag bg-[#F6DDD7] border border-crimson-urgent/30 px-2.5 py-0.5 rounded-sharp uppercase tracking-wide">
