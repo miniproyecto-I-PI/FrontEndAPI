@@ -263,7 +263,7 @@ export default function CrearGestionPage() {
           <Breadcrumb
             backTo={`/evento/${id}`}
             items={[
-              { label: "Convoka", to: "/hoy" },
+              { label: "Convoka"},
               { label: "Eventos", to: "/eventos" },
               { label: eventName, to: `/evento/${id}` },
               { label: "Nueva gestión" },

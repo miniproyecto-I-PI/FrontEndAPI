@@ -38,7 +38,7 @@ export default function ProgresoPage() {
   return (
     <PageContainer>
       <PageHeader
-        breadcrumb={<Breadcrumb backTo="/hoy" items={[{ label: "Convoka", to: "/hoy" }, { label: "Progreso" }]} />}
+        breadcrumb={<Breadcrumb backTo="/hoy" items={[{ label: "Convoka"}, { label: "Progreso" }]} />}
         eyebrow="Resumen"
         title="Progreso"
         accent="de eventos"

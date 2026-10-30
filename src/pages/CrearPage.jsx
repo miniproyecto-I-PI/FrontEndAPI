@@ -150,7 +150,7 @@ function handleSuccessGoToEvents() {
         breadcrumb={
           <Breadcrumb
             backTo="/eventos"
-            items={[{ label: "Convoka", to: "/hoy" }, { label: "Eventos", to: "/eventos" }, { label: "Nuevo evento" }]}
+            items={[{ label: "Convoka"}, { label: "Eventos", to: "/eventos" }, { label: "Nuevo evento" }]}
           />
         }
         title="Crear"
