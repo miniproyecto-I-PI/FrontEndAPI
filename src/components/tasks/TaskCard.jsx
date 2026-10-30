@@ -224,7 +224,7 @@ function EditableTitle({ gestion, onEdit }) {
     >
       <span>{gestion.title}</span>
       <span
-        className="material-symbols-outlined text-[0.72em] text-ink-muted opacity-40 group-hover/title:opacity-100 group-hover/title:text-terracotta transition-all"
+        className="material-symbols-outlined text-[0.72em] text-ink-muted group-hover/title:text-terracotta transition-colors"
         aria-hidden="true"
       >
         edit
