@@ -159,10 +159,25 @@ async function handleEditEvent(payload) {
     }
   }
 
-  async function handlePostpone(note) {
-    await updateSubtask(postponeTarget.id, { status: "POSPUESTA", note });
+    async function handlePostpone({ note, newDate }) {
+    const patch = { status: "POSPUESTA", note };
+    if (newDate) patch.targetDate = newDate;
+    
+    await updateSubtask(postponeTarget.id, patch);
+    
+    const dateLabel = newDate
+      ? new Date(`${newDate}T12:00:00`).toLocaleDateString("es", {
+          day: "numeric",
+          month: "short",
+        })
+      : null;
+      
     setPostponeTarget(null);
-    setToast({ message: "Gestión pospuesta" });
+    setToast({
+      message: dateLabel
+        ? `Gestión pospuesta al ${dateLabel}`
+        : "Gestión pospuesta",
+    });
   }
 
   async function handleConfirmReschedule() {
@@ -350,6 +365,7 @@ async function handleEditEvent(payload) {
       {postponeTarget && (
         <PostponeSubtaskModal
           subtask={postponeTarget}
+          eventDateTime={event?.dateTime}
           onCancel={() => setPostponeTarget(null)}
           onSubmit={handlePostpone}
         />

@@ -298,7 +298,7 @@ function handleSuccessGoToEvents() {
               Aún no tienes gestiones
             </h3>
             <p className="font-body text-sm text-ink-muted max-w-md mx-auto leading-relaxed">
-              Comienza a planificar tu evento agregando las primeras tareas logísticas para su preparación.
+              Comienza a planificar tu evento agregando las primeras tareas logísticas para su preparación (opcional).
             </p>
             <button
               type="button"
