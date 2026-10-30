@@ -49,7 +49,7 @@ export default function PriorityRuleTooltip({ rule }) {
         onBlur={() => setFocused(false)}
         aria-expanded={open}
         aria-describedby={tooltipId}
-        className="inline-flex items-center gap-1 pb-0.5 border-b-2 border-terracotta/50 hover:border-terracotta-dark font-body text-sm font-semibold text-terracotta hover:text-terracotta-dark cursor-help transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta"
+        className="inline-flex items-center gap-1 pb-0.5 border-b-2 border-gold/60 hover:border-gold font-body text-sm font-semibold text-gold hover:text-gold-dark cursor-help transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-1"
       >
         <span className="material-symbols-outlined text-[17px]" aria-hidden="true">help</span>
         ¿Cómo se ordena?
@@ -59,11 +59,11 @@ export default function PriorityRuleTooltip({ rule }) {
         id={tooltipId}
         role="tooltip"
         className={[
-          "absolute left-0 top-full mt-2 w-72 max-w-[85vw] p-3.5 bg-terracotta-light border border-terracotta/40 border-l-4 border-l-terracotta rounded-sharp shadow-lg text-ink-charcoal text-xs font-body leading-relaxed transition-opacity duration-150",
+          "absolute left-0 top-full mt-2 w-72 max-w-[85vw] p-3.5 bg-gold-light border border-gold-border border-l-4 border-l-gold rounded-sharp shadow-lg text-ink-charcoal text-xs font-body leading-relaxed transition-opacity duration-150",
           open ? "opacity-100 visible" : "opacity-0 invisible",
         ].join(" ")}
       >
-        <strong className="block mb-1 font-bold text-terracotta-dark uppercase tracking-wider">¿Cómo se ordena?</strong>
+        <strong className="block mb-1 font-bold text-gold-dark uppercase tracking-wider">¿Cómo se ordena?</strong>
         {rule}
       </span>
     </span>
