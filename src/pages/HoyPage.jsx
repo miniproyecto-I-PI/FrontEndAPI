@@ -105,11 +105,23 @@ export default function HoyPage() {
     setToast({ message: "Gestión reprogramada" });
   }
 
-  async function handlePostpone(note) {
-    await actions.editGestion(postponeTarget.id, { status: "POSPUESTA", note });
-    setPostponeTarget(null);
-    setToast({ message: "Gestión pospuesta" });
-  }
+  async function handlePostpone({ note, newDate }) {
+  const patch = { status: "POSPUESTA", note };
+  if (newDate) patch.targetDate = newDate;
+  await actions.editGestion(postponeTarget.id, patch);
+  const dateLabel = newDate
+    ? new Date(`${newDate}T12:00:00`).toLocaleDateString("es", {
+        day: "numeric",
+        month: "short",
+      })
+    : null;
+  setPostponeTarget(null);
+  setToast({
+    message: dateLabel
+      ? `Gestión pospuesta al ${dateLabel}`
+      : "Gestión pospuesta",
+  });
+}
 
   async function handleEditSubmit(payload) {
     await actions.editGestion(editTarget.id, payload);
@@ -547,6 +559,7 @@ export default function HoyPage() {
       {postponeTarget && (
         <PostponeSubtaskModal
           subtask={postponeTarget}
+          eventDateTime={eventDateOf(postponeTarget)}
           onCancel={() => setPostponeTarget(null)}
           onSubmit={handlePostpone}
         />
