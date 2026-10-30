@@ -4,13 +4,7 @@ import { STATUS_FILTERS } from "../../hooks/useTodayGestiones";
 /**
  * HoyFilters.jsx — filtros de "/hoy" (US-05): selector de evento + chips de
  * estado de gestión, con indicador "Filtro activo" y "Limpiar", y el switch
- * "Mostrar gestiones ejecutadas" (sección "0. Ejecutadas", apagado por
- * defecto). Controles nativos con label, operables por teclado.
- *
- * Chips rediseñados para mayor prominencia (US: "aumentar prominencia, color
- * y tamaño de los chips de filtrado"): tamaño text-sm, padding mayor, y el
- * botón activo lleva anillo terracotta para que destaque sin depender solo
- * del color de fondo.
+ * de vista (agenda/kanban).
  */
 export default function HoyFilters({
   eventOptions,
@@ -19,8 +13,6 @@ export default function HoyFilters({
   statusFilter,
   onStatusChange,
   onClear,
-  showExecuted,
-  onShowExecutedChange,
   viewMode = "agenda",
   onViewModeChange,
   disabled = false,
@@ -134,7 +126,6 @@ export default function HoyFilters({
             </button>
           </div>
         )}
-        <ExecutedSwitch checked={showExecuted} onChange={onShowExecutedChange} disabled={disabled} />
       </div>
 
       {hasActive && (
@@ -153,37 +144,6 @@ export default function HoyFilters({
           </button>
         </div>
       )}
-    </div>
-  );
-}
-
-function ExecutedSwitch({ checked, onChange, disabled }) {
-  const labelId = useId();
-  return (
-    <div className="flex items-center justify-end gap-2">
-      <span id={labelId} className="font-body text-sm text-ink-charcoal font-medium">
-        Mostrar gestiones ejecutadas
-      </span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        aria-labelledby={labelId}
-        onClick={() => onChange(!checked)}
-        disabled={disabled}
-        className={[
-          "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1 disabled:opacity-60",
-          checked ? "bg-sage-wax" : "bg-ink-muted",
-        ].join(" ")}
-      >
-        <span
-          aria-hidden="true"
-          className={[
-            "inline-block h-3.5 w-3.5 rounded-full bg-paper-card shadow-sm transition-transform",
-            checked ? "translate-x-[18px]" : "translate-x-[3px]",
-          ].join(" ")}
-        />
-      </button>
     </div>
   );
 }
