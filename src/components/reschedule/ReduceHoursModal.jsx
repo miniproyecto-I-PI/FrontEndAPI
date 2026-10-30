@@ -108,7 +108,7 @@ export default function ReduceHoursModal({
 
         {/* Cuerpo desplazable */}
         <div className="overflow-y-auto flex-1 pr-1.5 -mr-1 mt-3 space-y-4">
-          {/* Callout de contexto */}
+                  {/* Callout de contexto */}
         <div
           className={`mt-4 p-3 rounded-sharp text-xs font-body leading-relaxed border ${
             isInvalidZero
@@ -159,22 +159,55 @@ export default function ReduceHoursModal({
           )}
         </div>
 
-        {/* Stepper de Horas */}
+                {/* Stepper de Horas */}
         <div className="mt-5">
-          <div className="flex items-center justify-between text-xs font-body mb-2">
-            <span className="font-semibold text-ink-charcoal">Horas estimadas</span>
-            <span className="text-ink-muted text-[11px]">
-              {isOptimal ? (
-                <span className="text-sage-wax font-semibold">✓ Valor óptimo detectado</span>
-              ) : (
-                "Mínimo: 0,5 h · Pasos de 0,5 h"
-              )}
-            </span>
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <div className="min-w-0">
+              <span className="block font-body font-semibold text-sm text-ink-charcoal">
+                Nueva duración de la tarea:
+              </span>
+              <span className="block text-ink-muted text-[11px] font-body mt-0.5">
+                {isOptimal ? (
+                  <span className="text-sage-wax font-semibold">✓ Valor óptimo detectado</span>
+                ) : (
+                  "Mínimo: 0,5 h · Pasos de 0,5 h"
+                )}
+              </span>
+            </div>
+            <div
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              className={`shrink-0 px-2.5 py-1.5 rounded-sharp border font-stamp text-[11px] font-bold text-center transition-all duration-300 ${
+                isOptimal
+                  ? "bg-sage-light border-sage-wax/40 text-sage-wax"
+                  : "bg-crimson-paper border-crimson-urgent/30 text-crimson-urgent"
+              }`}
+            >
+              <div className="text-[9px] opacity-80 uppercase tracking-wider leading-tight">
+                Carga del día
+              </div>
+              <div className="leading-tight mt-0.5">
+                {totalCalculated.toFixed(1).replace(".", ",")} /{" "}
+                {dailyLimitHours.toFixed(1).replace(".", ",")} h
+              </div>
+              <div className="text-[9px] leading-tight mt-0.5 font-semibold">
+                {isOptimal
+  ? "Dentro del límite"
+  : isInvalidZero
+    ? "Duración inválida"
+    : `+${excess.toFixed(1).replace(".", ",")} h exceso`}
+              </div>
+            </div>
           </div>
 
           <div
-            className={`flex items-center border rounded-sharp bg-paper-card overflow-hidden ${
-              fieldError ? "border-crimson-urgent ring-1 ring-crimson-urgent" : "border-sepia-border"
+            className={`flex items-center border rounded-sharp bg-paper-card overflow-hidden transition-colors duration-300 ${
+              fieldError
+                ? "border-crimson-urgent ring-1 ring-crimson-urgent"
+                : isOptimal
+                  ? "border-sage-wax/40"
+                  : "border-sepia-border"
             }`}
           >
             <button
