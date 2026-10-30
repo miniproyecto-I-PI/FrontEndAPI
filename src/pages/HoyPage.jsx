@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { useTodayGestiones } from "../hooks/useTodayGestiones";
 import { formatFullDate } from "../utils/dateUtils";
-import { PRIORITY_RULE_BY_GROUP, UPCOMING_WINDOW_DAYS } from "../utils/sortGestiones";
+import { PRIORITY_RULE_BY_GROUP } from "../utils/sortGestiones";
 
 import PageContainer from "../components/layout/PageContainer";
 import PageHeader from "../components/layout/PageHeader";
@@ -193,7 +193,7 @@ export default function HoyPage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
                 <StatCard label="Vencidas" tag={stats.overdueCount ? "Urgente" : "Al día"} value={stats.overdueCount} unit="gestiones atrasadas" accent="crimson" barWidthPercent={(stats.overdueCount / totalForBars) * 100} />
                 <StatCard label="Para hoy" tag="En curso" value={stats.todayCount} unit="prioritarias del día" accent="terracotta" barWidthPercent={(stats.todayCount / totalForBars) * 100} />
-                <StatCard label="Próximas" tag={`${UPCOMING_WINDOW_DAYS} días`} value={stats.upcomingCount} unit="en agenda" accent="neutral" barWidthPercent={(stats.upcomingCount / totalForBars) * 100} />
+                <StatCard label="Próximas" tag={"Agenda futura"} value={stats.upcomingCount} unit="en agenda" accent="neutral" barWidthPercent={(stats.upcomingCount / totalForBars) * 100} />
                 <StatCard label="Carga estimada" tag="Horas" value={stats.estimatedLoadHours} unit="hrs estimadas" accent="sage" barWidthPercent={stats.estimatedLoadHours ? (stats.todayLoadHours / stats.estimatedLoadHours) * 100 : 0} />
               </div>
             )}
