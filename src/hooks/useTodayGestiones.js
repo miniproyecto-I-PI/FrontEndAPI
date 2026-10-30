@@ -1,21 +1,3 @@
-/**
- * useTodayGestiones.js
- * ---------------------------------------------------------------------------
- * Estado y lógica de la vista "/hoy" (US-04 + US-05), separada del JSX.
- *
- *  - Carga GET /today. Los filtros por evento y estado (US-05) se envían al
- *    backend como query params; el texto del buscador se filtra en memoria.
- *  - Agrupa y ordena con utils/sortGestiones.js (regla de priorización).
- *  - Estados: "loading" (primera carga), "success", "error". `isRefreshing`
- *    indica una recarga con datos ya visibles (chip "Sincronizando…").
- *    `errorKind` distingue un fallo de carga de un fallo al aplicar filtros.
- *  - Acciones optimistas (marcar hecha / reprogramar) con "Deshacer", que
- *    también revierte el cambio en el servidor.
- *  - Ejecutadas: GET /today las excluye por defecto. Se piden aparte
- *    (?status=EJECUTADA) si el switch "Mostrar gestiones ejecutadas" está
- *    activo, o llegan solas con el chip "Ejecutadas". Se muestran en la
- *    sección "0. Ejecutadas" y se editan con el modal de /evento/:id.
- */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getEvents, getToday, markGestionAsDone, rescheduleGestion, updateSubtask, deleteSubtask } from "../services/api";
 import { computeHoyStats, groupAndSortGestiones } from "../utils/sortGestiones";
@@ -36,8 +18,6 @@ export function useTodayGestiones({ query = "", simulateError = false, simulateE
 
   const [eventFilter, setEventFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [showExecuted, setShowExecuted] = useState(false); // switch, apagado por defecto
-  const executedVisible = showExecuted || statusFilter === "EJECUTADA";
   const [eventOptions, setEventOptions] = useState([]);
 
   const hasServerFilters = Boolean(eventFilter || statusFilter);
@@ -45,12 +25,8 @@ export function useTodayGestiones({ query = "", simulateError = false, simulateE
   const fetchData = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      const fetchExecutedApart = showExecuted && statusFilter !== "EJECUTADA";
-      const [data, executed] = await Promise.all([
-        getToday({ eventId: eventFilter, status: statusFilter, simulateError }),
-        fetchExecutedApart ? getToday({ eventId: eventFilter, status: "EJECUTADA", simulateError }) : [],
-      ]);
-      setRawGestiones(simulateEmpty ? [] : [...data, ...executed]);
+      const data = await getToday({ eventId: eventFilter, status: statusFilter, simulateError });
+      setRawGestiones(simulateEmpty ? [] : data);
       setLocalOverrides({});
       setErrorKind(null);
       setStatus("success");
@@ -60,14 +36,13 @@ export function useTodayGestiones({ query = "", simulateError = false, simulateE
     } finally {
       setIsRefreshing(false);
     }
-  }, [eventFilter, statusFilter, showExecuted, simulateError, simulateEmpty]);
+  }, [eventFilter, statusFilter, simulateError, simulateEmpty]);
 
   useEffect(() => {
     Promise.resolve().then(fetchData);
   }, [fetchData]);
 
   // Opciones del selector de evento: todos los eventos del organizador.
-  // `dateTime` sirve para validar que una gestión no pase del día del evento.
   useEffect(() => {
     let cancelled = false;
     getEvents()
@@ -106,14 +81,13 @@ export function useTodayGestiones({ query = "", simulateError = false, simulateE
     );
   }, [effectiveGestiones, query]);
 
-  // Con la sección oculta, una gestión recién marcada como hecha no aparece en "0. Ejecutadas".
   const grouped = useMemo(() => {
-    const groups = groupAndSortGestiones(searchedGestiones);
-    return executedVisible ? groups : { ...groups, ejecutadas: [] };
-  }, [searchedGestiones, executedVisible]);
+    return groupAndSortGestiones(searchedGestiones);
+  }, [searchedGestiones]);
+
   const stats = useMemo(() => computeHoyStats(grouped), [grouped]);
 
-  /** US-09 — Marcar como ejecutada (sale de /hoy). */
+  /** US-09 — Marcar como ejecutada. */
   const markAsDone = useCallback(async (id) => {
     setOverride(id, { status: "EJECUTADA" });
     try {
@@ -157,7 +131,7 @@ export function useTodayGestiones({ query = "", simulateError = false, simulateE
     [rawGestiones]
   );
 
-  /** US-03 — Editar una gestión (modal de /evento/:id). Lanza si falla, para el modal. */
+  /** US-03 — Editar una gestión. Lanza si falla, para el modal. */
   const editGestion = useCallback(
     async (id, patch) => {
       await updateSubtask(id, patch);
@@ -166,7 +140,7 @@ export function useTodayGestiones({ query = "", simulateError = false, simulateE
     [fetchData]
   );
 
-  /** US-03 — Eliminar una gestión. Lanza si falla, para que el modal muestre el error. */
+  /** US-03 — Eliminar una gestión. Lanza si falla, para el modal. */
   const deleteGestion = useCallback(
     async (id) => {
       await deleteSubtask(id);
@@ -187,9 +161,8 @@ export function useTodayGestiones({ query = "", simulateError = false, simulateE
     grouped,
     stats,
     totalUnfiltered: rawGestiones.filter((g) => g.status !== "EJECUTADA").length,
-    executedVisible,
     allGestiones: rawGestiones,
-    filters: { eventFilter, setEventFilter, statusFilter, setStatusFilter, hasServerFilters, clearFilters, showExecuted, setShowExecuted },
+    filters: { eventFilter, setEventFilter, statusFilter, setStatusFilter, hasServerFilters, clearFilters },
     eventOptions,
     actions: { markAsDone, undoMarkAsDone, reschedule, editGestion, deleteGestion },
     reload: fetchData,

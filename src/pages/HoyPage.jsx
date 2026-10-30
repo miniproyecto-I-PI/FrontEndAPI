@@ -22,19 +22,6 @@ import HoyKanbanView from "../components/tasks/HoyKanbanView";
 import SimulationToolbar from "../components/dev/SimulationToolbar";
 import DeleteSubtaskModal from "../components/eventos/DeleteSubtaskModal";
 
-/**
- * HoyPage.jsx — ruta "/hoy" (T2: US-04 vista Hoy + US-05 filtros).
- *
- * Diseño Stitch (Sprint 2). Estados: cargando (esqueleto + "Sincronizando…"),
- * vacío con acción "Crear evento", sin resultados por filtro con "Limpiar
- * filtros", error de carga / error al filtrar con "Reintentar", y éxito con
- * los tres grupos (Vencidas, Agenda de Hoy, Próximas), cada uno con su regla
- * de orden en el tooltip "¿Cómo se ordena?" junto al título. La sección
- * "0. Ejecutadas" solo aparece con el switch "Mostrar gestiones ejecutadas"
- * o con el chip de estado "Ejecutadas".
- *
- * Header, Footer y buscador vienen de MainLayout (useOutletContext).
- */
 export default function HoyPage() {
   const { search, setSearch } = useOutletContext();
   const location = useLocation();
@@ -43,14 +30,14 @@ export default function HoyPage() {
   const [simMode, setSimMode] = useState("normal"); // 'normal' | 'empty' | 'error' (solo desarrollo)
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
   const [postponeTarget, setPostponeTarget] = useState(null);
-  const [editTarget, setEditTarget] = useState(null); // gestión en edición (título de la tarjeta o botón Editar)
+  const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [toast, setToast] = useState(() => (location.state?.toast ? { message: location.state.toast } : null));
   const closeToast = useCallback(() => setToast(null), []);
 
   const [galleryModal, setGalleryModal] = useState({
     isOpen: false,
-    group: null, // 'hoy' | 'vencidas' | 'proximas'
+    group: null,
     initialIndex: 0,
   });
 
@@ -106,22 +93,22 @@ export default function HoyPage() {
   }
 
   async function handlePostpone({ note, newDate }) {
-  const patch = { status: "POSPUESTA", note };
-  if (newDate) patch.targetDate = newDate;
-  await actions.editGestion(postponeTarget.id, patch);
-  const dateLabel = newDate
-    ? new Date(`${newDate}T12:00:00`).toLocaleDateString("es", {
-        day: "numeric",
-        month: "short",
-      })
-    : null;
-  setPostponeTarget(null);
-  setToast({
-    message: dateLabel
-      ? `Gestión pospuesta al ${dateLabel}`
-      : "Gestión pospuesta",
-  });
-}
+    const patch = { status: "POSPUESTA", note };
+    if (newDate) patch.targetDate = newDate;
+    await actions.editGestion(postponeTarget.id, patch);
+    const dateLabel = newDate
+      ? new Date(`${newDate}T12:00:00`).toLocaleDateString("es", {
+          day: "numeric",
+          month: "short",
+        })
+      : null;
+    setPostponeTarget(null);
+    setToast({
+      message: dateLabel
+        ? `Gestión pospuesta al ${dateLabel}`
+        : "Gestión pospuesta",
+    });
+  }
 
   async function handleEditSubmit(payload) {
     await actions.editGestion(editTarget.id, payload);
@@ -136,7 +123,6 @@ export default function HoyPage() {
     setToast({ message: "Gestión eliminada" });
   }
 
-  // /today no trae la fecha del evento; se toma de la lista de eventos.
   const eventDateOf = (gestion) => eventOptions.find((o) => o.value === gestion.eventId)?.dateTime;
 
   const galleryGestiones = useMemo(() => {
@@ -177,8 +163,6 @@ export default function HoyPage() {
               statusFilter={filters.statusFilter}
               onStatusChange={filters.setStatusFilter}
               onClear={filters.clearFilters}
-              showExecuted={filters.showExecuted}
-              onShowExecutedChange={filters.setShowExecuted}
               viewMode={viewMode}
               onViewModeChange={setViewMode}
               disabled={status === "loading"}
@@ -186,7 +170,6 @@ export default function HoyPage() {
           }
         />
 
-        {/* ---------- Resumen de actividad ---------- */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
           <span className="font-stamp text-[11px] uppercase tracking-wider text-ink-muted font-bold">Resumen de actividad</span>
           {isRefreshing && (
@@ -212,7 +195,6 @@ export default function HoyPage() {
           </div>
         )}
 
-        {/* ---------- Cuerpo ---------- */}
         {status === "loading" && <LoadingSkeleton />}
 
         {status === "error" && (
@@ -263,7 +245,6 @@ export default function HoyPage() {
                 onPostpone={(g) => setPostponeTarget(g)}
                 onEdit={(g) => setEditTarget(g)}
                 onDelete={(g) => setDeleteTarget(g)}
-                showExecuted={filters.showExecuted}
               />
             </div>
           ) : (
@@ -364,9 +345,7 @@ export default function HoyPage() {
                       </span>
                     }
                   />
-                  {/* Grid alineada a Resumen de Actividad (3 de 4 cols a la izquierda, 1 de 4 a la derecha con gap-3.5) */}
                   <div className="grid grid-cols-1 lg:grid-cols-4 gap-3.5 items-stretch">
-                    {/* Gestión 1: siempre arriba a la izquierda (Row 1, Cols 1-3 en desktop, full width si ≤ 2) */}
                     <div
                       className={
                         grouped.hoy.length > 2
@@ -385,7 +364,6 @@ export default function HoyPage() {
                       />
                     </div>
 
-                    {/* Gestión 3: arriba a la derecha (Row 1, Col 4), alineada con Gestión 1 */}
                     {grouped.hoy.length > 2 && (
                       <div className="lg:col-span-1 lg:col-start-4 lg:row-start-1 order-3 flex flex-col">
                         <TaskCard
@@ -400,7 +378,6 @@ export default function HoyPage() {
                       </div>
                     )}
 
-                    {/* Gestión 2: abajo a la izquierda (Row 2, Cols 1-3 en desktop, full width si solo son 2) */}
                     {grouped.hoy.length > 1 && (
                       <div
                         className={
@@ -422,7 +399,6 @@ export default function HoyPage() {
                       </div>
                     )}
 
-                    {/* Gestión 4: abajo a la derecha (Row 2, Col 4), alineada con Gestión 2 */}
                     {grouped.hoy.length === 4 && (
                       <div className="lg:col-span-1 lg:col-start-4 lg:row-start-2 order-4 flex flex-col">
                         <TaskCard
@@ -438,7 +414,6 @@ export default function HoyPage() {
                       </div>
                     )}
 
-                    {/* Más de 4 gestiones: botón de ver más / galería en Row 2, Col 4 */}
                     {grouped.hoy.length > 4 && (
                       <div className="lg:col-span-1 lg:col-start-4 lg:row-start-2 order-4 flex flex-col min-h-[140px]">
                         <TaskCardGalleryOverlay
@@ -588,7 +563,6 @@ export default function HoyPage() {
         />
       )}
 
-      {/* Herramienta de QA solo en desarrollo — nunca en `npm run build`. */}
       {import.meta.env.DEV && (
         <SimulationToolbar
           mode={simMode}
