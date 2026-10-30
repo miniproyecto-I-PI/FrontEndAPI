@@ -4,7 +4,7 @@ import { useState } from "react";
  * ReduceHoursModal.jsx
  * ---------------------------------------------------------------------------
  * US-08: Resolución reduciendo horas estimadas.
- * Diseño limpio: Header (sin subtítulo) + Stepper (con badge de carga) + Resumen.
+ * El botón de confirmar se bloquea si el conflicto aún no se ha resuelto.
  */
 export default function ReduceHoursModal({
   gestion,
@@ -66,12 +66,8 @@ export default function ReduceHoursModal({
         {/* Header */}
         <div className="shrink-0 mb-6">
           <div className="flex items-center justify-between text-ink-muted mb-2">
-            <span className="font-stamp text-[11px] font-bold tracking-wider uppercase">
-              {isOptimal ? (
-                <span className="text-sage-wax">Ajuste recomendado</span>
-              ) : (
-                "Resolución de carga · Gestión"
-              )}
+            <span className="font-stamp text-[11px] font-bold tracking-wider uppercase text-ink-muted">
+              Resolución de carga · Gestión
             </span>
             <button
               type="button"
@@ -86,7 +82,6 @@ export default function ReduceHoursModal({
           <h2 id="reduce-hours-title" className="font-heading text-xl md:text-2xl font-bold text-ink-charcoal">
             Reduce las horas de esta gestión
           </h2>
-          {/* Subtítulo eliminado */}
         </div>
 
         {/* Cuerpo desplazable */}
@@ -109,7 +104,6 @@ export default function ReduceHoursModal({
                 <span className="block font-body font-semibold text-sm text-ink-charcoal">
                   Nueva duración de la tarea:
                 </span>
-                {/* Hint eliminado */}
               </div>
               <div
                 role="status"
@@ -216,12 +210,12 @@ export default function ReduceHoursModal({
           </button>
           <button
             type="button"
-            disabled={isSubmitting || isInvalidZero || !canResolveByReducing}
+            disabled={isSubmitting || !canResolveByReducing || !isOptimal}
             onClick={handleConfirm}
             className={`px-6 py-2.5 rounded-sharp font-body text-xs font-semibold tracking-wide border shadow-sm transition-colors inline-flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-terracotta disabled:opacity-60 disabled:cursor-not-allowed ${
               isOptimal
                 ? "bg-sage-wax hover:bg-[#2F422F] text-[#FAF6F0] border-[#2F422F]"
-                : "bg-terracotta hover:bg-terracotta-dark text-[#FAF6F0] border-terracotta-dark"
+                : "bg-paper-linen text-ink-muted border-sepia-border"
             }`}
           >
             <span>
@@ -229,11 +223,11 @@ export default function ReduceHoursModal({
                 ? "Guardando…"
                 : !canResolveByReducing
                   ? "Elige otra fecha"
-                  : isOptimal
-                    ? "Confirmar cambio"
-                    : "Confirmar con aviso"}
+                  : !isOptimal
+                    ? "Conflicto sin resolver"
+                    : "Confirmar cambio"}
             </span>
-            <span aria-hidden="true">→</span>
+            {isOptimal && <span aria-hidden="true">→</span>}
           </button>
         </div>
       </div>
