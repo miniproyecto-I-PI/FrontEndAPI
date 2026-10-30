@@ -1,18 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { formatOverdueLabel, formatShortDate, formatUpcomingLabel } from "../../utils/dateUtils";
 
-/**
- * TaskCard.jsx
- * ---------------------------------------------------------------------------
- * Una gestión (subtarea logística) en "/hoy". Un solo componente con `variant`
- * para los tratamientos del diseño (vencida / hero de hoy / secundaria de
- * hoy / próxima / ejecutada).
- *
- * `compactActions` (usado por GestionesGalleryModal en modo carrusel):
- * reduce la fila de acciones a Marcar como hecha + Editar + menú ⋯ que
- * despliega Reprogramar / Posponer / Eliminar. Evita que los botones se
- * salgan del recuadro cuando el contenedor es angosto.
- */
 export default function TaskCard({
   gestion,
   variant,
@@ -31,8 +19,11 @@ export default function TaskCard({
   const isProxima = variant === "proxima";
   const isEjecutada = variant === "ejecutada";
 
+  const showOverflow = compactActions && !isEjecutada;
+
   const containerClasses = [
     "bg-paper-card border border-sepia-border rounded-sharp warm-card-shadow warm-card-hover transition-all group",
+    showOverflow && "relative",
     single && isVencida && "relative bg-crimson-paper/50 border-l-[6px] border-l-crimson-urgent p-5 md:p-6 flex flex-col justify-between",
     single && isProxima && "border-l-4 border-l-sepia-dark p-5 md:p-6 flex flex-col justify-between",
     !single && isVencida && "relative bg-crimson-paper/50 border-l-[6px] border-l-crimson-urgent p-4 md:p-5",
@@ -45,8 +36,18 @@ export default function TaskCard({
     .join(" ");
 
   const props = { gestion, today, onMarkDone, onReschedule, onPostpone, onEdit, onDelete, compactActions };
+
   return (
     <article className={containerClasses} data-gestion-id={gestion.id} aria-label={gestion.title}>
+      {showOverflow && (
+        <CardOverflowMenu
+          gestion={gestion}
+          onEdit={onEdit}
+          onReschedule={onReschedule}
+          onPostpone={onPostpone}
+          onDelete={onDelete}
+        />
+      )}
       {single && (isVencida || isProxima) ? (
         <SingleCardBody {...props} variant={variant} />
       ) : (
@@ -76,25 +77,15 @@ function PostponedTag() {
   );
 }
 
-function ActionButtons({
-  gestion,
-  onMarkDone,
-  onReschedule,
-  onPostpone,
-  onEdit,
-  onDelete,
-  size = "normal",
-  compactActions = false,
-}) {
+/** Menú "⋯" en la esquina superior derecha de la tarjeta (solo compactActions). */
+function CardOverflowMenu({ gestion, onEdit, onReschedule, onPostpone, onDelete }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const menuContainerRef = useRef(null);
+  const ref = useRef(null);
 
   useEffect(() => {
     if (!menuOpen) return;
     function handleClickOutside(e) {
-      if (menuContainerRef.current && !menuContainerRef.current.contains(e.target)) {
-        setMenuOpen(false);
-      }
+      if (ref.current && !ref.current.contains(e.target)) setMenuOpen(false);
     }
     function handleEscape(e) {
       if (e.key === "Escape") setMenuOpen(false);
@@ -107,6 +98,87 @@ function ActionButtons({
     };
   }, [menuOpen]);
 
+  return (
+    <div ref={ref} className="absolute top-2 right-2 z-30">
+      <button
+        type="button"
+        onClick={() => setMenuOpen((v) => !v)}
+        aria-expanded={menuOpen}
+        aria-haspopup="menu"
+        aria-label="Más opciones"
+        title="Más opciones"
+        className={`w-7 h-7 inline-flex items-center justify-center rounded-sharp border border-sepia-border shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1 ${
+          menuOpen
+            ? "bg-paper-linen text-ink-charcoal"
+            : "bg-paper-card/95 hover:bg-paper-linen text-ink-muted hover:text-ink-charcoal"
+        }`}
+      >
+        <span className="material-symbols-outlined text-[16px]" aria-hidden="true">more_horiz</span>
+      </button>
+      {menuOpen && (
+        <div
+          role="menu"
+          className="absolute right-0 top-full mt-1 z-40 w-44 bg-paper-card border border-sepia-border rounded-sharp shadow-lg py-1"
+        >
+          {onEdit && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => { setMenuOpen(false); onEdit?.(); }}
+              className="w-full text-left px-3 py-1.5 font-body text-xs text-ink-charcoal hover:bg-paper-linen transition-colors flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-[14px] text-ink-muted" aria-hidden="true">edit</span>
+              <span>Editar</span>
+            </button>
+          )}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => { setMenuOpen(false); onReschedule?.(); }}
+            className="w-full text-left px-3 py-1.5 font-body text-xs text-ink-charcoal hover:bg-paper-linen transition-colors flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[14px] text-ink-muted" aria-hidden="true">event_repeat</span>
+            <span>Reprogramar</span>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => { setMenuOpen(false); onPostpone?.(); }}
+            className="w-full text-left px-3 py-1.5 font-body text-xs text-ink-charcoal hover:bg-paper-linen transition-colors flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[14px] text-ink-muted" aria-hidden="true">pause_circle</span>
+            <span>Posponer</span>
+          </button>
+          {onDelete && (
+            <>
+              <div className="my-1 border-t border-sepia-border" aria-hidden="true" />
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => { setMenuOpen(false); onDelete?.(); }}
+                className="w-full text-left px-3 py-1.5 font-body text-xs text-crimson-urgent hover:bg-crimson-paper transition-colors flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-[14px]" aria-hidden="true">delete</span>
+                <span>Eliminar</span>
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ActionButtons({
+  gestion,
+  onMarkDone,
+  onReschedule,
+  onPostpone,
+  onEdit,
+  onDelete,
+  size = "normal",
+  compactActions = false,
+}) {
   const base = size === "normal" ? "px-3.5 py-1.5 text-xs" : "px-3 py-1 text-xs";
   const ghost = `${base} rounded-sharp bg-paper-card hover:bg-paper-linen border border-sepia-border text-ink-charcoal font-body font-medium inline-flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-1`;
 
@@ -121,75 +193,9 @@ function ActionButtons({
     </button>
   );
 
+  // En modo compacto solo queda "Marcar como hecha"; el resto vive en el menú ⋯.
   if (compactActions) {
-    return (
-      <>
-        {primaryBtn}
-        {onEdit && (
-          <button
-            type="button"
-            onClick={onEdit}
-            aria-label={gestion ? `Editar gestión ${gestion.title}` : "Editar gestión"}
-            className={ghost}
-          >
-            <span className="material-symbols-outlined text-[15px] text-ink-muted" aria-hidden="true">edit</span>
-            <span>Editar</span>
-          </button>
-        )}
-        <div className="relative" ref={menuContainerRef}>
-          <button
-            type="button"
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-expanded={menuOpen}
-            aria-haspopup="menu"
-            aria-label="Más opciones"
-            title="Más opciones"
-            className={`${ghost} px-2`}
-          >
-            <span className="material-symbols-outlined text-[16px] text-ink-muted" aria-hidden="true">more_horiz</span>
-          </button>
-          {menuOpen && (
-            <div
-              role="menu"
-              className="absolute right-0 bottom-full mb-1 z-40 w-44 bg-paper-card border border-sepia-border rounded-sharp shadow-lg py-1"
-            >
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => { setMenuOpen(false); onReschedule?.(); }}
-                className="w-full text-left px-3 py-1.5 font-body text-xs text-ink-charcoal hover:bg-paper-linen transition-colors flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-[14px] text-ink-muted">event_repeat</span>
-                <span>Reprogramar</span>
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => { setMenuOpen(false); onPostpone?.(); }}
-                className="w-full text-left px-3 py-1.5 font-body text-xs text-ink-charcoal hover:bg-paper-linen transition-colors flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-[14px] text-ink-muted">pause_circle</span>
-                <span>Posponer</span>
-              </button>
-              {onDelete && (
-                <>
-                  <div className="my-1 border-t border-sepia-border" aria-hidden="true" />
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => { setMenuOpen(false); onDelete?.(); }}
-                    className="w-full text-left px-3 py-1.5 font-body text-xs text-crimson-urgent hover:bg-crimson-paper transition-colors flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined text-[14px]">delete</span>
-                    <span>Eliminar</span>
-                  </button>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      </>
-    );
+    return primaryBtn;
   }
 
   return (
@@ -249,7 +255,7 @@ function Hours({ value }) {
 
 function VencidaBody({ gestion, today, onMarkDone, onReschedule, onPostpone, onEdit, onDelete, compactActions }) {
   return (
-    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div className={`flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${compactActions ? "pr-8" : ""}`}>
       <div className="space-y-1.5 flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
           <span className="inline-flex items-center gap-1 font-body text-[11px] font-bold text-crimson-tag bg-[#F6DDD7] border border-crimson-urgent/30 px-2 py-0.5 rounded-sharp uppercase tracking-wide">
@@ -281,7 +287,7 @@ function HeroBody({ gestion, onMarkDone, onReschedule, onPostpone, onEdit, onDel
   return (
     <>
       <div className="space-y-2.5">
-        <div className="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-sepia-border/70">
+        <div className={`flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-sepia-border/70 ${compactActions ? "pr-8" : ""}`}>
           <div className="flex items-center gap-2">
             <span className="font-body text-[11px] font-bold text-terracotta-dark bg-terracotta-light/70 border border-terracotta/30 px-2.5 py-0.5 rounded-sharp uppercase tracking-wide">
               {todayLabel(gestion)}
@@ -315,7 +321,7 @@ function SecondaryBody({ gestion, onMarkDone, onReschedule, onPostpone, onEdit, 
   return (
     <>
       <div>
-        <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-sepia-border/40">
+        <div className={`flex items-center justify-between gap-2 pb-1.5 border-b border-sepia-border/40 ${compactActions ? "pr-8" : ""}`}>
           <div className="flex items-center gap-2">
             <span className="font-body text-[11px] font-bold text-terracotta-dark bg-terracotta-light/60 border border-terracotta/30 px-2 py-0.5 rounded-sharp uppercase tracking-wide">
               {todayLabel(gestion)}
@@ -341,7 +347,7 @@ function ProximaBody({ gestion, today, onMarkDone, onReschedule, onPostpone, onE
   return (
     <>
       <div className="space-y-2">
-        <div className="flex items-center justify-between gap-1 pb-1.5 border-b border-sepia-border/50">
+        <div className={`flex items-center justify-between gap-1 pb-1.5 border-b border-sepia-border/50 ${compactActions ? "pr-8" : ""}`}>
           <div className="flex items-center gap-2">
             <span className="font-body text-[11px] font-semibold text-ink-charcoal bg-paper-linen border border-sepia-border px-2 py-0.5 rounded-sharp">
               {formatUpcomingLabel(gestion.targetDate, today)}
@@ -420,7 +426,7 @@ function SingleCardBody({ gestion, variant, today, onMarkDone, onReschedule, onP
   return (
     <>
       <div className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-sepia-border/70">
+        <div className={`flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-sepia-border/70 ${compactActions ? "pr-8" : ""}`}>
           <div className="flex flex-wrap items-center gap-2.5">
             {isVencida ? (
               <span className="inline-flex items-center gap-1 font-body text-[11px] font-bold text-crimson-tag bg-[#F6DDD7] border border-crimson-urgent/30 px-2.5 py-0.5 rounded-sharp uppercase tracking-wide">
