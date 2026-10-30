@@ -50,12 +50,12 @@ export default function Header({ searchValue, onSearchChange }) {
   </div>
 ) : (
   <Link
-    to="/hoy"
-    className="flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta rounded-sharp"
-    aria-label="Convoka — ir a Hoy"
-  >
-    <img src={logo} alt="Convoka Events" className="h-8 w-auto" />
-  </Link>
+  to="/"
+  className="flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta rounded-sharp"
+  aria-label="Convoka — ir al inicio"
+>
+  <img src={logo} alt="Convoka Events" className="h-8 w-auto" />
+</Link>
 )}
           <div className="h-5 w-px bg-sepia-border hidden md:block" aria-hidden="true" />
           <nav className="hidden md:flex items-center gap-1" aria-label="Navegación principal">
