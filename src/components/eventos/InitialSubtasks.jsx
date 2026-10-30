@@ -1,6 +1,7 @@
-import { useId, useState } from "react";
+import { useId, useState, useEffect } from "react";
 import { formatShortDate, toDateInputValue, validateTargetDateAgainstEvent } from "../../utils/dateUtils";
 import { useDailyLimit } from "../../hooks/useDailyLimit";
+
 
 const emptyDraft = { title: "", provider: "", targetDate: "", time: "", estimatedHours: "" };
 
@@ -16,13 +17,19 @@ const emptyDraft = { title: "", provider: "", targetDate: "", time: "", estimate
  * @param {string} eventDate  "AAAA-MM-DD" del evento ("" si aún no se elige):
  *   ninguna gestión puede quedar después de ese día.
  */
-export default function InitialSubtasks({ items, onAdd, onRemove, eventDate = "", disabled = false }) {
+export default function InitialSubtasks({ items, onAdd, onRemove, eventDate = "", disabled = false, onDraftChange }) {
   const { allowSubtasksAfterEvent, allowOverdueSubtasks } = useDailyLimit();
   const [open, setOpen] = useState(true);
   const [draft, setDraft] = useState(emptyDraft);
   const [errors, setErrors] = useState({});
   const baseId = useId();
   const panelId = `${baseId}-panel`;
+
+useEffect(() => {
+    if (!onDraftChange) return;
+    const hasContent = Object.values(draft).some((v) => String(v ?? "").trim() !== "");
+    onDraftChange({ draft, hasContent });
+  }, [draft, onDraftChange]);
 
   function update(field) {
     return (e) => {

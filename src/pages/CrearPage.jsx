@@ -10,6 +10,7 @@ import InitialSubtasks from "../components/eventos/InitialSubtasks";
 import { createEvent } from "../services/api";
 import { toDateInputValue, validateTargetDateAgainstEvent } from "../utils/dateUtils";
 import { useDailyLimit } from "../hooks/useDailyLimit";
+import UnsavedDraftConfirmModal from "../components/common/UnsavedDraftConfirmModal";
 
 const emptyForm = {
   title: "",
@@ -39,6 +40,10 @@ export default function CrearPage() {
   const [createdEventName, setCreatedEventName] = useState(null);
   const [initialSubtasks, setInitialSubtasks] = useState([]);
   const closeToast = useCallback(() => setToast(null), []);
+  const [pendingDraft, setPendingDraft] = useState(null); // { draft, hasContent }
+  const [showDraftWarning, setShowDraftWarning] = useState(false);
+
+  const handleDraftChange = useCallback((info) => setPendingDraft(info), []);
 
   function handleChange(field) {
     return (e) => {
@@ -72,8 +77,8 @@ export default function CrearPage() {
     return errors;
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+    async function handleSubmit(e) {
+    if (e?.preventDefault) e.preventDefault();
     setGeneralError(null);
     const errors = validate();
     if (Object.keys(errors).length > 0) {
@@ -83,6 +88,18 @@ export default function CrearPage() {
       window.scrollTo({ top: 120, behavior: "smooth" });
       return;
     }
+
+    // #2: si el borrador de gestión tiene datos y nunca se añadió, advertir.
+    if (pendingDraft?.hasContent) {
+      setShowDraftWarning(true);
+      return;
+    }
+
+    await performCreate();
+  }
+
+  async function performCreate() {
+    setShowDraftWarning(false);
     setStatus("loading");
     try {
       const localDate = new Date(`${form.date}T12:00:00`);
@@ -96,7 +113,6 @@ export default function CrearPage() {
       });
       setCreatedEventName(created?.name || form.title.trim());
       setStatus("idle");
-
     } catch (err) {
       setStatus("idle");
       if (err.code === "event_date_in_past") {
@@ -106,6 +122,10 @@ export default function CrearPage() {
       setGeneralError(errorMsg);
       setToast({ message: errorMsg, intent: "error" });
     }
+  }
+
+  function handleConfirmCreateWithoutDraft() {
+    performCreate();
   }
 
   
@@ -203,7 +223,7 @@ function handleSuccessGoToEvents() {
               <div className="space-y-1.5 pt-1">
                 <label
                   htmlFor="event-host"
-                  className="block font-heading font-semibold text-sm text-ink-charcoal"
+                  className="flex items-center justify-between font-heading font-semibold text-sm text-ink-charcoal"
                 >
                   <span>Cliente o anfitrión</span>
                   <span className="font-body text-[11px] text-ink-muted font-normal">Opcional</span>
@@ -252,7 +272,7 @@ function handleSuccessGoToEvents() {
               <div className="space-y-1.5">
                 <label
                   htmlFor="event-venue"
-                  className="block font-heading font-semibold text-sm text-ink-charcoal"
+                  className="flex items-center justify-between font-heading font-semibold text-sm text-ink-charcoal"
                 >
                   <span>Lugar o recinto tentativo</span>
                   <span className="font-body text-[11px] text-ink-muted font-normal">Opcional</span>
@@ -296,6 +316,7 @@ function handleSuccessGoToEvents() {
             eventDate={form.date}
             onAdd={(item) => setInitialSubtasks((list) => [...list, item])}
             onRemove={(index) => setInitialSubtasks((list) => list.filter((_, i) => i !== index))}
+            onDraftChange={handleDraftChange}
             disabled={isLoading}
           />
         )}
@@ -331,6 +352,14 @@ function handleSuccessGoToEvents() {
     eventName={createdEventName}
     onStay={handleSuccessStay}
     onGoToEvents={handleSuccessGoToEvents}
+  />
+  
+)}
+
+{showDraftWarning && (
+  <UnsavedDraftConfirmModal
+    onCancel={() => setShowDraftWarning(false)}
+    onConfirm={handleConfirmCreateWithoutDraft}
   />
 )}
 
